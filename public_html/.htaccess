@@ -1,0 +1,48 @@
+Options -Indexes
+Options -MultiViews
+
+# Security headers
+Header always set X-Frame-Options "SAMEORIGIN"
+Header always set X-Content-Type-Options "nosniff"
+Header always set X-XSS-Protection "1; mode=block"
+Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+# Deny access to sensitive files
+<FilesMatch "(\.env|composer\.(json|lock)|\.git)">
+    Require all denied
+</FilesMatch>
+
+# PHP error display off in production (set in .env)
+php_flag display_errors off
+
+AddDefaultCharset UTF-8
+
+RewriteEngine On
+
+# Allow CORS for API endpoints
+<IfModule mod_headers.c>
+    <If "%{REQUEST_URI} =~ m#^/api/#">
+        Header always set Access-Control-Allow-Origin "*"
+        Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+        Header always set Access-Control-Allow-Headers "Authorization, Content-Type, Accept"
+        Header always set Access-Control-Max-Age "86400"
+    </If>
+</IfModule>
+
+# Handle OPTIONS preflight
+RewriteCond %{REQUEST_METHOD} OPTIONS
+RewriteRule ^api/ - [R=200,L]
+
+# Route /api/* to api.php
+RewriteRule ^api/(.*)$ api.php [QSA,L]
+
+# Route /attachment/* to attachment.php
+RewriteRule ^attachment/(.*)$ attachment.php [QSA,L]
+
+# Serve existing files directly (assets, favicon, etc.)
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# All other requests -> SPA shell
+RewriteRule ^ index.php [QSA,L]

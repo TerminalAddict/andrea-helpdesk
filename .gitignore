@@ -1,0 +1,9 @@
+/vendor/
+/.env
+/storage/attachments/
+/storage/logs/*.log
+composer.lock
+*.swp
+.DS_Store
+Thumbs.db
+/public_html/assets/js/vendor/

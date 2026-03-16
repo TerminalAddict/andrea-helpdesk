@@ -1,0 +1,133 @@
+/**
+ * Andrea Helpdesk - Custom Styles
+ */
+
+:root {
+    --brand-color: #0d6efd;
+    --sidebar-width: 220px;
+}
+
+/* Smooth page transitions */
+#app {
+    min-height: calc(100vh - 56px);
+}
+
+/* Reply thread */
+.reply-html img {
+    max-width: 100%;
+    height: auto;
+}
+
+.reply-html blockquote {
+    border-left: 3px solid #dee2e6;
+    padding-left: 1rem;
+    color: #6c757d;
+    margin: .75rem 0;
+}
+
+.reply-html pre {
+    background: #f8f9fa;
+    padding: .75rem;
+    border-radius: .375rem;
+    overflow-x: auto;
+}
+
+/* Ticket rows */
+.ticket-row:hover td {
+    background-color: #f8f9fa;
+}
+
+/* Table truncation */
+.text-truncate-cell {
+    max-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Status / priority badges */
+.badge {
+    font-weight: 500;
+    letter-spacing: .02em;
+}
+
+/* Sticky header for ticket detail thread */
+#reply-card {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+}
+
+/* Toast container */
+#toast-container {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 1100;
+    min-width: 280px;
+}
+
+/* Navbar active link */
+.navbar .nav-link.active {
+    font-weight: 600;
+    color: #fff !important;
+}
+
+/* Loading screen */
+#loading-screen {
+    position: fixed;
+    inset: 0;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+/* Settings color input */
+.form-control-color {
+    width: 60px;
+    height: 38px;
+    padding: .25rem;
+}
+
+/* Knowledge base article body */
+.article-body h1, .article-body h2, .article-body h3 {
+    margin-top: 1.5rem;
+    margin-bottom: .75rem;
+}
+
+.article-body p {
+    margin-bottom: .75rem;
+    line-height: 1.7;
+}
+
+.article-body code {
+    background: #f8f9fa;
+    padding: .1em .35em;
+    border-radius: .2rem;
+    font-size: .875em;
+}
+
+.article-body pre code {
+    background: none;
+    padding: 0;
+}
+
+/* Portal bubble layout */
+.portal-bubble-agent {
+    background: #f8f9fa;
+    border-radius: .5rem;
+}
+
+.portal-bubble-customer {
+    background: #e8f0fe;
+    border-radius: .5rem;
+}
+
+/* Responsive tweaks */
+@media (max-width: 767px) {
+    .container-fluid.p-4 {
+        padding: 1rem !important;
+    }
+}

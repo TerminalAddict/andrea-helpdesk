@@ -1,0 +1,21 @@
+{
+    "name": "andrea-helpdesk/andrea-helpdesk",
+    "description": "Andrea Helpdesk - PHP ticket management system",
+    "type": "project",
+    "license": "GPL-3.0-or-later",
+    "require": {
+        "php": ">=8.1",
+        "phpmailer/phpmailer": "^6.8",
+        "firebase/php-jwt": "^7.0",
+        "vlucas/phpdotenv": "^5.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "Andrea\\Helpdesk\\": "src/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
+    }
+}

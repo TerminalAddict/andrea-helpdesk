@@ -1,0 +1,102 @@
+<?php
+declare(strict_types=1);
+
+namespace Andrea\Helpdesk\Agents;
+
+use Andrea\Helpdesk\Core\Request;
+use Andrea\Helpdesk\Core\Response;
+use Andrea\Helpdesk\Core\Exceptions\NotFoundException;
+
+class AgentController
+{
+    private AgentRepository $repo;
+    private AgentService $service;
+
+    public function __construct()
+    {
+        $this->repo    = new AgentRepository();
+        $this->service = new AgentService($this->repo);
+    }
+
+    private function sanitise(?array $agent): ?array
+    {
+        if (!$agent) return null;
+        unset($agent['password_hash']);
+        return $agent;
+    }
+
+    public function index(Request $request): void
+    {
+        $includeInactive = $request->input('include_inactive') === '1';
+        $agents = array_map([$this, 'sanitise'], $this->repo->findAll($includeInactive));
+        Response::success($agents);
+    }
+
+    public function show(Request $request, array $params): void
+    {
+        $agent = $this->repo->findById((int)$params['id']);
+        if (!$agent) throw new NotFoundException('Agent not found');
+        Response::success($this->sanitise($agent));
+    }
+
+    public function store(Request $request): void
+    {
+        $data = $request->validate([
+            'name'     => 'required',
+            'email'    => 'required|email',
+            'password' => 'required|min:8',
+        ]);
+
+        $data['role']               = $request->input('role', 'agent');
+        $data['can_close_tickets']  = $request->input('can_close_tickets', true);
+        $data['can_delete_tickets'] = $request->input('can_delete_tickets', false);
+        $data['can_edit_customers'] = $request->input('can_edit_customers', false);
+        $data['can_view_reports']   = $request->input('can_view_reports', false);
+        $data['signature']          = $request->input('signature');
+
+        $agent = $this->service->create($data);
+        Response::created($agent, 'Agent created');
+    }
+
+    public function update(Request $request, array $params): void
+    {
+        $agent = $this->repo->findById((int)$params['id']);
+        if (!$agent) throw new NotFoundException('Agent not found');
+
+        $data = [];
+        foreach (['name', 'email', 'role', 'password', 'can_close_tickets', 'can_delete_tickets',
+                  'can_edit_customers', 'can_view_reports', 'signature', 'is_active'] as $field) {
+            if ($request->input($field) !== null) {
+                $data[$field] = $request->input($field);
+            }
+        }
+
+        $updated = $this->service->update($agent['id'], $data);
+        Response::success($updated, 'Agent updated');
+    }
+
+    public function deactivate(Request $request, array $params): void
+    {
+        $agent = $this->repo->findById((int)$params['id']);
+        if (!$agent) throw new NotFoundException('Agent not found');
+        $this->repo->deactivate($agent['id']);
+        Response::success(null, 'Agent deactivated');
+    }
+
+    public function activate(Request $request, array $params): void
+    {
+        $agent = $this->repo->findById((int)$params['id']);
+        if (!$agent) throw new NotFoundException('Agent not found');
+        $this->repo->activate($agent['id']);
+        Response::success(null, 'Agent activated');
+    }
+
+    public function resetPassword(Request $request, array $params): void
+    {
+        $agent = $this->repo->findById((int)$params['id']);
+        if (!$agent) throw new NotFoundException('Agent not found');
+
+        $newPassword = $this->service->resetPassword($agent['id']);
+        Response::success(['new_password' => $newPassword], 'Password reset. Share this password securely.');
+    }
+}
