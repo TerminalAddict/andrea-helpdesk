@@ -5,7 +5,7 @@ $projectRoot = dirname(__DIR__);
 require $projectRoot . '/vendor/autoload.php';
 
 // Load environment
-$dotenv = Dotenv\Dotenv::createImmutable($projectRoot);
+$dotenv = Dotenv\Dotenv::createUnsafeImmutable($projectRoot);
 $dotenv->safeLoad();
 
 use Andrea\Helpdesk\Core\App;

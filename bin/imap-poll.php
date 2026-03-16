@@ -11,7 +11,7 @@ if (PHP_SAPI !== 'cli') {
 $projectRoot = dirname(__DIR__);
 require $projectRoot . '/vendor/autoload.php';
 
-$dotenv = Dotenv\Dotenv::createImmutable($projectRoot);
+$dotenv = Dotenv\Dotenv::createUnsafeImmutable($projectRoot);
 $dotenv->safeLoad();
 
 use Andrea\Helpdesk\Core\Database;
