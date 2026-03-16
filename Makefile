@@ -3,7 +3,7 @@
 LOCAL_HOST  = your-local-server
 PROD_HOST   = your-prod-server
 REMOTE_USER = deploy
-REMOTE_PATH = /var/www/andrea-helpdesk
+REMOTE_PATH = \/var\/www\/html\/andrea-helpdesk
 RSYNC_OPTS  = -avz --delete
 RSYNC_EXCLUDE = --exclude=vendor --exclude=.env --exclude=storage --exclude=.git --exclude=*.swp
 
