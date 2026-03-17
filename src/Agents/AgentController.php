@@ -108,6 +108,14 @@ class AgentController
             $data['signature'] = $request->input('signature');
         }
 
+        // Page size preference
+        if ($request->input('page_size') !== null) {
+            $size = (int)$request->input('page_size');
+            if (in_array($size, [10, 20, 50], true)) {
+                $data['page_size'] = $size;
+            }
+        }
+
         // Password change — requires current password
         $newPassword = $request->input('new_password');
         if ($newPassword !== null && $newPassword !== '') {

@@ -73,7 +73,7 @@ const TicketsView = {
         </div>`;
     },
 
-    async init() {
+    async init(params) {
         // Load agents and tags for filters
         try {
             const [agentsRes, tagsRes] = await Promise.all([API.get('/agents'), API.get('/tags')]);
@@ -86,6 +86,19 @@ const TicketsView = {
                 $('#filter-tag').append(`<option value="${t.id}">${App.escapeHtml(t.name)}</option>`);
             });
         } catch (e) {}
+
+        // Pre-populate filters from query params (e.g. links from dashboard)
+        this._sort = null;
+        this._dir  = null;
+        if (params) {
+            if (params.status)      $('#filter-status').val(params.status);
+            if (params.priority)    $('#filter-priority').val(params.priority);
+            if (params.assigned_to) $('#filter-agent').val(params.assigned_to);
+            if (params.tag_id)      $('#filter-tag').val(params.tag_id);
+            if (params.q)           $('#filter-q').val(params.q);
+            if (params.sort)        this._sort = params.sort;
+            if (params.dir)         this._dir  = params.dir;
+        }
 
         // Bind filters
         let searchTimer;
@@ -105,14 +118,17 @@ const TicketsView = {
     },
 
     async loadTickets(page = 1) {
+        const perPage = parseInt(API.currentUser?.page_size) || 20;
         const filters = {
             status:      $('#filter-status').val() || undefined,
             priority:    $('#filter-priority').val() || undefined,
             assigned_to: $('#filter-agent').val() || undefined,
             tag_id:      $('#filter-tag').val() || undefined,
             q:           $('#filter-q').val() || undefined,
+            sort:        this._sort || undefined,
+            dir:         this._dir  || undefined,
             page,
-            per_page: 25,
+            per_page: perPage,
         };
 
         // Remove undefined keys

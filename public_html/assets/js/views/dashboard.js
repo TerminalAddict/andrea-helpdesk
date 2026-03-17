@@ -95,18 +95,20 @@ const DashboardView = {
             $('#stat-closed').text(data.closed || 0);
         } catch (e) {}
 
+        const pageSize = parseInt(API.currentUser?.page_size) || 20;
+
         // My tickets
         try {
-            const res = await API.get('/tickets', { assigned_to: API.currentUser.id, status: 'open', per_page: 10 });
-            this.renderTable('#my-tickets-table', res.data || []);
+            const res = await API.get('/tickets', { assigned_to: API.currentUser.id, status: 'open', per_page: pageSize });
+            this.renderTable('#my-tickets-table', res.data || [], res.meta || {}, `#/tickets?status=open&assigned_to=${API.currentUser.id}`);
         } catch (e) {
             $('#my-tickets-table').html('<p class="text-muted p-3">No tickets assigned to you.</p>');
         }
 
         // Recent tickets
         try {
-            const res = await API.get('/tickets', { per_page: 10, sort: 'updated_at', dir: 'desc' });
-            this.renderTable('#recent-tickets-table', res.data || []);
+            const res = await API.get('/tickets', { per_page: pageSize, sort: 'updated_at', dir: 'desc' });
+            this.renderTable('#recent-tickets-table', res.data || [], res.meta || {}, `#/tickets?sort=updated_at&dir=desc`);
         } catch (e) {
             $('#recent-tickets-table').html('<p class="text-muted p-3">No recent tickets.</p>');
         }
@@ -144,13 +146,18 @@ const DashboardView = {
     async loadAllOpen() {
         $('#all-open-tickets-table').html('<div class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm"></div></div>');
         try {
-            const params = { status: 'open', per_page: 50, sort: 'updated_at', dir: 'desc' };
+            const pageSize = parseInt(API.currentUser?.page_size) || 20;
+            const params   = { status: 'open', per_page: pageSize, sort: 'updated_at', dir: 'desc' };
             const tag_id   = $('#dash-filter-tag').val();
             const priority = $('#dash-filter-priority').val();
             if (tag_id)   params.tag_id   = tag_id;
             if (priority) params.priority = priority;
-            const res = await API.get('/tickets', params);
-            this.renderAllOpenTable(res.data || []);
+            const res   = await API.get('/tickets', params);
+            const total = res.meta?.total || 0;
+            const viewAllParams = new URLSearchParams({ status: 'open', sort: 'updated_at', dir: 'desc' });
+            if (tag_id)   viewAllParams.set('tag_id',   tag_id);
+            if (priority) viewAllParams.set('priority', priority);
+            this.renderAllOpenTable(res.data || [], total, `#/tickets?${viewAllParams}`);
         } catch (e) {
             $('#all-open-tickets-table').html('<p class="text-muted p-3 mb-0">Failed to load tickets.</p>');
         }
@@ -200,7 +207,7 @@ const DashboardView = {
         }
     },
 
-    renderAllOpenTable(tickets) {
+    renderAllOpenTable(tickets, total = 0, viewAllHref = '#/tickets') {
         if (!tickets.length) {
             $('#all-open-tickets-table').html('<p class="text-muted p-3 mb-0">No open tickets match the selected filters.</p>');
             return;
@@ -219,16 +226,22 @@ const DashboardView = {
                 <td class="small text-muted text-nowrap">${App.formatDate(t.updated_at)}</td>
             </tr>`;
         }).join('');
+        const showing = tickets.length;
+        const footer  = total > showing
+            ? `<div class="px-3 py-2 border-top bg-light d-flex justify-content-between align-items-center">
+                   <span class="small text-muted">Showing ${showing} of ${total}</span>
+                   <a href="${viewAllHref}" class="btn btn-sm btn-outline-primary">View all ${total} tickets →</a>
+               </div>` : '';
         $('#all-open-tickets-table').html(`
             <table class="table table-hover table-sm mb-0">
                 <thead class="table-light">
                     <tr><th>Ticket</th><th>Subject</th><th>Priority</th><th>Tags</th><th>Assigned To</th><th>Updated</th></tr>
                 </thead>
                 <tbody>${rows}</tbody>
-            </table>`);
+            </table>${footer}`);
     },
 
-    renderTable(selector, tickets) {
+    renderTable(selector, tickets, meta = {}, viewAllHref = null) {
         if (!tickets.length) {
             $(selector).html('<p class="text-muted p-3 mb-0">No tickets to show.</p>');
             return;
@@ -248,12 +261,20 @@ const DashboardView = {
             </tr>`;
         }).join('');
 
+        const total   = meta.total || 0;
+        const showing = tickets.length;
+        const footer  = viewAllHref && total > showing
+            ? `<div class="px-3 py-2 border-top bg-light d-flex justify-content-between align-items-center">
+                   <span class="small text-muted">Showing ${showing} of ${total}</span>
+                   <a href="${viewAllHref}" class="btn btn-sm btn-outline-primary">View all ${total} →</a>
+               </div>` : '';
+
         $(selector).html(`
             <table class="table table-hover table-sm mb-0">
                 <thead class="table-light">
                     <tr><th>Ticket</th><th>Subject</th><th>Status</th><th>Tags</th><th>Updated</th></tr>
                 </thead>
                 <tbody>${rows}</tbody>
-            </table>`);
+            </table>${footer}`);
     }
 };

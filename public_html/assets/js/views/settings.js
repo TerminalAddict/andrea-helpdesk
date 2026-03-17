@@ -566,6 +566,18 @@ const SettingsView = {
                 ${globalSigHint}
 
                 <hr class="my-4">
+                <h6 class="mb-3">Display Preferences</h6>
+                <div class="mb-4" style="max-width:420px;">
+                    <label class="form-label" for="profile-page-size">Tickets per page</label>
+                    <select class="form-select" id="profile-page-size">
+                        <option value="10" ${(agent.page_size || 20) == 10 ? 'selected' : ''}>10</option>
+                        <option value="20" ${(agent.page_size || 20) == 20 ? 'selected' : ''}>20</option>
+                        <option value="50" ${(agent.page_size || 20) == 50 ? 'selected' : ''}>50</option>
+                    </select>
+                    <div class="form-text">Controls the number of rows shown on the tickets page and each dashboard block.</div>
+                </div>
+
+                <hr class="my-4">
                 <h6 class="mb-3">Change Password</h6>
                 <div class="mb-3" style="max-width:420px;">
                     <label class="form-label" for="profile-current-password">Current Password</label>
@@ -603,7 +615,7 @@ const SettingsView = {
             return;
         }
 
-        const payload = { signature };
+        const payload = { signature, page_size: parseInt($('#profile-page-size').val()) };
         if (newPassword) {
             payload.current_password = currentPassword;
             payload.new_password     = newPassword;
@@ -613,6 +625,8 @@ const SettingsView = {
         try {
             const res = await API.put('/agent/profile', payload);
             this.currentAgent = res.data || this.currentAgent;
+            // Update the cached current user so page_size takes effect immediately
+            if (API.currentUser) API.currentUser.page_size = payload.page_size;
             $('#profile-current-password,#profile-new-password,#profile-confirm-password').val('');
             App.toast('Profile saved');
         } catch (e) {
