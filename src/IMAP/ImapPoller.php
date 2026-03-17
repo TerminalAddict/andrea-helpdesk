@@ -42,7 +42,7 @@ class ImapPoller
             default => '/notls',
         };
 
-        $mailbox = "{{$config['host']}:{$config['port']}/imap{$encFlag}}{$config['folder']}";
+        $mailbox = "{{$config['host']}:{$config['port']}/imap{$encFlag}/novalidate-cert}{$config['folder']}";
 
         $this->connection = @imap_open($mailbox, $config['username'], $config['password'], 0, 1);
 
