@@ -70,7 +70,7 @@ class MessageParser
         }
         [$htmlBody, $textBody, $attachments] = $this->parseStructure($imap, $msgNum, $structure);
 
-        $result['body_html']   = $htmlBody ? $this->stripHtmlQuotes($htmlBody) : '';
+        $result['body_html']   = $htmlBody ? $this->stripHtmlQuotes($this->replaceCidImages($htmlBody)) : '';
         $result['body_text']   = $textBody ? $this->stripPlainTextQuotes($textBody) : '';
         $result['attachments'] = $attachments;
 
@@ -191,6 +191,20 @@ class MessageParser
         $types = ['text', 'multipart', 'message', 'application', 'audio', 'image', 'video', 'other'];
         $type  = $types[$structure->type] ?? 'application';
         return $type . '/' . strtolower($structure->subtype ?? 'octet-stream');
+    }
+
+    /**
+     * Replace CID inline-image references with a paperclip icon.
+     * The images are stored as regular attachments; the cid: URI scheme
+     * is not renderable in this context.
+     */
+    private function replaceCidImages(string $html): string
+    {
+        return preg_replace(
+            '/<img[^>]+src=["\']cid:[^"\']*["\'][^>]*\/?>/si',
+            '<span class="bi bi-paperclip text-muted" title="Inline image (see attachments below)"></span>',
+            $html
+        ) ?? $html;
     }
 
     private function stripHtmlQuotes(string $html): string
