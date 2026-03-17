@@ -48,14 +48,29 @@ class TicketController
 
     public function store(Request $request): void
     {
-        $data = $request->validate([
-            'customer_id' => 'required|integer',
-            'subject'     => 'required|max:255',
+        $request->validate([
+            'customer_email' => 'required|email',
+            'subject'        => 'required|max:255',
         ]);
 
-        $data['priority'] = $request->input('priority', 'normal');
-        $data['channel']  = $request->input('channel', 'phone');
-        $data['body_html']= $request->input('body_html', '');
+        // Upsert customer by email
+        $customerRepo = new \Andrea\Helpdesk\Customers\CustomerRepository();
+        $customer     = $customerRepo->upsertByEmail(
+            $request->input('customer_email'),
+            $request->input('customer_name', '')
+        );
+
+        $body = $request->input('body', '');
+
+        $data = [
+            'customer_id'       => $customer['id'],
+            'subject'           => $request->input('subject'),
+            'priority'          => $request->input('priority', 'normal'),
+            'channel'           => $request->input('channel', 'phone'),
+            'body_html'         => nl2br(htmlspecialchars($body)),
+            'assigned_agent_id' => $request->input('assigned_agent_id'),
+            'parent_ticket_id'  => $request->input('parent_ticket_id'),
+        ];
 
         $result = $this->service->createFromAgent($data, $request->agent->id);
         Response::created($result['ticket'], 'Ticket created');
