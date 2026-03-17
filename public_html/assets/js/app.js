@@ -98,8 +98,14 @@ const App = {
             return;
         }
 
-        // Get view
-        const view = viewName && window[viewName];
+        // Get view from registry (const declarations don't attach to window)
+        const viewRegistry = {
+            DashboardView, LoginView, TicketsView, TicketNewView,
+            TicketDetailView, CustomersView, CustomerDetailView,
+            AgentsView, SettingsView, ReportsView,
+            KnowledgeBaseView, KbArticleView, PortalView, PortalTicketView,
+        };
+        const view = viewName && viewRegistry[viewName];
         if (!view) {
             $('#app').html('<div class="container mt-5"><div class="alert alert-warning">Page not found.</div></div>');
             return;
