@@ -36,6 +36,7 @@ class EmailNotifier
             'tls'   => PHPMailer::ENCRYPTION_STARTTLS,
             default => '',
         };
+        $mailer->Timeout     = 15; // seconds — prevent slow SMTP from stalling requests
         $mailer->CharSet     = PHPMailer::CHARSET_UTF8;
         $mailer->setFrom($smtp['from_address'], $smtp['from_name']);
         if (!empty($smtp['reply_to'])) {

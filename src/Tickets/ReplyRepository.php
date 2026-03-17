@@ -29,13 +29,23 @@ class ReplyRepository
             [$ticketId]
         );
 
-        // Attach attachments and compute display fields
-        foreach ($replies as &$reply) {
-            $reply['attachments'] = $this->db->fetchAll(
-                "SELECT id, filename, mime_type, size_bytes, download_token, created_at
-                 FROM attachments WHERE reply_id = ?",
-                [$reply['id']]
+        // Batch load all attachments for these replies in one query
+        $attachmentsByReply = [];
+        if (!empty($replies)) {
+            $replyIds     = array_column($replies, 'id');
+            $placeholders = implode(',', array_fill(0, count($replyIds), '?'));
+            $allAttachments = $this->db->fetchAll(
+                "SELECT id, reply_id, filename, mime_type, size_bytes, download_token, created_at
+                 FROM attachments WHERE reply_id IN ({$placeholders})",
+                $replyIds
             );
+            foreach ($allAttachments as $att) {
+                $attachmentsByReply[(int)$att['reply_id']][] = $att;
+            }
+        }
+
+        foreach ($replies as &$reply) {
+            $reply['attachments'] = $attachmentsByReply[(int)$reply['id']] ?? [];
 
             // Computed fields for the frontend
             if ($reply['author_type'] === 'system') {

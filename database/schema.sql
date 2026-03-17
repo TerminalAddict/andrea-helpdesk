@@ -87,6 +87,8 @@ CREATE TABLE IF NOT EXISTS tickets (
     INDEX idx_tickets_status (status),
     INDEX idx_tickets_created (created_at),
     INDEX idx_tickets_deleted (deleted_at),
+    INDEX idx_tickets_deleted_status (deleted_at, status),
+    INDEX idx_tickets_deleted_agent (deleted_at, assigned_agent_id),
     INDEX idx_tickets_original_msg (original_message_id(191)),
     CONSTRAINT fk_tickets_customer   FOREIGN KEY (customer_id)       REFERENCES customers(id),
     CONSTRAINT fk_tickets_agent      FOREIGN KEY (assigned_agent_id) REFERENCES agents(id) ON DELETE SET NULL,
