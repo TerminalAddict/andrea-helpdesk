@@ -96,21 +96,68 @@ class ImapAccountController
             return;
         }
 
-        $password = $this->repo->getDecryptedPassword($id);
-        $encFlag  = match(strtolower($account['encryption'])) {
-            'ssl'  => '/ssl',
-            'tls'  => '/tls',
-            default => '/notls',
-        };
-        $mailbox = "{{$account['host']}:{$account['port']}/imap{$encFlag}/novalidate-cert}{$account['folder']}";
+        $password   = $this->repo->getDecryptedPassword($id);
+        $host       = $account['host'];
+        $port       = (int)$account['port'];
+        $username   = $account['username'];
+        $encryption = strtolower($account['encryption']);
 
-        $conn = @imap_open($mailbox, $account['username'], $password, 0, 1);
-        if (!$conn) {
-            Response::error('Connection failed: ' . (imap_last_error() ?: 'Unknown error'));
+        $ctx = stream_context_create(['ssl' => [
+            'verify_peer'      => false,
+            'verify_peer_name' => false,
+        ]]);
+
+        if ($encryption === 'ssl') {
+            $target = "ssl://{$host}:{$port}";
+            $sock   = @stream_socket_client($target, $errno, $errstr, 15, STREAM_CLIENT_CONNECT, $ctx);
+        } else {
+            $target = "tcp://{$host}:{$port}";
+            $sock   = @stream_socket_client($target, $errno, $errstr, 15);
+        }
+
+        if (!$sock) {
+            Response::error("Cannot connect to {$host}:{$port} — {$errstr}");
             return;
         }
-        $count = imap_num_msg($conn);
-        imap_close($conn);
-        Response::success(['message_count' => $count], "Connected. {$count} messages in folder.");
+
+        stream_set_timeout($sock, 15);
+
+        $greeting = fgets($sock, 1024);
+        if (!$greeting || strpos($greeting, '* OK') === false) {
+            fclose($sock);
+            Response::error('Connected but did not receive IMAP greeting: ' . trim($greeting ?: '(no response)'));
+            return;
+        }
+
+        if ($encryption === 'tls') {
+            fwrite($sock, "A1 STARTTLS\r\n");
+            $resp = fgets($sock, 1024);
+            if (strpos($resp, 'A1 OK') === false) {
+                fclose($sock);
+                Response::error('STARTTLS not supported: ' . trim($resp));
+                return;
+            }
+            if (!stream_socket_enable_crypto($sock, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+                fclose($sock);
+                Response::error('STARTTLS upgrade failed');
+                return;
+            }
+        }
+
+        $encodedUser = base64_encode($username);
+        $encodedPass = base64_encode($password);
+        fwrite($sock, "A2 LOGIN \"{$username}\" \"{$password}\"\r\n");
+        $resp = fgets($sock, 1024);
+
+        fwrite($sock, "A3 LOGOUT\r\n");
+        fclose($sock);
+
+        if (strpos($resp, 'A2 OK') !== false) {
+            Response::success([], 'Connection successful — credentials accepted.');
+        } elseif (strpos($resp, 'A2 NO') !== false || strpos($resp, 'A2 BAD') !== false) {
+            Response::error('Connected but login failed — check username/password. Server: ' . trim($resp));
+        } else {
+            Response::error('Unexpected response: ' . trim($resp));
+        }
     }
 }
