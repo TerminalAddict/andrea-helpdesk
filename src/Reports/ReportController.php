@@ -19,6 +19,15 @@ class ReportController
     {
         $to   = $request->input('to')   ?: date('Y-m-d');
         $from = $request->input('from') ?: date('Y-m-d', strtotime('-30 days'));
+
+        // Validate format — fall back to defaults if input is malformed
+        $validDate = fn(string $d) => (bool)\DateTime::createFromFormat('Y-m-d', $d);
+        if (!$validDate($from)) $from = date('Y-m-d', strtotime('-30 days'));
+        if (!$validDate($to))   $to   = date('Y-m-d');
+
+        // Ensure from <= to
+        if ($from > $to) [$from, $to] = [$to, $from];
+
         return [$from, $to];
     }
 

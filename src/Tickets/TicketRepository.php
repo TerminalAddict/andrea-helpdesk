@@ -180,9 +180,17 @@ class TicketRepository
 
     public function softDelete(int $id): bool
     {
-        $this->db->execute("DELETE FROM ticket_participants WHERE ticket_id = ?", [$id]);
-        $this->db->execute("DELETE FROM ticket_tag_map WHERE ticket_id = ?", [$id]);
-        return $this->db->execute("UPDATE tickets SET deleted_at = NOW() WHERE id = ?", [$id]);
+        $this->db->beginTransaction();
+        try {
+            $this->db->execute("DELETE FROM ticket_participants WHERE ticket_id = ?", [$id]);
+            $this->db->execute("DELETE FROM ticket_tag_map WHERE ticket_id = ?", [$id]);
+            $result = $this->db->execute("UPDATE tickets SET deleted_at = NOW() WHERE id = ?", [$id]);
+            $this->db->commit();
+            return $result;
+        } catch (\Throwable $e) {
+            $this->db->rollback();
+            throw $e;
+        }
     }
 
     public function generateTicketNumber(string $prefix, string $date): string

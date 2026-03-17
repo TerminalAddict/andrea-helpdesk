@@ -29,48 +29,56 @@ class TicketService
      */
     public function createFromEmail(array $emailData): array
     {
-        $customer = $this->customerRepo->upsertByEmail(
-            $emailData['from_email'],
-            $emailData['from_name'] ?? '',
-        );
+        $this->db->beginTransaction();
+        try {
+            $customer = $this->customerRepo->upsertByEmail(
+                $emailData['from_email'],
+                $emailData['from_name'] ?? '',
+            );
 
-        $ticketNumber = $this->generateNumber();
+            $ticketNumber = $this->generateNumber();
 
-        $ticketId = $this->ticketRepo->create([
-            'ticket_number'      => $ticketNumber,
-            'subject'            => $emailData['subject'],
-            'channel'            => 'email',
-            'customer_id'        => $customer['id'],
-            'original_message_id'=> $emailData['message_id'] ?? null,
-            'last_message_id'    => $emailData['message_id'] ?? null,
-            'reply_to_address'   => $emailData['reply_to'] ?? $emailData['from_email'],
-        ]);
+            $ticketId = $this->ticketRepo->create([
+                'ticket_number'      => $ticketNumber,
+                'subject'            => $emailData['subject'],
+                'channel'            => 'email',
+                'customer_id'        => $customer['id'],
+                'original_message_id'=> $emailData['message_id'] ?? null,
+                'last_message_id'    => $emailData['message_id'] ?? null,
+                'reply_to_address'   => $emailData['reply_to'] ?? $emailData['from_email'],
+            ]);
 
-        $ticket = $this->ticketRepo->findById($ticketId);
+            $ticket = $this->ticketRepo->findById($ticketId);
 
-        // Create initial reply
-        $this->replyRepo->create([
-            'ticket_id'      => $ticketId,
-            'author_type'    => 'customer',
-            'customer_id'    => $customer['id'],
-            'body_html'      => $emailData['body_html'] ?? nl2br(htmlspecialchars($emailData['body_text'] ?? '')),
-            'body_text'      => $emailData['body_text'] ?? '',
-            'is_private'     => 0,
-            'direction'      => 'inbound',
-            'raw_message_id' => $emailData['message_id'] ?? null,
-        ]);
+            // Create initial reply
+            $this->replyRepo->create([
+                'ticket_id'      => $ticketId,
+                'author_type'    => 'customer',
+                'customer_id'    => $customer['id'],
+                'body_html'      => $emailData['body_html'] ?? nl2br(htmlspecialchars($emailData['body_text'] ?? '')),
+                'body_text'      => $emailData['body_text'] ?? '',
+                'is_private'     => 0,
+                'direction'      => 'inbound',
+                'raw_message_id' => $emailData['message_id'] ?? null,
+            ]);
 
-        // Handle CC participants
-        foreach ($emailData['cc_emails'] ?? [] as $cc) {
-            $ccEmail = is_array($cc) ? $cc['email'] : $cc;
-            $ccName  = is_array($cc) ? ($cc['name'] ?? '') : '';
-            if ($ccEmail && $ccEmail !== $emailData['from_email']) {
-                $ccCustomer = $this->customerRepo->upsertByEmail($ccEmail, $ccName);
-                $this->ticketRepo->addParticipant($ticketId, $ccEmail, $ccName, 'cc', $ccCustomer['id']);
+            // Handle CC participants
+            foreach ($emailData['cc_emails'] ?? [] as $cc) {
+                $ccEmail = is_array($cc) ? $cc['email'] : $cc;
+                $ccName  = is_array($cc) ? ($cc['name'] ?? '') : '';
+                if ($ccEmail && $ccEmail !== $emailData['from_email']) {
+                    $ccCustomer = $this->customerRepo->upsertByEmail($ccEmail, $ccName);
+                    $this->ticketRepo->addParticipant($ticketId, $ccEmail, $ccName, 'cc', $ccCustomer['id']);
+                }
             }
+
+            $this->db->commit();
+        } catch (\Throwable $e) {
+            $this->db->rollback();
+            throw $e;
         }
 
-        // Notify
+        // Notify outside the transaction
         try {
             $notifications = new NotificationService();
             $notifications->onNewTicket($ticket, $customer);

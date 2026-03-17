@@ -62,6 +62,12 @@ class MessageParser
 
         // Body and attachments
         $structure = imap_fetchstructure($imap, $msgNum);
+        if (!$structure) {
+            $result['body_html']   = '';
+            $result['body_text']   = '';
+            $result['attachments'] = [];
+            return $result;
+        }
         [$htmlBody, $textBody, $attachments] = $this->parseStructure($imap, $msgNum, $structure);
 
         $result['body_html']   = $htmlBody;
