@@ -102,25 +102,27 @@ class ImapAccountController
         $username   = $account['username'];
         $encryption = strtolower($account['encryption']);
 
-        $ctx = stream_context_create(['ssl' => [
-            'verify_peer'      => false,
-            'verify_peer_name' => false,
-        ]]);
-
-        if ($encryption === 'ssl') {
-            $target = "ssl://{$host}:{$port}";
-            $sock   = @stream_socket_client($target, $errno, $errstr, 15, STREAM_CLIENT_CONNECT, $ctx);
-        } else {
-            $target = "tcp://{$host}:{$port}";
-            $sock   = @stream_socket_client($target, $errno, $errstr, 15);
-        }
-
+        // TCP connect first (works regardless of TLS)
+        $sock = @fsockopen($host, $port, $errno, $errstr, 15);
         if (!$sock) {
             Response::error("Cannot connect to {$host}:{$port} — {$errstr}");
             return;
         }
-
         stream_set_timeout($sock, 15);
+
+        // Upgrade to TLS immediately for implicit SSL (port 993)
+        if ($encryption === 'ssl') {
+            stream_context_set_option($sock, 'ssl', 'verify_peer',      false);
+            stream_context_set_option($sock, 'ssl', 'verify_peer_name', false);
+            $tlsOk = @stream_socket_enable_crypto($sock, true,
+                STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT | STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT);
+            if (!$tlsOk) {
+                $err = error_get_last();
+                fclose($sock);
+                Response::error('TLS handshake failed — ' . ($err['message'] ?? 'check server SSL/TLS configuration'));
+                return;
+            }
+        }
 
         $greeting = fgets($sock, 1024);
         if (!$greeting || strpos($greeting, '* OK') === false) {
@@ -129,23 +131,24 @@ class ImapAccountController
             return;
         }
 
+        // STARTTLS upgrade for explicit TLS (port 143)
         if ($encryption === 'tls') {
             fwrite($sock, "A1 STARTTLS\r\n");
             $resp = fgets($sock, 1024);
-            if (strpos($resp, 'A1 OK') === false) {
+            if (!$resp || strpos($resp, 'A1 OK') === false) {
                 fclose($sock);
-                Response::error('STARTTLS not supported: ' . trim($resp));
+                Response::error('STARTTLS not supported: ' . trim($resp ?: '(no response)'));
                 return;
             }
-            if (!stream_socket_enable_crypto($sock, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+            stream_context_set_option($sock, 'ssl', 'verify_peer',      false);
+            stream_context_set_option($sock, 'ssl', 'verify_peer_name', false);
+            if (!@stream_socket_enable_crypto($sock, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
                 fclose($sock);
                 Response::error('STARTTLS upgrade failed');
                 return;
             }
         }
 
-        $encodedUser = base64_encode($username);
-        $encodedPass = base64_encode($password);
         fwrite($sock, "A2 LOGIN \"{$username}\" \"{$password}\"\r\n");
         $resp = fgets($sock, 1024);
 
@@ -157,7 +160,7 @@ class ImapAccountController
         } elseif (strpos($resp, 'A2 NO') !== false || strpos($resp, 'A2 BAD') !== false) {
             Response::error('Connected but login failed — check username/password. Server: ' . trim($resp));
         } else {
-            Response::error('Unexpected response: ' . trim($resp));
+            Response::error('Unexpected server response: ' . trim($resp ?: '(no response)'));
         }
     }
 }
