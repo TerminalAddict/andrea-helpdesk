@@ -102,7 +102,7 @@ class ImapAccountController
             'tls'  => '/tls',
             default => '/notls',
         };
-        $mailbox = "{{{$account['host']}:{$account['port']}/imap{$encFlag}}}{$account['folder']}";
+        $mailbox = "{{$account['host']}:{$account['port']}/imap{$encFlag}}{$account['folder']}";
 
         $conn = @imap_open($mailbox, $account['username'], $password, 0, 1);
         if (!$conn) {
