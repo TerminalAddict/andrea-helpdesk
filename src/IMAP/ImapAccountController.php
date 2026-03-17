@@ -5,6 +5,7 @@ namespace Andrea\Helpdesk\IMAP;
 
 use Andrea\Helpdesk\Core\Request;
 use Andrea\Helpdesk\Core\Response;
+use Andrea\Helpdesk\Core\Database;
 
 class ImapAccountController
 {
@@ -85,6 +86,44 @@ class ImapAccountController
         }
         $this->repo->delete($id);
         Response::success(null, 'IMAP account deleted');
+    }
+
+    public function pollNow(Request $request, array $params): void
+    {
+        $id      = (int)$params['id'];
+        $account = $this->repo->findById($id);
+        if (!$account) {
+            Response::error('IMAP account not found', 404);
+            return;
+        }
+
+        $config = [
+            'host'                => $account['host'],
+            'port'                => $account['port'],
+            'encryption'          => $account['encryption'],
+            'username'            => $account['username'],
+            'password'            => $this->repo->getDecryptedPassword($id),
+            'folder'              => $account['folder'],
+            'delete_after_import' => (bool)$account['delete_after_import'],
+            'tag_id'              => $account['tag_id'] ?: null,
+        ];
+
+        $poller = new ImapPoller($config, new MessageParser(), new ThreadMatcher(Database::getInstance()));
+
+        if (!$poller->connect()) {
+            Response::error('Failed to connect to IMAP server');
+            return;
+        }
+
+        $this->repo->recordConnected($id);
+        $count = $poller->poll();
+        $poller->disconnect();
+        $this->repo->recordPoll($id, $count);
+
+        Response::success(
+            ['imported' => $count],
+            $count > 0 ? "Poll complete — {$count} message(s) imported." : 'Poll complete — no new messages.'
+        );
     }
 
     public function triggerPoll(Request $request): void

@@ -353,6 +353,7 @@ const SettingsView = {
                                     <i class="bi bi-envelope-arrow-down me-1"></i>${App.escapeHtml(pollStr)}
                                 </div>
                             </div>
+                            <button class="btn btn-sm btn-outline-success btn-poll-now-imap" data-id="${a.id}" title="Poll now"><i class="bi bi-arrow-clockwise"></i></button>
                             <button class="btn btn-sm btn-outline-primary btn-edit-imap" data-id="${a.id}"><i class="bi bi-pencil"></i></button>
                             <button class="btn btn-sm btn-outline-danger btn-delete-imap" data-id="${a.id}"><i class="bi bi-trash"></i></button>
                         </div>
@@ -363,8 +364,9 @@ const SettingsView = {
 
             $('#btn-add-imap-account').off('click').on('click', () => this.openImapModal());
             $(document).off('click.imap')
-                .on('click.imap', '.btn-edit-imap',   (e) => this.openImapModal($(e.currentTarget).data('id'), accounts))
-                .on('click.imap', '.btn-delete-imap', (e) => this.deleteImapAccount($(e.currentTarget).data('id')));
+                .on('click.imap', '.btn-edit-imap',     (e) => this.openImapModal($(e.currentTarget).data('id'), accounts))
+                .on('click.imap', '.btn-delete-imap',   (e) => this.deleteImapAccount($(e.currentTarget).data('id')))
+                .on('click.imap', '.btn-poll-now-imap', (e) => this.pollNowImap($(e.currentTarget)));
 
         } catch (e) {
             $('#imap-accounts-list').html('<p class="text-danger">' + App.escapeHtml(e.message) + '</p>');
@@ -451,6 +453,19 @@ const SettingsView = {
             App.toast(e.message || 'Connection failed', 'error');
         } finally {
             btn.prop('disabled', false).html('<i class="bi bi-plug me-1"></i>Test Connection');
+        }
+    },
+
+    async pollNowImap($btn) {
+        const id = $btn.data('id');
+        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+        try {
+            const res = await API.post('/admin/imap-accounts/' + id + '/poll-now', {});
+            App.toast(res.message || 'Poll complete', 'success');
+            await this.loadImapAccounts(); // refresh stats
+        } catch (e) {
+            App.toast(e.message || 'Poll failed', 'error');
+            $btn.prop('disabled', false).html('<i class="bi bi-arrow-clockwise"></i>');
         }
     },
 
