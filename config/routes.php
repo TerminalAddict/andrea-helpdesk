@@ -11,6 +11,7 @@ use Andrea\Helpdesk\Tickets\TagController;
 use Andrea\Helpdesk\Customers\CustomerController;
 use Andrea\Helpdesk\Agents\AgentController;
 use Andrea\Helpdesk\Settings\SettingsController;
+use Andrea\Helpdesk\IMAP\ImapAccountController;
 use Andrea\Helpdesk\Reports\ReportController;
 use Andrea\Helpdesk\KnowledgeBase\KbController;
 
@@ -84,6 +85,12 @@ return [
 
     // ── Settings ──────────────────────────────────────────────────────────────
     ['GET',  '/api/settings/public',            SettingsController::class, 'publicSettings', []],
+    ['GET',    '/api/admin/imap-accounts',         ImapAccountController::class, 'index',   ['role:admin']],
+    ['POST',   '/api/admin/imap-accounts',         ImapAccountController::class, 'store',   ['role:admin']],
+    ['PUT',    '/api/admin/imap-accounts/:id',      ImapAccountController::class, 'update',  ['role:admin']],
+    ['DELETE', '/api/admin/imap-accounts/:id',      ImapAccountController::class, 'destroy', ['role:admin']],
+    ['POST',   '/api/admin/imap-accounts/:id/test', ImapAccountController::class, 'test',    ['role:admin']],
+
     ['GET',  '/api/admin/settings',             SettingsController::class, 'index',     ['role:admin']],
     ['PUT',  '/api/admin/settings',             SettingsController::class, 'update',    ['role:admin']],
     ['POST', '/api/admin/settings/test-smtp',   SettingsController::class, 'testSmtp',  ['role:admin']],

@@ -185,6 +185,24 @@ CREATE TABLE IF NOT EXISTS ticket_relations (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
+-- IMAP Accounts (multiple inbound email accounts)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS imap_accounts (
+    id                   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name                 VARCHAR(100) NOT NULL,
+    host                 VARCHAR(255) NOT NULL,
+    port                 SMALLINT UNSIGNED NOT NULL DEFAULT 993,
+    encryption           ENUM('ssl','tls','none') NOT NULL DEFAULT 'ssl',
+    username             VARCHAR(255) NOT NULL,
+    password             TEXT,
+    folder               VARCHAR(100) NOT NULL DEFAULT 'INBOX',
+    delete_after_import  TINYINT(1) NOT NULL DEFAULT 0,
+    tag_id               INT UNSIGNED NULL,
+    is_enabled           TINYINT(1) NOT NULL DEFAULT 1,
+    created_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
 -- Settings (runtime configurable key/value store)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS settings (

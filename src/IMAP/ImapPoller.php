@@ -3,10 +3,10 @@ declare(strict_types=1);
 
 namespace Andrea\Helpdesk\IMAP;
 
-use Andrea\Helpdesk\Settings\SettingsService;
 use Andrea\Helpdesk\Tickets\TicketService;
 use Andrea\Helpdesk\Tickets\ReplyService;
 use Andrea\Helpdesk\Tickets\AttachmentService;
+use Andrea\Helpdesk\Tickets\TicketRepository;
 use Andrea\Helpdesk\Customers\CustomerRepository;
 use Andrea\Helpdesk\Notifications\NotificationService;
 use Andrea\Helpdesk\Core\Database;
@@ -15,26 +15,28 @@ class ImapPoller
 {
     private $connection = null;
     private string $logFile;
+    private array $config;
 
     public function __construct(
-        private SettingsService $settings,
+        array $config,
         private MessageParser $parser,
         private ThreadMatcher $matcher
     ) {
+        $this->config  = $config;
         $storagePath   = getenv('STORAGE_PATH') ?: '/tmp';
         $this->logFile = $storagePath . '/logs/imap.log';
     }
 
     public function connect(): bool
     {
-        $config = $this->settings->getImapConfig();
+        $config = $this->config;
 
         if (empty($config['host']) || empty($config['username'])) {
             $this->log('IMAP host or username not configured', 'ERROR');
             return false;
         }
 
-        $encFlag = match(strtolower($config['encryption'])) {
+        $encFlag = match(strtolower($config['encryption'] ?? 'ssl')) {
             'ssl'  => '/ssl',
             'tls'  => '/tls',
             default => '/notls',
@@ -51,7 +53,7 @@ class ImapPoller
         }
 
         $count = imap_num_msg($this->connection);
-        $this->log("Connected. {$count} messages in folder.");
+        $this->log("Connected to {$config['host']} as {$config['username']}. {$count} messages in folder.");
         return true;
     }
 
@@ -82,8 +84,8 @@ class ImapPoller
 
     public function processMessage(int $msgNum): bool
     {
-        $parsed  = $this->parser->parse($this->connection, $msgNum);
-        $config  = $this->settings->getImapConfig();
+        $parsed = $this->parser->parse($this->connection, $msgNum);
+        $config = $this->config;
 
         $this->log("Processing: [{$parsed['message_id']}] {$parsed['subject']} from {$parsed['from_email']}");
 
@@ -141,6 +143,12 @@ class ImapPoller
                 'reply_to'    => $parsed['reply_to'] ?: $parsed['from_email'],
                 'cc_emails'   => $ccEmails,
             ]);
+
+            // Apply account tag if set
+            if (!empty($config['tag_id'])) {
+                $ticketRepo = new TicketRepository();
+                $ticketRepo->addTag($result['ticket']['id'], (int)$config['tag_id']);
+            }
 
             // Save attachments to the new ticket
             $db          = Database::getInstance();

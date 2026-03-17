@@ -95,16 +95,9 @@ const SettingsView = {
                   hint: 'Placeholders: {{customer_name}}, {{ticket_number}}, {{subject}}, {{app_name}}' },
             ]);
         } else if (tab === 'imap') {
-            html = this.form('imap', [
-                { key: 'imap_enabled',  label: 'Enable IMAP Polling', type: 'checkbox', value: s.imap_enabled },
-                { key: 'imap_host',     label: 'IMAP Host',    type: 'text',     value: s.imap_host || '' },
-                { key: 'imap_port',     label: 'IMAP Port',    type: 'number',   value: s.imap_port || '993' },
-                { key: 'imap_username', label: 'Username',     type: 'email',    value: s.imap_username || '' },
-                { key: 'imap_password', label: 'Password',     type: 'password', value: '', placeholder: 'Leave blank to keep current' },
-                { key: 'imap_folder',   label: 'Folder/Mailbox', type: 'text',   value: s.imap_folder || 'INBOX' },
-                { key: 'imap_delete_after_import', label: 'Delete email after import', type: 'checkbox', value: s.imap_delete_after_import,
-                  hint: 'If unchecked, emails are marked as read instead' },
-            ]);
+            $('#settings-content').html(this.renderImapPanel());
+            this.loadImapAccounts();
+            return;
         } else if (tab === 'slack') {
             html = this.form('slack', [
                 { key: 'slack_enabled',      label: 'Enable Slack Notifications',  type: 'checkbox', value: s.slack_enabled },
@@ -177,6 +170,227 @@ const SettingsView = {
                 </div>
             </div>
         </div>`;
+    },
+
+    renderImapPanel() {
+        return `
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <p class="text-muted mb-0 small">Each account is polled every minute. Emails create or update tickets automatically.</p>
+                    <button class="btn btn-primary btn-sm" id="btn-add-imap-account">
+                        <i class="bi bi-plus-lg me-1"></i>Add Account
+                    </button>
+                </div>
+                <div id="imap-accounts-list">
+                    <div class="text-center py-3 text-muted"><div class="spinner-border spinner-border-sm"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- IMAP Account Modal -->
+        <div class="modal fade" id="imapAccountModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="imap-modal-title">IMAP Account</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="imap-account-id">
+                        <div class="mb-3">
+                            <label class="form-label">Account Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="imap-name" placeholder="e.g. support@mydomain.com">
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-8">
+                                <label class="form-label">IMAP Host <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="imap-host" placeholder="mail.example.com">
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label">Port</label>
+                                <input type="number" class="form-control" id="imap-port" value="993">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Encryption</label>
+                            <select class="form-select" id="imap-encryption">
+                                <option value="ssl">SSL</option>
+                                <option value="tls">TLS (STARTTLS)</option>
+                                <option value="none">None</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Username <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="imap-username">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="imap-password" placeholder="Leave blank to keep current when editing">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Folder / Mailbox</label>
+                            <input type="text" class="form-control" id="imap-folder" value="INBOX">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Default Tag <span class="text-muted small">(applied to all new tickets from this account)</span></label>
+                            <select class="form-select" id="imap-tag-id">
+                                <option value="">No tag</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="imap-delete-after-import">
+                                <label class="form-check-label" for="imap-delete-after-import">Delete email after import</label>
+                            </div>
+                            <div class="form-text">If unchecked, emails are marked as read instead.</div>
+                        </div>
+                        <div class="mb-0">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="imap-is-enabled" checked>
+                                <label class="form-check-label" for="imap-is-enabled">Enabled</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-outline-secondary me-auto" id="btn-test-imap-account">
+                            <i class="bi bi-plug me-1"></i>Test Connection
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="btn-save-imap-account">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    },
+
+    async loadImapAccounts() {
+        try {
+            const [accountsRes, tagsRes] = await Promise.all([
+                API.get('/admin/imap-accounts'),
+                API.get('/tags'),
+            ]);
+            const accounts = accountsRes.data || [];
+            this._imapTags = tagsRes.data || [];
+
+            if (!accounts.length) {
+                $('#imap-accounts-list').html('<p class="text-muted">No IMAP accounts configured yet.</p>');
+            } else {
+                const rows = accounts.map(a => `
+                    <div class="card mb-2 ${a.is_enabled ? '' : 'opacity-50'}">
+                        <div class="card-body py-2 px-3 d-flex align-items-center gap-3">
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold">${App.escapeHtml(a.name)}</div>
+                                <div class="small text-muted">${App.escapeHtml(a.username)}@${App.escapeHtml(a.host)}:${a.port}
+                                    ${a.tag_name ? `· <span class="badge bg-secondary">${App.escapeHtml(a.tag_name)}</span>` : ''}
+                                    ${!a.is_enabled ? '· <span class="badge bg-light text-dark border">Disabled</span>' : ''}
+                                </div>
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary btn-edit-imap" data-id="${a.id}"><i class="bi bi-pencil"></i></button>
+                            <button class="btn btn-sm btn-outline-danger btn-delete-imap" data-id="${a.id}"><i class="bi bi-trash"></i></button>
+                        </div>
+                    </div>`).join('');
+                $('#imap-accounts-list').html(rows);
+            }
+
+            $('#btn-add-imap-account').off('click').on('click', () => this.openImapModal());
+            $(document).off('click.imap')
+                .on('click.imap', '.btn-edit-imap',   (e) => this.openImapModal($(e.currentTarget).data('id'), accounts))
+                .on('click.imap', '.btn-delete-imap', (e) => this.deleteImapAccount($(e.currentTarget).data('id')));
+
+        } catch (e) {
+            $('#imap-accounts-list').html('<p class="text-danger">' + App.escapeHtml(e.message) + '</p>');
+        }
+    },
+
+    openImapModal(id = null, accounts = []) {
+        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('imapAccountModal'));
+
+        // Populate tag dropdown
+        $('#imap-tag-id').html('<option value="">No tag</option>' +
+            (this._imapTags || []).map(t => `<option value="${t.id}">${App.escapeHtml(t.name)}</option>`).join(''));
+
+        if (id) {
+            const a = accounts.find(x => x.id == id);
+            $('#imap-modal-title').text('Edit IMAP Account');
+            $('#imap-account-id').val(a.id);
+            $('#imap-name').val(a.name);
+            $('#imap-host').val(a.host);
+            $('#imap-port').val(a.port);
+            $('#imap-encryption').val(a.encryption);
+            $('#imap-username').val(a.username);
+            $('#imap-password').val('');
+            $('#imap-folder').val(a.folder);
+            $('#imap-tag-id').val(a.tag_id || '');
+            $('#imap-delete-after-import').prop('checked', !!a.delete_after_import);
+            $('#imap-is-enabled').prop('checked', !!a.is_enabled);
+            $('#btn-test-imap-account').show();
+        } else {
+            $('#imap-modal-title').text('Add IMAP Account');
+            $('#imap-account-id').val('');
+            $('#imap-name,#imap-host,#imap-username,#imap-password').val('');
+            $('#imap-port').val('993');
+            $('#imap-encryption').val('ssl');
+            $('#imap-folder').val('INBOX');
+            $('#imap-tag-id').val('');
+            $('#imap-delete-after-import').prop('checked', false);
+            $('#imap-is-enabled').prop('checked', true);
+            $('#btn-test-imap-account').hide();
+        }
+
+        $('#btn-save-imap-account').off('click').on('click', () => this.saveImapAccount());
+        $('#btn-test-imap-account').off('click').on('click', () => this.testImapAccount());
+        modal.show();
+    },
+
+    async saveImapAccount() {
+        const id = $('#imap-account-id').val();
+        const payload = {
+            name:                $('#imap-name').val(),
+            host:                $('#imap-host').val(),
+            port:                $('#imap-port').val(),
+            encryption:          $('#imap-encryption').val(),
+            username:            $('#imap-username').val(),
+            password:            $('#imap-password').val(),
+            folder:              $('#imap-folder').val(),
+            tag_id:              $('#imap-tag-id').val() || null,
+            delete_after_import: $('#imap-delete-after-import').is(':checked'),
+            is_enabled:          $('#imap-is-enabled').is(':checked'),
+        };
+
+        try {
+            if (id) {
+                await API.put('/admin/imap-accounts/' + id, payload);
+            } else {
+                await API.post('/admin/imap-accounts', payload);
+            }
+            bootstrap.Modal.getInstance(document.getElementById('imapAccountModal')).hide();
+            await this.loadImapAccounts();
+            App.toast('IMAP account saved');
+        } catch (e) { App.toast(e.message, 'error'); }
+    },
+
+    async testImapAccount() {
+        const id = $('#imap-account-id').val();
+        if (!id) return;
+        const btn = $('#btn-test-imap-account').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Testing…');
+        try {
+            const res = await API.post('/admin/imap-accounts/' + id + '/test', {});
+            App.toast(res.message || 'Connection successful', 'success');
+        } catch (e) {
+            App.toast(e.message || 'Connection failed', 'error');
+        } finally {
+            btn.prop('disabled', false).html('<i class="bi bi-plug me-1"></i>Test Connection');
+        }
+    },
+
+    async deleteImapAccount(id) {
+        if (!await App.confirm('Delete this IMAP account?', 'Delete Account')) return;
+        try {
+            await API.delete('/admin/imap-accounts/' + id);
+            await this.loadImapAccounts();
+            App.toast('IMAP account deleted');
+        } catch (e) { App.toast(e.message, 'error'); }
     },
 
     renderTagsPanel() {
@@ -279,7 +493,7 @@ const SettingsView = {
             branding:     ['logo_url','primary_color','support_email_display'],
             email:        ['smtp_host','smtp_port','smtp_encryption','smtp_username','smtp_password','smtp_from_address','smtp_from_name','reply_to_address','global_signature','notify_agent_on_new_ticket'],
             autoresponse: ['auto_response_enabled','auto_response_subject','auto_response_body'],
-            imap:         ['imap_enabled','imap_host','imap_port','imap_username','imap_password','imap_folder','imap_delete_after_import'],
+            imap:         [],
             slack:        ['slack_enabled','slack_webhook_url','slack_channel','slack_on_new_ticket','slack_on_assign'],
         };
 

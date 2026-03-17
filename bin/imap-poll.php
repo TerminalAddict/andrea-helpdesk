@@ -16,6 +16,7 @@ $dotenv->safeLoad();
 
 use Andrea\Helpdesk\Core\Database;
 use Andrea\Helpdesk\Settings\SettingsService;
+use Andrea\Helpdesk\IMAP\ImapAccountRepository;
 use Andrea\Helpdesk\IMAP\ImapPoller;
 use Andrea\Helpdesk\IMAP\MessageParser;
 use Andrea\Helpdesk\IMAP\ThreadMatcher;
@@ -33,26 +34,48 @@ if (!flock($lock, LOCK_EX | LOCK_NB)) {
     exit(0);
 }
 
+$totalProcessed = 0;
+
 try {
-    // Initialise DB
-    $db       = Database::getInstance();
-    $settings = SettingsService::getInstance();
+    $db          = Database::getInstance();
+    $settings    = SettingsService::getInstance();
+    $accountRepo = new ImapAccountRepository();
+    $accounts    = $accountRepo->findEnabled();
 
-    $poller = new ImapPoller(
-        $settings,
-        new MessageParser(),
-        new ThreadMatcher($db)
-    );
-
-    if (!$poller->connect()) {
-        echo '[' . date('Y-m-d H:i:s') . '] IMAP connection failed. Check settings.' . PHP_EOL;
-        exit(1);
+    if (empty($accounts)) {
+        echo '[' . date('Y-m-d H:i:s') . '] No enabled IMAP accounts configured.' . PHP_EOL;
+        exit(0);
     }
 
-    $count = $poller->poll();
-    $poller->disconnect();
+    foreach ($accounts as $account) {
+        echo '[' . date('Y-m-d H:i:s') . "] Polling account: {$account['name']} ({$account['username']})" . PHP_EOL;
 
-    echo '[' . date('Y-m-d H:i:s') . "] Done. Processed {$count} message(s)." . PHP_EOL;
+        $config = [
+            'host'                => $account['host'],
+            'port'                => $account['port'],
+            'encryption'          => $account['encryption'],
+            'username'            => $account['username'],
+            'password'            => $accountRepo->getDecryptedPassword((int)$account['id']),
+            'folder'              => $account['folder'],
+            'delete_after_import' => (bool)$account['delete_after_import'],
+            'tag_id'              => $account['tag_id'] ?: null,
+        ];
+
+        $poller = new ImapPoller($config, new MessageParser(), new ThreadMatcher($db));
+
+        if (!$poller->connect()) {
+            echo '[' . date('Y-m-d H:i:s') . "] Failed to connect to {$account['name']}. Skipping." . PHP_EOL;
+            continue;
+        }
+
+        $count = $poller->poll();
+        $poller->disconnect();
+        $totalProcessed += $count;
+
+        echo '[' . date('Y-m-d H:i:s') . "] Account {$account['name']}: processed {$count} message(s)." . PHP_EOL;
+    }
+
+    echo '[' . date('Y-m-d H:i:s') . "] Done. Total processed: {$totalProcessed} message(s)." . PHP_EOL;
     exit(0);
 
 } catch (\Throwable $e) {
