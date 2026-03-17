@@ -1,5 +1,11 @@
 .DEFAULT_GOAL := help
 
+# Frontend library versions — bump these and run `make fetch-assets` to upgrade
+BOOTSTRAP_VERSION       = 5.3.3
+BOOTSTRAP_ICONS_VERSION = 1.11.3
+JQUERY_VERSION          = 3.7.1
+VENDOR_DIR              = public_html/assets/vendor
+
 LOCAL_HOST  = your-local-server
 PROD_HOST   = your-prod-server
 REMOTE_USER = deploy
@@ -9,13 +15,29 @@ RSYNC_EXCLUDE = --exclude=vendor --exclude=.env --exclude=storage --exclude=.git
 
 CRON_ENTRY  = "* * * * * php $(REMOTE_PATH)/bin/imap-poll.php >> $(REMOTE_PATH)/storage/logs/imap.log 2>&1"
 
-.PHONY: help install install-dev db-migrate db-seed \
+.PHONY: help install install-dev db-migrate db-seed fetch-assets \
         deploy-local deploy-production \
         cron-install-local cron-install-production \
         logs-local logs-production storage-setup
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-28s\033[0m %s\n", $$1, $$2}'
+
+fetch-assets: ## Download Bootstrap, Bootstrap Icons, and jQuery locally (bump versions above to upgrade)
+	mkdir -p $(VENDOR_DIR)/bootstrap $(VENDOR_DIR)/bootstrap-icons/fonts $(VENDOR_DIR)/jquery
+	curl -sL "https://cdn.jsdelivr.net/npm/bootstrap@$(BOOTSTRAP_VERSION)/dist/css/bootstrap.min.css" \
+	     -o $(VENDOR_DIR)/bootstrap/bootstrap.min.css
+	curl -sL "https://cdn.jsdelivr.net/npm/bootstrap@$(BOOTSTRAP_VERSION)/dist/js/bootstrap.bundle.min.js" \
+	     -o $(VENDOR_DIR)/bootstrap/bootstrap.bundle.min.js
+	curl -sL "https://cdn.jsdelivr.net/npm/bootstrap-icons@$(BOOTSTRAP_ICONS_VERSION)/font/bootstrap-icons.min.css" \
+	     -o $(VENDOR_DIR)/bootstrap-icons/bootstrap-icons.min.css
+	curl -sL "https://cdn.jsdelivr.net/npm/bootstrap-icons@$(BOOTSTRAP_ICONS_VERSION)/font/fonts/bootstrap-icons.woff2" \
+	     -o $(VENDOR_DIR)/bootstrap-icons/fonts/bootstrap-icons.woff2
+	curl -sL "https://cdn.jsdelivr.net/npm/bootstrap-icons@$(BOOTSTRAP_ICONS_VERSION)/font/fonts/bootstrap-icons.woff" \
+	     -o $(VENDOR_DIR)/bootstrap-icons/fonts/bootstrap-icons.woff
+	curl -sL "https://code.jquery.com/jquery-$(JQUERY_VERSION).min.js" \
+	     -o $(VENDOR_DIR)/jquery/jquery.min.js
+	@echo "Assets ready — Bootstrap $(BOOTSTRAP_VERSION), Bootstrap Icons $(BOOTSTRAP_ICONS_VERSION), jQuery $(JQUERY_VERSION)"
 
 install: ## Install Composer dependencies (production)
 	composer install --no-dev --optimize-autoloader
