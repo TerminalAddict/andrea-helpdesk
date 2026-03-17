@@ -13,7 +13,7 @@
 <div id="navbar-container"></div>
 
 <div id="app-wrapper">
-    <div id="loading-screen" class="d-flex justify-content-center align-items-center" style="height:100vh;">
+    <div id="loading-screen">
         <div class="text-center">
             <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;">
                 <span class="visually-hidden">Loading...</span>
