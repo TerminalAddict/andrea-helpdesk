@@ -40,7 +40,8 @@ const SettingsView = {
         const canTags  = isAdmin || API.can('can_manage_tags');
         const firstTab = isAdmin ? 'general' : (canTags ? 'tags' : 'profile');
         try {
-            const fetches = [API.get('/auth/me'), API.get('/settings/public')];
+            const agentId = API.currentUser && API.currentUser.sub;
+            const fetches = [API.get('/agents/' + agentId), API.get('/settings/public')];
             if (isAdmin) fetches.push(API.get('/admin/settings'));
             const results = await Promise.all(fetches);
             this.currentAgent = results[0].data || {};
