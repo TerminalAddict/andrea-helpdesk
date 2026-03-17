@@ -97,6 +97,7 @@ const LoginView = {
                 API.setTokens(res.data.access_token, res.data.refresh_token);
                 API.currentUser = res.data.user;
                 API.currentUser.type = 'agent';
+                App.applyTheme(API.currentUser.theme || 'light');
                 Navbar.init();
                 App.navigate('/');
             } catch (err) {

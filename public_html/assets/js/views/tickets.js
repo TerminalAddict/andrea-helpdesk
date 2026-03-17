@@ -170,7 +170,7 @@ const TicketsView = {
         tickets.filter(t => t.parent_ticket_id && !seenChildIds.has(t.id)).forEach(t => ordered.push({ t, child: true }));
 
         const rows = ordered.map(({ t, child }) => `
-            <tr class="ticket-row${child ? ' table-light' : ''}" data-id="${t.id}" style="cursor:pointer;${child ? 'border-left:3px solid #dee2e6;' : ''}">
+            <tr class="ticket-row${child ? ' table-light ticket-child-row' : ''}" data-id="${t.id}" style="cursor:pointer;">
                 <td>
                     ${child ? '<span class="text-muted me-1" style="padding-left:1rem;">↳</span>' : ''}
                     <span class="font-monospace small fw-semibold">${App.escapeHtml(t.ticket_number)}</span>

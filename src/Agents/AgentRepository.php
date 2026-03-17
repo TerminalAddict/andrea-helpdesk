@@ -61,7 +61,7 @@ class AgentRepository
     public function update(int $id, array $data): bool
     {
         $allowed = ['name', 'email', 'password_hash', 'role', 'can_close_tickets',
-                    'can_delete_tickets', 'can_edit_customers', 'can_view_reports', 'can_manage_kb', 'can_manage_tags', 'signature', 'page_size', 'is_active'];
+                    'can_delete_tickets', 'can_edit_customers', 'can_view_reports', 'can_manage_kb', 'can_manage_tags', 'signature', 'page_size', 'theme', 'is_active'];
         $set     = [];
         $params  = [];
 

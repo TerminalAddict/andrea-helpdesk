@@ -116,6 +116,14 @@ class AgentController
             }
         }
 
+        // Theme preference
+        if ($request->input('theme') !== null) {
+            $theme = $request->input('theme');
+            if (in_array($theme, ['light', 'dark'], true)) {
+                $data['theme'] = $theme;
+            }
+        }
+
         // Password change — requires current password
         $newPassword = $request->input('new_password');
         if ($newPassword !== null && $newPassword !== '') {

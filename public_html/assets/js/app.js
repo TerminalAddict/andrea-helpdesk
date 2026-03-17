@@ -37,6 +37,7 @@ const App = {
         if (API.isAuthenticated()) {
             const user = await API.loadCurrentUser();
             if (user) {
+                this.applyTheme(user.theme || 'light');
                 Navbar.init();
                 this.startImapWebPoller();
             } else {
@@ -226,6 +227,10 @@ const App = {
             });
             $('#confirmModal').one('hidden.bs.modal', () => resolve(false));
         });
+    },
+
+    applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light');
     },
 
     escapeHtml(str) {

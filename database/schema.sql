@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS agents (
     can_manage_tags     TINYINT(1) NOT NULL DEFAULT 0,
     signature           TEXT NULL COMMENT 'Per-agent email signature HTML',
     page_size           TINYINT UNSIGNED NOT NULL DEFAULT 20 COMMENT 'Rows per page for tickets list and dashboard blocks (10/20/50)',
+    theme               VARCHAR(20) NOT NULL DEFAULT 'light' COMMENT 'UI theme preference: light or dark',
     is_active           TINYINT(1) NOT NULL DEFAULT 1,
     last_login_at       DATETIME NULL,
     created_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
