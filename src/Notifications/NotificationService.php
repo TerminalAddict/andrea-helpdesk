@@ -104,10 +104,10 @@ class NotificationService
         }
     }
 
-    public function onAgentReply(array $ticket, array $reply, array $agent, array $customer, array $ccEmails = []): void
+    public function onAgentReply(array $ticket, array $reply, array $agent, array $customer, array $ccEmails = [], array $attachmentIds = []): void
     {
         try {
-            $this->emailNotifier->sendTicketReply($ticket, $reply, $agent, $customer, $ccEmails);
+            $this->emailNotifier->sendTicketReply($ticket, $reply, $agent, $customer, $ccEmails, $attachmentIds);
         } catch (\Throwable $e) {
             $this->log('onAgentReply: ' . $e->getMessage());
         }

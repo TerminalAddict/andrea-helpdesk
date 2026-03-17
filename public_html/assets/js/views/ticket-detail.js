@@ -266,9 +266,14 @@ const TicketDetailView = {
             }
 
             const attachments = (r.attachments || []).map(a =>
-                `<a href="/attachment/${a.id}?token=${a.token || ''}" target="_blank" class="btn btn-sm btn-outline-secondary me-1 mb-1">
-                    <i class="bi bi-paperclip me-1"></i>${App.escapeHtml(a.filename)}
-                </a>`
+                `<span class="d-inline-flex align-items-center me-1 mb-1 border rounded px-2 py-1 bg-white" style="font-size:.8rem;">
+                    <a href="/attachment/${a.id}?token=${a.download_token || ''}" target="_blank" class="text-decoration-none text-body me-1">
+                        <i class="bi bi-paperclip me-1 text-muted"></i>${App.escapeHtml(a.filename)}
+                    </a>
+                    <a href="#" class="text-danger attachment-delete ms-1" data-id="${a.id}" title="Delete attachment">
+                        <i class="bi bi-x"></i>
+                    </a>
+                </span>`
             ).join('');
 
             if (isInternal) {
@@ -317,10 +322,15 @@ const TicketDetailView = {
     renderAttachmentsList(attachments) {
         if (!attachments.length) return '<p class="small text-muted mb-0">No attachments.</p>';
         return attachments.map(a =>
-            `<div class="small mb-1">
-                <i class="bi bi-file-earmark me-1 text-muted"></i>
-                <a href="/attachment/${a.id}?token=${a.token || ''}" target="_blank">${App.escapeHtml(a.filename)}</a>
-                <span class="text-muted ms-1">(${this.formatBytes(a.size || 0)})</span>
+            `<div class="small mb-1 d-flex align-items-center justify-content-between">
+                <div>
+                    <i class="bi bi-file-earmark me-1 text-muted"></i>
+                    <a href="/attachment/${a.id}?token=${a.download_token || ''}" target="_blank">${App.escapeHtml(a.filename)}</a>
+                    <span class="text-muted ms-1">(${this.formatBytes(a.size_bytes || 0)})</span>
+                </div>
+                <a href="#" class="text-danger attachment-delete ms-2" data-id="${a.id}" title="Delete">
+                    <i class="bi bi-trash3" style="font-size:.85rem;"></i>
+                </a>
             </div>`
         ).join('');
     },
@@ -430,6 +440,12 @@ const TicketDetailView = {
             e.preventDefault();
             this.removeRelation($(e.currentTarget).data('id'));
         });
+
+        // Attachment delete
+        $(document).on('click', '.attachment-delete', (e) => {
+            e.preventDefault();
+            this.deleteAttachment($(e.currentTarget).data('id'));
+        });
     },
 
     async sendReply() {
@@ -444,22 +460,14 @@ const TicketDetailView = {
         $('#btn-send-reply').prop('disabled', true);
 
         try {
-            if (type === 'note') {
-                await API.post('/tickets/' + this.ticket.id + '/replies', { body, type: 'internal' });
-            } else {
-                const payload = { body, type: 'reply' };
-                if (status) payload.status_after = status;
-                await API.post('/tickets/' + this.ticket.id + '/replies', payload);
-            }
+            // Send body + files together so the email includes the attachments
+            const fd = new FormData();
+            fd.append('body', body);
+            fd.append('type', type === 'note' ? 'internal' : 'reply');
+            if (status) fd.append('status_after', status);
+            for (const file of files) fd.append('file[]', file);
 
-            // Upload attachments if any
-            if (files.length) {
-                for (const file of files) {
-                    const fd = new FormData();
-                    fd.append('file', file);
-                    await API.upload('/tickets/' + this.ticket.id + '/attachments', fd);
-                }
-            }
+            await API.upload('/tickets/' + this.ticket.id + '/replies', fd);
 
             $('#reply-body').val('');
             $('#reply-files').val('');
@@ -512,6 +520,14 @@ const TicketDetailView = {
     async removeParticipant(email) {
         try {
             await API.delete('/tickets/' + this.ticket.id + '/participants', { email });
+            await this.reload();
+        } catch (e) { App.toast(e.message, 'error'); }
+    },
+
+    async deleteAttachment(id) {
+        if (!confirm('Delete this attachment?')) return;
+        try {
+            await API.delete('/attachments/' + id);
             await this.reload();
         } catch (e) { App.toast(e.message, 'error'); }
     },

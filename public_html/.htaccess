@@ -41,7 +41,7 @@ RewriteRule ^api/ - [R=200,L]
 RewriteRule ^api/(.*)$ api.php [QSA,L]
 
 # Route /attachment/* to attachment.php
-RewriteRule ^attachment/(.*)$ attachment.php [QSA,L]
+RewriteRule ^attachment/([0-9]+)$ attachment.php?id=$1 [QSA,L]
 
 # Serve existing files directly (assets, favicon, etc.)
 RewriteCond %{REQUEST_FILENAME} -f [OR]

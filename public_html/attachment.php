@@ -4,7 +4,7 @@ declare(strict_types=1);
 $projectRoot = dirname(__DIR__);
 require $projectRoot . '/vendor/autoload.php';
 
-$dotenv = Dotenv\Dotenv::createImmutable($projectRoot);
+$dotenv = Dotenv\Dotenv::createUnsafeImmutable($projectRoot);
 $dotenv->safeLoad();
 
 use Andrea\Helpdesk\Core\Database;
@@ -102,8 +102,18 @@ try {
     $mimeType = $attachment['mime_type'] ?: 'application/octet-stream';
     $fileSize = filesize($filePath);
 
+    // Inline for types browsers can render natively; force download for everything else
+    $inlineTypes = [
+        'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+        'application/pdf',
+        'text/plain', 'text/html', 'text/csv',
+        'video/mp4', 'video/webm',
+        'audio/mpeg', 'audio/wav', 'audio/ogg',
+    ];
+    $disposition = in_array($mimeType, $inlineTypes, true) ? 'inline' : 'attachment';
+
     header('Content-Type: ' . $mimeType);
-    header('Content-Disposition: attachment; filename="' . addslashes($filename) . '"');
+    header('Content-Disposition: ' . $disposition . '; filename="' . addslashes($filename) . '"');
     header('Content-Length: ' . $fileSize);
     header('X-Content-Type-Options: nosniff');
     header('Cache-Control: private, max-age=3600');

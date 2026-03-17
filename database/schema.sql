@@ -144,7 +144,7 @@ CREATE TABLE IF NOT EXISTS attachments (
     stored_path                 VARCHAR(512) NOT NULL COMMENT 'Relative path under storage/attachments/',
     mime_type                   VARCHAR(100) NOT NULL,
     size_bytes                  INT UNSIGNED NOT NULL,
-    download_token              VARCHAR(64) NULL,
+    download_token              VARCHAR(255) NULL,
     uploaded_by_agent_id        INT UNSIGNED NULL,
     uploaded_by_customer_id     INT UNSIGNED NULL,
     created_at                  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

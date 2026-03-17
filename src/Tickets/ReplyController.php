@@ -43,13 +43,39 @@ class ReplyController
         $isPrivate = $type === 'internal' || (bool)$request->input('is_private', false);
         $ccEmails  = $request->input('cc_emails', []);
 
+        // Save any uploaded files before creating the reply so they can be emailed
+        $attachmentIds = [];
+        if (!empty($request->files)) {
+            $attachService = new AttachmentService();
+            foreach ($request->files as $file) {
+                $fileList = isset($file['name']) && is_array($file['name'])
+                    ? array_map(fn($i) => ['name' => $file['name'][$i], 'tmp_name' => $file['tmp_name'][$i], 'type' => $file['type'][$i], 'size' => $file['size'][$i], 'error' => $file['error'][$i]], range(0, count($file['name']) - 1))
+                    : [$file];
+                foreach ($fileList as $f) {
+                    if ($f['error'] === UPLOAD_ERR_OK) {
+                        $saved           = $attachService->store($ticket['id'], $f, null, $request->agent->id);
+                        $attachmentIds[] = $saved['id'];
+                    }
+                }
+            }
+        }
+
         $reply = $this->service->createAgentReply(
             $ticket['id'],
             $request->agent->id,
             $bodyHtml,
             $isPrivate,
-            is_array($ccEmails) ? $ccEmails : []
+            is_array($ccEmails) ? $ccEmails : [],
+            $attachmentIds
         );
+
+        // Link attachments to the reply now that we have its ID
+        if ($attachmentIds && $reply) {
+            $db = \Andrea\Helpdesk\Core\Database::getInstance();
+            foreach ($attachmentIds as $aid) {
+                $db->execute("UPDATE attachments SET reply_id = ? WHERE id = ?", [$reply['id'], $aid]);
+            }
+        }
 
         Response::created($reply, 'Reply added');
     }
