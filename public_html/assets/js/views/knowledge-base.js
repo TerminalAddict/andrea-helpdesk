@@ -487,7 +487,7 @@ const KbArticleView = {
                 </div>
                 <div class="card border-0 shadow-sm">
                     <div class="card-body">
-                        <div class="article-body" style="white-space:pre-wrap;">${a.body_html || App.escapeHtml(a.body || '')}</div>
+                        <div class="article-body" style="white-space:pre-wrap;">${a.body_html ? DOMPurify.sanitize(a.body_html) : App.escapeHtml(a.body || '')}</div>
                     </div>
                 </div>`);
         } catch (e) {
