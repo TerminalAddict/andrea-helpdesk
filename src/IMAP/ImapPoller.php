@@ -224,6 +224,5 @@ class ImapPoller
         $dir  = dirname($this->logFile);
         if (!is_dir($dir)) mkdir($dir, 0750, true);
         file_put_contents($this->logFile, $line, FILE_APPEND | LOCK_EX);
-        echo $line; // Also output to stdout for cron log
     }
 }
