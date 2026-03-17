@@ -79,6 +79,7 @@ window.AppConfig = {
 
 <script src="/assets/vendor/jquery/jquery.min.js"></script>
 <script src="/assets/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+<script src="/assets/vendor/dompurify/purify.min.js"></script>
 
 <!-- API wrapper (must load first) -->
 <script src="/assets/js/api.js"></script>

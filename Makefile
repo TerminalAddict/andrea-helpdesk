@@ -4,6 +4,7 @@
 BOOTSTRAP_VERSION = 5.3.8
 BOOTSTRAP_ICONS_VERSION = 1.13.1
 JQUERY_VERSION          = 4.0.0
+DOMPURIFY_VERSION       = 3.2.4
 VENDOR_DIR              = public_html/assets/vendor
 
 LOCAL_HOST  = your-local-server
@@ -40,7 +41,10 @@ fetch-assets: ## Download Bootstrap, Bootstrap Icons, and jQuery locally (bump v
 	     -o $(VENDOR_DIR)/bootstrap-icons/fonts/bootstrap-icons.woff
 	curl -sL "https://code.jquery.com/jquery-$(JQUERY_VERSION).min.js" \
 	     -o $(VENDOR_DIR)/jquery/jquery.min.js
-	@echo "Assets ready — Bootstrap $(BOOTSTRAP_VERSION), Bootstrap Icons $(BOOTSTRAP_ICONS_VERSION), jQuery $(JQUERY_VERSION)"
+	mkdir -p $(VENDOR_DIR)/dompurify
+	curl -sL "https://cdn.jsdelivr.net/npm/dompurify@$(DOMPURIFY_VERSION)/dist/purify.min.js" \
+	     -o $(VENDOR_DIR)/dompurify/purify.min.js
+	@echo "Assets ready — Bootstrap $(BOOTSTRAP_VERSION), Bootstrap Icons $(BOOTSTRAP_ICONS_VERSION), jQuery $(JQUERY_VERSION), DOMPurify $(DOMPURIFY_VERSION)"
 
 install: ## Install Composer dependencies (production)
 	composer install --no-dev --optimize-autoloader

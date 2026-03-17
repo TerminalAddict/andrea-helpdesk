@@ -320,7 +320,7 @@ const TicketDetailView = {
     },
 
     renderBody(text, html) {
-        if (html) return `<div class="reply-html">${html}</div>`;
+        if (html) return `<div class="reply-html">${DOMPurify.sanitize(html)}</div>`;
         return '<pre class="mb-0" style="white-space:pre-wrap;font-family:inherit;font-size:.9rem;">' + App.escapeHtml(text || '') + '</pre>';
     },
 
