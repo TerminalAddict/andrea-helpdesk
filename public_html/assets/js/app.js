@@ -2,6 +2,9 @@
  * Andrea Helpdesk - Main SPA Router
  */
 const App = {
+    appName: 'Andrea Helpdesk',
+    settings: {},
+
     routes: {
         '/':               'DashboardView',
         '/login':          'LoginView',
@@ -15,8 +18,10 @@ const App = {
         '/admin/reports':  'ReportsView',
         '/kb':             'KnowledgeBaseView',
         '/kb/:slug':       'KbArticleView',
-        '/portal':         'PortalView',
-        '/portal/tickets/:id': 'PortalTicketView',
+        '/portal/login':        'PortalLoginView',
+        '/portal/set-password': 'PortalSetPasswordView',
+        '/portal':              'PortalView',
+        '/portal/tickets/:id':  'PortalTicketView',
     },
 
     publicRoutes: ['/login', '/portal/login'],
@@ -25,6 +30,9 @@ const App = {
         // Hide loading screen
         $('#loading-screen').hide();
         $('#app').show();
+
+        // Load public settings (no auth required) — sets title/brand for all screens
+        await this.loadAppName();
 
         if (API.isAuthenticated()) {
             const user = await API.loadCurrentUser();
@@ -56,8 +64,9 @@ const App = {
     },
 
     matchPattern(pattern, path) {
+        const [pathOnly, queryString] = path.split('?');
         const patternParts = pattern.split('/').filter(Boolean);
-        const pathParts    = path.split('?')[0].split('/').filter(Boolean);
+        const pathParts    = pathOnly.split('/').filter(Boolean);
         if (patternParts.length !== pathParts.length) return null;
 
         const params = {};
@@ -67,6 +76,10 @@ const App = {
             } else if (patternParts[i] !== pathParts[i]) {
                 return null;
             }
+        }
+        // Merge query string params
+        if (queryString) {
+            new URLSearchParams(queryString).forEach((v, k) => { params[k] = v; });
         }
         return params;
     },
@@ -84,16 +97,15 @@ const App = {
             return;
         }
 
-        // Admin route guard
-        if (hash.startsWith('/admin/') && !API.isAdmin()) {
+        // Admin route guard — /admin/reports is also accessible to agents with can_view_reports
+        if (hash.startsWith('/admin/reports')) {
+            if (!API.can('can_view_reports')) {
+                this.toast('You do not have permission to view reports', 'error');
+                window.location.hash = '#/';
+                return;
+            }
+        } else if (hash.startsWith('/admin/') && !API.isAdmin()) {
             this.toast('Admin access required', 'error');
-            window.location.hash = '#/';
-            return;
-        }
-
-        // Reports permission
-        if (hash.startsWith('/admin/reports') && !API.can('can_view_reports')) {
-            this.toast('You do not have permission to view reports', 'error');
             window.location.hash = '#/';
             return;
         }
@@ -103,7 +115,8 @@ const App = {
             DashboardView, LoginView, TicketsView, TicketNewView,
             TicketDetailView, CustomersView, CustomerDetailView,
             AgentsView, SettingsView, ReportsView,
-            KnowledgeBaseView, KbArticleView, PortalView, PortalTicketView,
+            KnowledgeBaseView, KbArticleView,
+            PortalLoginView, PortalSetPasswordView, PortalView, PortalTicketView,
         };
         const view = viewName && viewRegistry[viewName];
         if (!view) {
@@ -124,6 +137,22 @@ const App = {
         }
 
         this.hideLoading();
+    },
+
+    async loadAppName() {
+        try {
+            const res = await API.get('/settings/public');
+            if (res.data) {
+                this.settings = res.data;
+                if (res.data.company_name) this.applyAppName(res.data.company_name);
+            }
+        } catch (e) {}
+    },
+
+    applyAppName(name) {
+        this.appName = name;
+        document.title = name;
+        $('.navbar-brand').html(`<i class="bi bi-headset me-2"></i>${this.escapeHtml(name)}`);
     },
 
     navigate(path) {
@@ -179,11 +208,43 @@ const App = {
         return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     },
 
-    // Format date for display
+    // Format date for display using PHP-style date_format setting
     formatDate(dateStr) {
         if (!dateStr) return '–';
         const d = new Date(dateStr.replace(' ', 'T'));
-        return d.toLocaleString();
+        if (isNaN(d)) return dateStr;
+        const fmt = this.settings.date_format || 'Y-m-d H:i';
+        const pad = n => String(n).padStart(2, '0');
+        const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        const days   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        return fmt.split('').map((c, i, arr) => {
+            if (arr[i - 1] === '\\') return c;
+            if (c === '\\') return '';
+            switch (c) {
+                case 'Y': return d.getFullYear();
+                case 'y': return String(d.getFullYear()).slice(-2);
+                case 'm': return pad(d.getMonth() + 1);
+                case 'n': return d.getMonth() + 1;
+                case 'd': return pad(d.getDate());
+                case 'j': return d.getDate();
+                case 'H': return pad(d.getHours());
+                case 'G': return d.getHours();
+                case 'i': return pad(d.getMinutes());
+                case 's': return pad(d.getSeconds());
+                case 'A': return d.getHours() < 12 ? 'AM' : 'PM';
+                case 'a': return d.getHours() < 12 ? 'am' : 'pm';
+                case 'g': return d.getHours() % 12 || 12;
+                case 'h': return pad(d.getHours() % 12 || 12);
+                case 'D': return days[d.getDay()].slice(0, 3);
+                case 'l': return days[d.getDay()];
+                case 'M': return months[d.getMonth()].slice(0, 3);
+                case 'F': return months[d.getMonth()];
+                case 't': return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+                case 'N': return d.getDay() || 7;
+                case 'w': return d.getDay();
+                default:  return c;
+            }
+        }).join('');
     },
 
     statusBadge(status) {

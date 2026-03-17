@@ -33,7 +33,7 @@ const Navbar = {
                     <i class="bi bi-book"></i> Knowledge Base
                 </a>
             </li>
-            ${isAdmin ? `
+            ${API.can('can_view_reports') ? `
             <li class="nav-item">
                 <a class="nav-link" href="#/admin/reports" data-route="/admin/reports">
                     <i class="bi bi-bar-chart"></i> Reports
@@ -60,7 +60,7 @@ const Navbar = {
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
             <div class="container-fluid">
                 <a class="navbar-brand fw-bold" href="#/">
-                    <i class="bi bi-headset me-2"></i>Andrea Helpdesk
+                    <i class="bi bi-headset me-2"></i>${App.escapeHtml(App.appName)}
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
                     <span class="navbar-toggler-icon"></span>

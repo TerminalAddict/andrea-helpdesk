@@ -61,6 +61,7 @@ const AgentsView = {
                                     ['can_delete_tickets', 'Delete Tickets'],
                                     ['can_edit_customers', 'Edit Customer Records'],
                                     ['can_view_reports',   'View Reports'],
+                                    ['can_manage_kb',      'Manage KB Categories'],
                                 ].map(([key, label]) =>
                                     `<div class="form-check">
                                         <input class="form-check-input agent-perm" type="checkbox" id="perm-${key}" value="${key}">
@@ -105,7 +106,7 @@ const AgentsView = {
         }
 
         const rows = this.agents.map(a => {
-            const perms = ['can_close_tickets','can_delete_tickets','can_edit_customers','can_view_reports']
+            const perms = ['can_close_tickets','can_delete_tickets','can_edit_customers','can_view_reports','can_manage_kb']
                 .filter(p => a[p])
                 .map(p => `<span class="badge bg-light text-dark border me-1 small">${p.replace('can_','')}</span>`)
                 .join('');

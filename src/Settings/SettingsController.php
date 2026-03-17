@@ -20,6 +20,19 @@ class SettingsController
     }
 
     /**
+     * GET /api/settings/public — no auth required
+     */
+    public function publicSettings(Request $request): void
+    {
+        $keys = ['company_name', 'logo_url', 'primary_color', 'date_format'];
+        $data = [];
+        foreach ($keys as $key) {
+            $data[$key] = $this->repo->get($key);
+        }
+        Response::success($data);
+    }
+
+    /**
      * GET /api/admin/settings?group=email
      */
     public function index(Request $request): void

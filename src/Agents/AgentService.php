@@ -33,6 +33,7 @@ class AgentService
             'can_delete_tickets' => (int)($data['can_delete_tickets'] ?? 0),
             'can_edit_customers' => (int)($data['can_edit_customers'] ?? 0),
             'can_view_reports'   => (int)($data['can_view_reports'] ?? 0),
+            'can_manage_kb'      => (int)($data['can_manage_kb'] ?? 0),
             'signature'          => $data['signature'] ?? null,
         ];
 
@@ -46,7 +47,7 @@ class AgentService
     {
         $updateData = [];
         $fields     = ['name', 'email', 'role', 'can_close_tickets', 'can_delete_tickets',
-                       'can_edit_customers', 'can_view_reports', 'signature', 'is_active'];
+                       'can_edit_customers', 'can_view_reports', 'can_manage_kb', 'signature', 'is_active'];
 
         foreach ($fields as $field) {
             if (array_key_exists($field, $data)) {

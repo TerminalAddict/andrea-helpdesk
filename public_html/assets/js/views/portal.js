@@ -1,4 +1,111 @@
 /**
+ * Portal Magic-Link Login View
+ * Handles the link sent by "Send Portal Invite": #/portal/login?token=...&email=...
+ */
+const PortalLoginView = {
+    render() {
+        return `
+        <div class="container py-5" style="max-width:480px;">
+            <div class="card border-0 shadow-sm text-center p-4">
+                <div class="spinner-border mx-auto mb-3" id="portal-login-spinner"></div>
+                <p class="text-muted mb-0" id="portal-login-msg">Verifying your login link…</p>
+            </div>
+        </div>`;
+    },
+
+    async init(params) {
+        const token = params.token || '';
+        const email = params.email || '';
+
+        if (!token || !email) {
+            $('#portal-login-spinner').addClass('d-none');
+            $('#portal-login-msg').text('Invalid login link — token or email missing.');
+            return;
+        }
+
+        try {
+            const res = await API.post('/portal/auth/verify-magic-link', { token, email });
+            API.setTokens(res.data.access_token, res.data.refresh_token);
+            await API.loadCurrentUser();
+            App.navigate(res.data.user.has_password ? '/portal' : '/portal/set-password');
+        } catch (e) {
+            $('#portal-login-spinner').addClass('d-none');
+            $('#portal-login-msg').html(
+                '<span class="text-danger">' + App.escapeHtml(e.message) + '</span><br>' +
+                '<small class="text-muted">This link may have expired. Contact support for a new one.</small>'
+            );
+        }
+    }
+};
+
+/**
+ * Portal Set Password View
+ * Shown after first magic-link login to complete profile setup.
+ */
+const PortalSetPasswordView = {
+    render() {
+        return `
+        <div class="container py-5" style="max-width:480px;">
+            <div class="card border-0 shadow-sm p-4">
+                <h5 class="fw-bold mb-1"><i class="bi bi-shield-lock me-2"></i>Complete Your Profile</h5>
+                <p class="text-muted small mb-4">Set a password so you can log in and reply to support tickets in future.</p>
+                <div id="set-pw-error" class="alert alert-danger d-none"></div>
+                <div class="mb-3">
+                    <label class="form-label">New Password</label>
+                    <input type="password" class="form-control" id="set-pw-password" placeholder="At least 8 characters" minlength="8">
+                </div>
+                <div class="mb-4">
+                    <label class="form-label">Confirm Password</label>
+                    <input type="password" class="form-control" id="set-pw-confirm" placeholder="Repeat password">
+                </div>
+                <button class="btn btn-primary w-100" id="btn-set-pw">
+                    <span class="spinner-border spinner-border-sm d-none me-1" id="set-pw-spinner"></span>
+                    Set Password &amp; Continue
+                </button>
+            </div>
+        </div>`;
+    },
+
+    async init() {
+        $('#btn-set-pw').on('click', () => this.submit());
+        $('#set-pw-password, #set-pw-confirm').on('keydown', (e) => {
+            if (e.key === 'Enter') this.submit();
+        });
+    },
+
+    async submit() {
+        const password = $('#set-pw-password').val();
+        const confirm  = $('#set-pw-confirm').val();
+
+        if (password.length < 8) {
+            $('#set-pw-error').text('Password must be at least 8 characters.').removeClass('d-none');
+            return;
+        }
+        if (password !== confirm) {
+            $('#set-pw-error').text('Passwords do not match.').removeClass('d-none');
+            return;
+        }
+
+        $('#set-pw-spinner').removeClass('d-none');
+        $('#btn-set-pw').prop('disabled', true);
+        $('#set-pw-error').addClass('d-none');
+
+        try {
+            await API.post('/portal/auth/set-password', { password, password_confirm: confirm });
+            // Update local user state
+            if (API.currentUser) API.currentUser.has_password = true;
+            App.toast('Password set successfully');
+            App.navigate('/portal');
+        } catch (e) {
+            $('#set-pw-error').text(e.message).removeClass('d-none');
+        } finally {
+            $('#set-pw-spinner').addClass('d-none');
+            $('#btn-set-pw').prop('disabled', false);
+        }
+    }
+};
+
+/**
  * Customer Portal View
  */
 const PortalView = {
@@ -27,6 +134,37 @@ const PortalView = {
                         <div class="col-md-1">
                             <button class="btn btn-secondary btn-sm w-100" id="portal-filter-reset">Clear</button>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center" style="cursor:pointer;" id="toggle-change-pw">
+                    <span class="small fw-semibold"><i class="bi bi-key me-2"></i>Change Password</span>
+                    <i class="bi bi-chevron-down small" id="change-pw-chevron"></i>
+                </div>
+                <div class="card-body d-none" id="change-pw-form">
+                    <div id="change-pw-error" class="alert alert-danger d-none"></div>
+                    <div id="change-pw-success" class="alert alert-success d-none"></div>
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label class="form-label small">Current Password</label>
+                            <input type="password" class="form-control form-control-sm" id="cp-current">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">New Password</label>
+                            <input type="password" class="form-control form-control-sm" id="cp-new" placeholder="At least 8 characters">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">Confirm New Password</label>
+                            <input type="password" class="form-control form-control-sm" id="cp-confirm">
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button class="btn btn-primary btn-sm" id="btn-change-pw">
+                            <span class="spinner-border spinner-border-sm d-none me-1" id="change-pw-spinner"></span>
+                            Update Password
+                        </button>
                     </div>
                 </div>
             </div>
@@ -87,6 +225,48 @@ const PortalView = {
             new bootstrap.Modal(document.getElementById('portalNewTicketModal')).show();
         });
         $('#btn-portal-submit').on('click', () => this.submitNewTicket());
+
+        // Change password toggle
+        $('#toggle-change-pw').on('click', () => {
+            $('#change-pw-form').toggleClass('d-none');
+            $('#change-pw-chevron').toggleClass('bi-chevron-down bi-chevron-up');
+        });
+
+        $('#btn-change-pw').on('click', async () => {
+            const current = $('#cp-current').val();
+            const nw      = $('#cp-new').val();
+            const confirm = $('#cp-confirm').val();
+
+            $('#change-pw-error').addClass('d-none');
+            $('#change-pw-success').addClass('d-none');
+
+            if (nw.length < 8) {
+                $('#change-pw-error').text('New password must be at least 8 characters.').removeClass('d-none');
+                return;
+            }
+            if (nw !== confirm) {
+                $('#change-pw-error').text('New passwords do not match.').removeClass('d-none');
+                return;
+            }
+
+            $('#change-pw-spinner').removeClass('d-none');
+            $('#btn-change-pw').prop('disabled', true);
+            try {
+                await API.post('/portal/auth/change-password', {
+                    current_password: current,
+                    password: nw,
+                    password_confirm: confirm,
+                });
+                $('#cp-current, #cp-new, #cp-confirm').val('');
+                $('#change-pw-success').text('Password updated successfully.').removeClass('d-none');
+                if (API.currentUser) API.currentUser.has_password = true;
+            } catch (e) {
+                $('#change-pw-error').text(e.message).removeClass('d-none');
+            } finally {
+                $('#change-pw-spinner').addClass('d-none');
+                $('#btn-change-pw').prop('disabled', false);
+            }
+        });
 
         await this.load();
     },
@@ -242,7 +422,22 @@ const PortalTicketView = {
             <div id="portal-thread" class="mb-4"></div>
 
             <!-- Reply form (only if not closed) -->
-            ${t.status !== 'closed' ? `
+            ${t.status !== 'closed' ? (
+                API.currentUser && !API.currentUser.has_password ? `
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-4">
+                    <i class="bi bi-shield-lock fs-3 text-muted mb-2 d-block"></i>
+                    <p class="mb-2 fw-semibold">Please complete your profile to reply to this ticket.</p>
+                    <p class="text-muted small mb-3">A confirmation email will be sent to <strong>${App.escapeHtml(API.currentUser.email)}</strong> with a link to set your password.</p>
+                    <button class="btn btn-primary btn-sm" id="btn-send-setup-email">
+                        <span class="spinner-border spinner-border-sm d-none me-1" id="setup-email-spinner"></span>
+                        <i class="bi bi-envelope me-1"></i>Send Confirmation Email
+                    </button>
+                    <div id="setup-email-sent" class="alert alert-success mt-3 d-none">
+                        <i class="bi bi-check-circle me-2"></i>Email sent! Check your inbox and click the link to set your password.
+                    </div>
+                </div>
+            </div>` : `
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white fw-semibold py-2">
                     <i class="bi bi-reply me-2"></i>Reply
@@ -259,7 +454,7 @@ const PortalTicketView = {
                         <i class="bi bi-send me-1"></i>Send
                     </button>
                 </div>
-            </div>` : `
+            </div>`) : `
             <div class="alert alert-secondary">This ticket is closed. <a href="#/portal">Submit a new ticket</a> if you need further assistance.</div>`}
         </div>`;
 
@@ -267,6 +462,20 @@ const PortalTicketView = {
         this.renderThread(t.replies || []);
 
         $('#btn-portal-reply').on('click', () => this.sendReply());
+
+        $('#btn-send-setup-email').on('click', async () => {
+            $('#setup-email-spinner').removeClass('d-none');
+            $('#btn-send-setup-email').prop('disabled', true);
+            try {
+                await API.post('/portal/auth/magic-link', { email: API.currentUser.email });
+                $('#setup-email-sent').removeClass('d-none');
+            } catch (e) {
+                App.toast(e.message, 'error');
+                $('#btn-send-setup-email').prop('disabled', false);
+            } finally {
+                $('#setup-email-spinner').addClass('d-none');
+            }
+        });
     },
 
     renderThread(replies) {

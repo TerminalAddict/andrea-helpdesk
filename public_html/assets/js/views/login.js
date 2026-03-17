@@ -9,7 +9,7 @@ const LoginView = {
                 <div class="card-body p-4">
                     <div class="text-center mb-4">
                         <i class="bi bi-headset text-primary" style="font-size:3rem;"></i>
-                        <h4 class="mt-2 mb-0 fw-bold">Andrea Helpdesk</h4>
+                        <h4 class="mt-2 mb-0 fw-bold">${App.escapeHtml(App.appName)}</h4>
                     </div>
 
                     <ul class="nav nav-tabs mb-3" id="loginTabs">

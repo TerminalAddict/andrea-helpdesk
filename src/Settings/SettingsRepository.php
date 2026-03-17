@@ -43,14 +43,10 @@ class SettingsRepository
 
     public function getAll(): array
     {
-        $rows   = $this->db->fetchAll("SELECT key_name, value, type, group_name, label FROM settings ORDER BY group_name, key_name");
+        $rows   = $this->db->fetchAll("SELECT key_name, value, type FROM settings ORDER BY key_name");
         $result = [];
         foreach ($rows as $row) {
-            $result[$row['group_name']][$row['key_name']] = [
-                'value' => $this->castValue($row['value'] ?? '', $row['type']),
-                'type'  => $row['type'],
-                'label' => $row['label'],
-            ];
+            $result[$row['key_name']] = $this->castValue($row['value'] ?? '', $row['type']);
         }
         return $result;
     }

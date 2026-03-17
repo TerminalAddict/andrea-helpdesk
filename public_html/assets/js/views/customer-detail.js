@@ -95,8 +95,21 @@ const CustomerDetailView = {
                         </div>
                         <div class="card-body">
                             <p class="small text-muted mb-2">Send a portal invitation link to this customer.</p>
-                            <button class="btn btn-sm btn-outline-primary" id="btn-send-invite">
+                            <button class="btn btn-sm btn-outline-primary mb-3" id="btn-send-invite">
                                 <i class="bi bi-envelope me-1"></i>Send Portal Invite
+                            </button>
+                            <hr class="my-2">
+                            <p class="small text-muted mb-2">Set a new portal password for this customer.</p>
+                            <div id="admin-set-pw-error" class="alert alert-danger d-none py-2 small"></div>
+                            <div class="mb-2">
+                                <input type="password" class="form-control form-control-sm" id="admin-pw-new" placeholder="New password (min 8 chars)">
+                            </div>
+                            <div class="mb-2">
+                                <input type="password" class="form-control form-control-sm" id="admin-pw-confirm" placeholder="Confirm password">
+                            </div>
+                            <button class="btn btn-sm btn-outline-secondary" id="btn-admin-set-pw">
+                                <span class="spinner-border spinner-border-sm d-none me-1" id="admin-pw-spinner"></span>
+                                <i class="bi bi-key me-1"></i>Set Password
                             </button>
                         </div>
                     </div>
@@ -106,7 +119,7 @@ const CustomerDetailView = {
                     <div class="card border-0 shadow-sm">
                         <div class="card-header bg-white fw-semibold py-2 d-flex justify-content-between align-items-center">
                             <span><i class="bi bi-ticket-perforated me-2"></i>Tickets</span>
-                            <a href="#/tickets/new?customer_email=${encodeURIComponent(c.email)}" class="btn btn-sm btn-primary">
+                            <a href="#/tickets/new?customer_email=${encodeURIComponent(c.email)}&customer_name=${encodeURIComponent(c.name || '')}" class="btn btn-sm btn-primary">
                                 <i class="bi bi-plus-lg me-1"></i>New Ticket
                             </a>
                         </div>
@@ -176,6 +189,37 @@ const CustomerDetailView = {
                 await API.post('/customers/' + this.customer.id + '/portal-invite');
                 App.toast('Invitation sent to ' + this.customer.email);
             } catch (e) { App.toast(e.message, 'error'); }
+        });
+
+        $('#btn-admin-set-pw').on('click', async () => {
+            const nw      = $('#admin-pw-new').val();
+            const confirm = $('#admin-pw-confirm').val();
+            $('#admin-set-pw-error').addClass('d-none');
+
+            if (nw.length < 8) {
+                $('#admin-set-pw-error').text('Password must be at least 8 characters.').removeClass('d-none');
+                return;
+            }
+            if (nw !== confirm) {
+                $('#admin-set-pw-error').text('Passwords do not match.').removeClass('d-none');
+                return;
+            }
+
+            $('#admin-pw-spinner').removeClass('d-none');
+            $('#btn-admin-set-pw').prop('disabled', true);
+            try {
+                await API.post('/customers/' + this.customer.id + '/set-password', {
+                    password: nw,
+                    password_confirm: confirm,
+                });
+                $('#admin-pw-new, #admin-pw-confirm').val('');
+                App.toast('Customer password updated');
+            } catch (e) {
+                $('#admin-set-pw-error').text(e.message).removeClass('d-none');
+            } finally {
+                $('#admin-pw-spinner').addClass('d-none');
+                $('#btn-admin-set-pw').prop('disabled', false);
+            }
         });
     }
 };

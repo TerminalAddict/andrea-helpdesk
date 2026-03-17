@@ -116,8 +116,33 @@ class TicketController
     {
         $ticket = $this->repo->findById((int)$params['id']);
         if (!$ticket) throw new NotFoundException('Ticket not found');
-        $this->repo->softDelete($ticket['id']);
+
+        $this->deleteTicketCascade($ticket['id']);
         Response::success(null, 'Ticket deleted');
+    }
+
+    private function deleteTicketCascade(int $ticketId): void
+    {
+        // Delete child tickets recursively
+        $children = $this->db->fetchAll(
+            "SELECT id FROM tickets WHERE parent_ticket_id = ? AND deleted_at IS NULL",
+            [$ticketId]
+        );
+        foreach ($children as $child) {
+            $this->deleteTicketCascade($child['id']);
+        }
+
+        // Delete physical attachment files and records
+        $attachmentService = new AttachmentService();
+        $attachments = $this->db->fetchAll(
+            "SELECT id FROM attachments WHERE ticket_id = ?",
+            [$ticketId]
+        );
+        foreach ($attachments as $att) {
+            $attachmentService->delete($att['id']);
+        }
+
+        $this->repo->softDelete($ticketId);
     }
 
     public function assign(Request $request, array $params): void

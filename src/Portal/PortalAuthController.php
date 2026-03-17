@@ -89,4 +89,38 @@ class PortalAuthController
 
         Response::success(null, 'Password updated successfully');
     }
+
+    /**
+     * POST /api/portal/auth/change-password
+     * Requires auth:customer. Verifies current password before setting new one.
+     */
+    public function changePassword(Request $request): void
+    {
+        $data = $request->validate([
+            'current_password' => 'required',
+            'password'         => 'required|min:8',
+            'password_confirm' => 'required',
+        ]);
+
+        if ($data['password'] !== $data['password_confirm']) {
+            throw new ValidationException(['password_confirm' => ['Passwords do not match']]);
+        }
+
+        $customer = $this->db->fetch(
+            "SELECT * FROM customers WHERE id = ? AND deleted_at IS NULL",
+            [$request->customer->id]
+        );
+
+        if (!$customer || !$this->passwords->verify($data['current_password'], $customer['portal_password_hash'] ?? '')) {
+            throw new AuthException('Current password is incorrect');
+        }
+
+        $hash = $this->passwords->hash($data['password']);
+        $this->db->execute(
+            "UPDATE customers SET portal_password_hash = ? WHERE id = ?",
+            [$hash, $request->customer->id]
+        );
+
+        Response::success(null, 'Password changed successfully');
+    }
 }

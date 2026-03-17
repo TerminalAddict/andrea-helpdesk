@@ -157,6 +157,7 @@ class JwtService
 
     public function sanitiseCustomer(array $customer): array
     {
+        $customer['has_password'] = !empty($customer['portal_password_hash']);
         unset($customer['portal_password_hash'], $customer['portal_token']);
         return $customer;
     }

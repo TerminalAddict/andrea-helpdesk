@@ -132,9 +132,32 @@ const TicketsView = {
             return;
         }
 
-        const rows = tickets.map(t => `
-            <tr class="ticket-row" data-id="${t.id}" style="cursor:pointer;">
-                <td><span class="font-monospace small fw-semibold">${App.escapeHtml(t.ticket_number)}</span></td>
+        // Group children under their parents within this page's results
+        const childrenOf = {};
+        const topLevel   = [];
+        tickets.forEach(t => {
+            if (t.parent_ticket_id) {
+                (childrenOf[t.parent_ticket_id] = childrenOf[t.parent_ticket_id] || []).push(t);
+            } else {
+                topLevel.push(t);
+            }
+        });
+
+        // Order: parent row, then its children; orphan children (parent not on page) appended at end
+        const seenChildIds = new Set();
+        const ordered = [];
+        topLevel.forEach(t => {
+            ordered.push({ t, child: false });
+            (childrenOf[t.id] || []).forEach(c => { ordered.push({ t: c, child: true }); seenChildIds.add(c.id); });
+        });
+        tickets.filter(t => t.parent_ticket_id && !seenChildIds.has(t.id)).forEach(t => ordered.push({ t, child: true }));
+
+        const rows = ordered.map(({ t, child }) => `
+            <tr class="ticket-row${child ? ' table-light' : ''}" data-id="${t.id}" style="cursor:pointer;${child ? 'border-left:3px solid #dee2e6;' : ''}">
+                <td>
+                    ${child ? '<span class="text-muted me-1" style="padding-left:1rem;">↳</span>' : ''}
+                    <span class="font-monospace small fw-semibold">${App.escapeHtml(t.ticket_number)}</span>
+                </td>
                 <td>
                     <div>${App.escapeHtml(t.subject)}</div>
                     <div class="small text-muted">${App.escapeHtml(t.customer_name || '')} ${t.customer_email ? '&lt;' + App.escapeHtml(t.customer_email) + '&gt;' : ''}</div>

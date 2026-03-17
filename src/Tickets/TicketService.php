@@ -231,6 +231,10 @@ class TicketService
         $ticket['tags']         = $this->ticketRepo->getTags($ticketId);
         $ticket['children']     = $this->ticketRepo->getChildTickets($ticketId);
 
+        if (!empty($ticket['parent_ticket_id'])) {
+            $ticket['parent'] = $this->ticketRepo->findById((int)$ticket['parent_ticket_id']);
+        }
+
         return $ticket;
     }
 }

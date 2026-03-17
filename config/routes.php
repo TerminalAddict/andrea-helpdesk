@@ -27,7 +27,8 @@ return [
     // ── Portal Auth ──────────────────────────────────────────────────────────
     ['POST', '/api/portal/auth/magic-link',         AuthController::class,      'magicLink',       []],
     ['POST', '/api/portal/auth/verify-magic-link',  PortalAuthController::class,'verifyMagicLink', []],
-    ['POST', '/api/portal/auth/set-password',       PortalAuthController::class,'setPassword',     ['auth:customer']],
+    ['POST', '/api/portal/auth/set-password',        PortalAuthController::class,'setPassword',     ['auth:customer']],
+    ['POST', '/api/portal/auth/change-password',    PortalAuthController::class,'changePassword',  ['auth:customer']],
 
     // ── Tickets ──────────────────────────────────────────────────────────────
     ['GET',    '/api/tickets',                              TicketController::class, 'index',           ['auth:agent']],
@@ -38,10 +39,10 @@ return [
     ['POST',   '/api/tickets/:id/assign',                   TicketController::class, 'assign',          ['auth:agent']],
     ['POST',   '/api/tickets/:id/status',                   TicketController::class, 'status',          ['auth:agent']],
     ['POST',   '/api/tickets/:id/merge',                    TicketController::class, 'merge',           ['auth:agent']],
-    ['POST',   '/api/tickets/:id/relate',                   TicketController::class, 'relate',          ['auth:agent']],
-    ['DELETE', '/api/tickets/:id/relate/:related_id',       TicketController::class, 'unrelate',        ['auth:agent']],
+    ['POST',   '/api/tickets/:id/relations',                 TicketController::class, 'relate',          ['auth:agent']],
+    ['DELETE', '/api/tickets/:id/relations/:related_id',    TicketController::class, 'unrelate',        ['auth:agent']],
     ['POST',   '/api/tickets/:id/spawn',                    TicketController::class, 'spawn',           ['auth:agent']],
-    ['POST',   '/api/tickets/:id/to-kb',                    TicketController::class, 'toKb',            ['auth:agent']],
+    ['POST',   '/api/tickets/:id/move-to-kb',                    TicketController::class, 'toKb',            ['auth:agent']],
     ['GET',    '/api/tickets/:id/participants',              TicketController::class, 'participants',    ['auth:agent']],
     ['POST',   '/api/tickets/:id/participants',              TicketController::class, 'addParticipant',  ['auth:agent']],
     ['DELETE', '/api/tickets/:id/participants/:participant_id', TicketController::class, 'removeParticipant', ['auth:agent']],
@@ -67,18 +68,20 @@ return [
     ['PUT',    '/api/customers/:id',                CustomerController::class, 'update',      ['auth:agent']],
     ['DELETE', '/api/customers/:id',                CustomerController::class, 'destroy',     ['role:admin']],
     ['GET',    '/api/customers/:id/tickets',        CustomerController::class, 'tickets',     ['auth:agent']],
-    ['POST',   '/api/customers/:id/portal-invite',  CustomerController::class, 'portalInvite',['role:admin']],
+    ['POST',   '/api/customers/:id/portal-invite',   CustomerController::class, 'portalInvite', ['role:admin']],
+    ['POST',   '/api/customers/:id/set-password',   CustomerController::class, 'setPassword',  ['role:admin']],
 
-    // ── Agents (admin only) ───────────────────────────────────────────────────
-    ['GET',  '/api/agents',                   AgentController::class, 'index',         ['role:admin']],
+    // ── Agents ───────────────────────────────────────────────────────────────
+    ['GET',  '/api/agents',                   AgentController::class, 'index',         ['auth:agent']],
     ['POST', '/api/agents',                   AgentController::class, 'store',         ['role:admin']],
-    ['GET',  '/api/agents/:id',               AgentController::class, 'show',          ['role:admin']],
+    ['GET',  '/api/agents/:id',               AgentController::class, 'show',          ['auth:agent']],
     ['PUT',  '/api/agents/:id',               AgentController::class, 'update',        ['role:admin']],
     ['POST', '/api/agents/:id/deactivate',    AgentController::class, 'deactivate',    ['role:admin']],
     ['POST', '/api/agents/:id/activate',      AgentController::class, 'activate',      ['role:admin']],
     ['POST', '/api/agents/:id/reset-password',AgentController::class, 'resetPassword', ['role:admin']],
 
-    // ── Settings (admin only) ─────────────────────────────────────────────────
+    // ── Settings ──────────────────────────────────────────────────────────────
+    ['GET',  '/api/settings/public',            SettingsController::class, 'publicSettings', []],
     ['GET',  '/api/admin/settings',             SettingsController::class, 'index',     ['role:admin']],
     ['PUT',  '/api/admin/settings',             SettingsController::class, 'update',    ['role:admin']],
     ['POST', '/api/admin/settings/test-smtp',   SettingsController::class, 'testSmtp',  ['role:admin']],
@@ -94,9 +97,9 @@ return [
 
     // ── Knowledge Base (GET routes are public) ────────────────────────────────
     ['GET',  '/api/kb/categories',              KbController::class, 'categories',     []],
-    ['POST', '/api/kb/categories',              KbController::class, 'storeCategory',  ['role:admin']],
-    ['PUT',  '/api/kb/categories/:id',          KbController::class, 'updateCategory', ['role:admin']],
-    ['DELETE','/api/kb/categories/:id',         KbController::class, 'destroyCategory',['role:admin']],
+    ['POST', '/api/kb/categories',              KbController::class, 'storeCategory',  ['auth:agent', 'permission:can_manage_kb']],
+    ['PUT',  '/api/kb/categories/:id',          KbController::class, 'updateCategory', ['auth:agent', 'permission:can_manage_kb']],
+    ['DELETE','/api/kb/categories/:id',         KbController::class, 'destroyCategory',['auth:agent', 'permission:can_manage_kb']],
     ['GET',  '/api/kb/articles',                KbController::class, 'index',          []],
     ['POST', '/api/kb/articles',                KbController::class, 'store',          ['auth:agent']],
     ['GET',  '/api/kb/articles/:slug',          KbController::class, 'show',           []],

@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS agents (
     can_delete_tickets  TINYINT(1) NOT NULL DEFAULT 0,
     can_edit_customers  TINYINT(1) NOT NULL DEFAULT 0,
     can_view_reports    TINYINT(1) NOT NULL DEFAULT 0,
+    can_manage_kb       TINYINT(1) NOT NULL DEFAULT 0,
     signature           TEXT NULL COMMENT 'Per-agent email signature HTML',
     is_active           TINYINT(1) NOT NULL DEFAULT 1,
     last_login_at       DATETIME NULL,

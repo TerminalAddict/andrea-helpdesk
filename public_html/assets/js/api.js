@@ -113,8 +113,8 @@ const API = {
         return this.request('PUT', path, data);
     },
 
-    delete(path) {
-        return this.request('DELETE', path);
+    delete(path, data = null) {
+        return this.request('DELETE', path, data);
     },
 
     upload(path, formData) {

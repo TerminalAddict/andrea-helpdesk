@@ -77,6 +77,15 @@ class ReplyController
             }
         }
 
+        // Update ticket status if requested alongside the reply
+        $statusAfter = $request->input('status_after');
+        if ($statusAfter) {
+            $ticketService = new TicketService();
+            try {
+                $ticketService->updateStatus($ticket['id'], $statusAfter, $request->agent->id);
+            } catch (\Throwable) {}
+        }
+
         Response::created($reply, 'Reply added');
     }
 }

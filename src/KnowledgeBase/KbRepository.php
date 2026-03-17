@@ -131,7 +131,21 @@ class KbRepository
 
     public function getCategories(): array
     {
-        return $this->db->fetchAll("SELECT * FROM knowledge_base_categories ORDER BY sort_order ASC, name ASC");
+        return $this->db->fetchAll(
+            "SELECT c.*, COUNT(a.id) AS article_count
+             FROM knowledge_base_categories c
+             LEFT JOIN knowledge_base_articles a ON a.category_id = c.id AND a.deleted_at IS NULL
+             GROUP BY c.id
+             ORDER BY c.sort_order ASC, c.name ASC"
+        );
+    }
+
+    public function moveArticlesFromCategory(int $fromId, ?int $toId): bool
+    {
+        return $this->db->execute(
+            "UPDATE knowledge_base_articles SET category_id = ? WHERE category_id = ? AND deleted_at IS NULL",
+            [$toId, $fromId]
+        );
     }
 
     public function createCategory(array $data): int

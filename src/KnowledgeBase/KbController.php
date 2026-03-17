@@ -41,8 +41,18 @@ class KbController
 
     public function show(Request $request, array $params): void
     {
-        $article = $this->repo->findBySlug($params['slug']);
+        $slug = $params['slug'];
+        $article = is_numeric($slug)
+            ? $this->repo->findById((int)$slug)
+            : $this->repo->findBySlug($slug);
         if (!$article) throw new NotFoundException('Article not found');
+
+        // If no agent loaded yet, try optional token auth so agents can view drafts
+        if (!$request->agent && $request->bearerToken()) {
+            try {
+                \Andrea\Helpdesk\Core\Middleware::run('auth:agent', $request);
+            } catch (\Throwable) {}
+        }
 
         // Unpublished articles only visible to agents
         if (!$article['is_published'] && !$request->agent) {
@@ -115,7 +125,14 @@ class KbController
 
     public function destroyCategory(Request $request, array $params): void
     {
-        $this->repo->deleteCategory((int)$params['id']);
-        Response::success(null, 'Category deleted');
+        $id     = (int)$params['id'];
+        $moveTo = $request->input('move_to_category_id'); // null = uncategorized, int = target category
+
+        if ($moveTo !== null) {
+            $this->repo->moveArticlesFromCategory($id, $moveTo ? (int)$moveTo : null);
+        }
+
+        $this->repo->deleteCategory($id);
+        Response::success($this->repo->getCategories(), 'Category deleted');
     }
 }

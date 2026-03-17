@@ -100,6 +100,14 @@ const TicketNewView = {
             }
         } catch (e) {}
 
+        // Pre-fill customer if navigated from customer detail
+        if (params && params.customer_email) {
+            $('#nt-customer-email').val(decodeURIComponent(params.customer_email));
+        }
+        if (params && params.customer_name) {
+            $('#nt-customer-name').val(decodeURIComponent(params.customer_name));
+        }
+
         // Pre-fill parent if coming from child creation
         if (params && params.parent_id) {
             this._parentId = params.parent_id;

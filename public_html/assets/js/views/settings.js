@@ -28,7 +28,7 @@ const SettingsView = {
 
     async init() {
         try {
-            const res = await API.get('/settings');
+            const res = await API.get('/admin/settings');
             this.settings = res.data || {};
             this.renderTab('general');
             this.bindTabSwitching();
@@ -51,7 +51,7 @@ const SettingsView = {
 
         if (tab === 'general') {
             html = this.form('general', [
-                { key: 'app_name',       label: 'Application Name',  type: 'text',   value: s.app_name || 'Andrea Helpdesk' },
+                { key: 'company_name',   label: 'Application Name',  type: 'text',   value: s.company_name || 'Andrea Helpdesk' },
                 { key: 'app_url',        label: 'Application URL',   type: 'text',   value: s.app_url || '' },
                 { key: 'timezone',       label: 'Timezone',          type: 'text',   value: s.timezone || 'Pacific/Auckland', hint: 'e.g. Pacific/Auckland, UTC' },
                 { key: 'date_format',    label: 'Date Format',       type: 'text',   value: s.date_format || 'Y-m-d H:i', hint: 'PHP date() format string' },
@@ -59,9 +59,8 @@ const SettingsView = {
             ]);
         } else if (tab === 'branding') {
             html = this.form('branding', [
-                { key: 'brand_name',      label: 'Brand Name',     type: 'text',  value: s.brand_name || '' },
-                { key: 'brand_logo_url',  label: 'Logo URL',       type: 'text',  value: s.brand_logo_url || '' },
-                { key: 'brand_color',     label: 'Primary Colour', type: 'color', value: s.brand_color || '#0d6efd' },
+                { key: 'logo_url',              label: 'Logo URL',       type: 'text',  value: s.logo_url || '' },
+                { key: 'primary_color',         label: 'Primary Colour', type: 'color', value: s.primary_color || '#0d6efd' },
                 { key: 'support_email_display', label: 'Support Email (displayed)', type: 'email', value: s.support_email_display || '' },
             ]);
         } else if (tab === 'email') {
@@ -72,17 +71,17 @@ const SettingsView = {
                   options: [['tls','TLS (STARTTLS)'],['ssl','SSL'],['none','None']] },
                 { key: 'smtp_username',   label: 'SMTP Username',   type: 'email',    value: s.smtp_username || '' },
                 { key: 'smtp_password',   label: 'SMTP Password',   type: 'password', value: '', placeholder: 'Leave blank to keep current' },
-                { key: 'smtp_from_email', label: 'From Email',      type: 'email',    value: s.smtp_from_email || '' },
+                { key: 'smtp_from_address', label: 'From Email',    type: 'email',    value: s.smtp_from_address || '' },
                 { key: 'smtp_from_name',  label: 'From Name',       type: 'text',     value: s.smtp_from_name || '' },
-                { key: 'reply_to_email',  label: 'Reply-To Email',  type: 'email',    value: s.reply_to_email || '', hint: 'Replies to this address create/update tickets' },
-                { key: 'email_signature', label: 'Email Signature', type: 'textarea', value: s.email_signature || '', hint: 'Use {{agent_name}} as placeholder' },
+                { key: 'reply_to_address', label: 'Reply-To Email', type: 'email',    value: s.reply_to_address || '', hint: 'Replies to this address create/update tickets' },
+                { key: 'global_signature', label: 'Email Signature', type: 'textarea', value: s.global_signature || '', hint: 'Use {{agent_name}} as placeholder' },
                 { key: 'notify_agent_on_new_ticket', label: 'Notify agents on new ticket', type: 'checkbox', value: s.notify_agent_on_new_ticket },
             ]);
         } else if (tab === 'autoresponse') {
             html = this.form('autoresponse', [
-                { key: 'autoresponse_enabled', label: 'Enable Auto-Response',    type: 'checkbox', value: s.autoresponse_enabled },
-                { key: 'autoresponse_subject', label: 'Auto-Response Subject',   type: 'text',     value: s.autoresponse_subject || 'Re: {{subject}} [{{ticket_number}}]' },
-                { key: 'autoresponse_body',    label: 'Auto-Response Body',      type: 'textarea', value: s.autoresponse_body || '',
+                { key: 'auto_response_enabled', label: 'Enable Auto-Response',    type: 'checkbox', value: s.auto_response_enabled },
+                { key: 'auto_response_subject', label: 'Auto-Response Subject',   type: 'text',     value: s.auto_response_subject || 'Re: {{subject}} [{{ticket_number}}]' },
+                { key: 'auto_response_body',    label: 'Auto-Response Body',      type: 'textarea', value: s.auto_response_body || '',
                   hint: 'Placeholders: {{customer_name}}, {{ticket_number}}, {{subject}}, {{app_name}}' },
             ]);
         } else if (tab === 'imap') {
@@ -98,11 +97,11 @@ const SettingsView = {
             ]);
         } else if (tab === 'slack') {
             html = this.form('slack', [
-                { key: 'slack_enabled',        label: 'Enable Slack Notifications', type: 'checkbox', value: s.slack_enabled },
-                { key: 'slack_webhook_url',    label: 'Webhook URL',                type: 'text',     value: s.slack_webhook_url || '' },
-                { key: 'slack_channel',        label: 'Channel',                    type: 'text',     value: s.slack_channel || '#support' },
-                { key: 'slack_notify_new',     label: 'Notify on new tickets',      type: 'checkbox', value: s.slack_notify_new },
-                { key: 'slack_notify_assign',  label: 'Notify on ticket assignment', type: 'checkbox', value: s.slack_notify_assign },
+                { key: 'slack_enabled',      label: 'Enable Slack Notifications',  type: 'checkbox', value: s.slack_enabled },
+                { key: 'slack_webhook_url',  label: 'Webhook URL',                 type: 'text',     value: s.slack_webhook_url || '' },
+                { key: 'slack_channel',      label: 'Channel',                     type: 'text',     value: s.slack_channel || '#helpdesk' },
+                { key: 'slack_on_new_ticket', label: 'Notify on new tickets',      type: 'checkbox', value: s.slack_on_new_ticket },
+                { key: 'slack_on_assign',    label: 'Notify on ticket assignment', type: 'checkbox', value: s.slack_on_assign },
             ]);
         }
 
@@ -159,12 +158,12 @@ const SettingsView = {
     async save(tab) {
         const s = this.settings;
         const tabFields = {
-            general:      ['app_name','app_url','timezone','date_format','ticket_prefix'],
-            branding:     ['brand_name','brand_logo_url','brand_color','support_email_display'],
-            email:        ['smtp_host','smtp_port','smtp_encryption','smtp_username','smtp_password','smtp_from_email','smtp_from_name','reply_to_email','email_signature','notify_agent_on_new_ticket'],
-            autoresponse: ['autoresponse_enabled','autoresponse_subject','autoresponse_body'],
+            general:      ['company_name','app_url','timezone','date_format','ticket_prefix'],
+            branding:     ['logo_url','primary_color','support_email_display'],
+            email:        ['smtp_host','smtp_port','smtp_encryption','smtp_username','smtp_password','smtp_from_address','smtp_from_name','reply_to_address','global_signature','notify_agent_on_new_ticket'],
+            autoresponse: ['auto_response_enabled','auto_response_subject','auto_response_body'],
             imap:         ['imap_enabled','imap_host','imap_port','imap_username','imap_password','imap_folder','imap_delete_after_import'],
-            slack:        ['slack_enabled','slack_webhook_url','slack_channel','slack_notify_new','slack_notify_assign'],
+            slack:        ['slack_enabled','slack_webhook_url','slack_channel','slack_on_new_ticket','slack_on_assign'],
         };
 
         const payload = {};
@@ -181,11 +180,16 @@ const SettingsView = {
         });
 
         try {
-            await API.put('/settings', payload);
+            await API.put('/admin/settings', { settings: payload });
             // Update local cache
             Object.assign(this.settings, payload);
             // Clear password fields
             document.querySelectorAll('input[type="password"]').forEach(el => el.value = '');
+            // Update public settings cache
+            if (tab === 'general') {
+                Object.assign(App.settings, payload);
+                if (payload.company_name) App.applyAppName(payload.company_name);
+            }
             App.toast('Settings saved');
         } catch (e) {
             App.toast(e.message, 'error');

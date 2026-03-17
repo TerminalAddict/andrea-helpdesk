@@ -132,7 +132,11 @@ const TicketDetailView = {
                         <div class="card-body py-2">
                             <div class="mb-2">
                                 <label class="form-label small text-muted mb-1">Status</label>
-                                <div id="ticket-status-display">${App.statusBadge(t.status)}</div>
+                                <select class="form-select form-select-sm" id="edit-status">
+                                    ${['open','pending','resolved','closed'].map(s =>
+                                        `<option value="${s}" ${t.status === s ? 'selected' : ''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`
+                                    ).join('')}
+                                </select>
                             </div>
                             <div class="mb-2">
                                 <label class="form-label small text-muted mb-1">Priority</label>
@@ -234,7 +238,7 @@ const TicketDetailView = {
                             <i class="bi bi-link-45deg me-2"></i>Related Tickets
                         </div>
                         <div class="card-body py-2" id="related-tickets-list">
-                            ${this.renderRelatedTickets(t.relations || [], t.children || [])}
+                            ${this.renderRelatedTickets(t.relations || [], t.children || [], t.parent || null)}
                         </div>
                     </div>
                 </div>
@@ -335,21 +339,26 @@ const TicketDetailView = {
         ).join('');
     },
 
-    renderRelatedTickets(relations, children) {
+    renderRelatedTickets(relations, children, parent) {
         let html = '';
+        if (parent) {
+            html += '<div class="small fw-semibold text-muted mb-1">Parent Ticket</div>';
+            html += `<div class="small mb-2"><i class="bi bi-arrow-up-circle text-secondary me-1"></i><a href="#/tickets/${parent.id}">${App.escapeHtml(parent.ticket_number)}</a> — ${App.escapeHtml(parent.subject)} ${App.statusBadge(parent.status)}</div>`;
+        }
         if (children && children.length) {
+            if (html) html += '<hr class="my-1">';
             html += '<div class="small fw-semibold text-muted mb-1">Child Tickets</div>';
             html += children.map(c =>
-                `<div class="small mb-1"><a href="#/tickets/${c.id}">${App.escapeHtml(c.ticket_number)}</a> — ${App.escapeHtml(c.subject)} ${App.statusBadge(c.status)}</div>`
+                `<div class="small mb-1"><i class="bi bi-arrow-down-circle text-secondary me-1"></i><a href="#/tickets/${c.id}">${App.escapeHtml(c.ticket_number)}</a> — ${App.escapeHtml(c.subject)} ${App.statusBadge(c.status)}</div>`
             ).join('');
         }
         if (relations && relations.length) {
             if (html) html += '<hr class="my-2">';
             html += '<div class="small fw-semibold text-muted mb-1">Related</div>';
             html += relations.map(r =>
-                `<div class="small mb-1 d-flex justify-content-between">
-                    <span><a href="#/tickets/${r.related_ticket_id}">${App.escapeHtml(r.ticket_number)}</a> — ${App.escapeHtml(r.relation_type)}</span>
-                    <a href="#" class="text-danger relation-remove" data-id="${r.id}">×</a>
+                `<div class="small mb-1 d-flex justify-content-between align-items-center">
+                    <span><a href="#/tickets/${r.id}">${App.escapeHtml(r.ticket_number)}</a> — ${App.escapeHtml(r.subject)}</span>
+                    <a href="#" class="text-danger relation-remove ms-2" data-id="${r.id}" title="Remove link">×</a>
                 </div>`
             ).join('');
         }
@@ -380,6 +389,12 @@ const TicketDetailView = {
                 await API.put('/tickets/' + ticketId, { assigned_agent_id: val || null });
                 App.toast('Assignment updated');
                 await this.reload();
+            } catch (e) { App.toast(e.message, 'error'); }
+        });
+
+        $('#edit-status').on('change', async () => {
+            try {
+                await this.setStatus($('#edit-status').val());
             } catch (e) { App.toast(e.message, 'error'); }
         });
 
@@ -484,7 +499,7 @@ const TicketDetailView = {
 
     async setStatus(status) {
         try {
-            await API.put('/tickets/' + this.ticket.id, { status });
+            await API.post('/tickets/' + this.ticket.id + '/status', { status });
             App.toast('Status updated to ' + status);
             await this.reload();
         } catch (e) { App.toast(e.message, 'error'); }
@@ -576,8 +591,8 @@ const TicketDetailView = {
         if (!confirmed) return;
         try {
             const res = await API.post('/tickets/' + this.ticket.id + '/move-to-kb');
-            App.toast('Article created');
-            App.navigate('/kb/' + res.data.slug);
+            App.toast('Draft KB article created — review and publish it in the Knowledge Base');
+            App.navigate('/kb?edit=' + res.data.id);
         } catch (e) { App.toast(e.message, 'error'); }
     },
 

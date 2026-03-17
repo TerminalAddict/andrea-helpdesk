@@ -100,6 +100,24 @@ class CustomerController
         Response::paginated($result['items'], $result['total'], $page, $perPage);
     }
 
+    public function setPassword(Request $request, array $params): void
+    {
+        $customer = $this->repo->findById((int)$params['id']);
+        if (!$customer) throw new NotFoundException('Customer not found');
+
+        $data = $request->validate([
+            'password'         => 'required|min:8',
+            'password_confirm' => 'required',
+        ]);
+
+        if ($data['password'] !== $data['password_confirm']) {
+            throw new \Andrea\Helpdesk\Core\Exceptions\ValidationException(['password_confirm' => ['Passwords do not match']]);
+        }
+
+        $this->service->setPortalPassword($customer['id'], $data['password']);
+        Response::success(null, 'Customer password updated');
+    }
+
     public function portalInvite(Request $request, array $params): void
     {
         $customer = $this->repo->findById((int)$params['id']);
