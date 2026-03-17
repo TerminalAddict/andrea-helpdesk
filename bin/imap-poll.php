@@ -41,6 +41,30 @@ if (!flock($lock, LOCK_EX | LOCK_NB)) {
     exit(0);
 }
 
+// Rotate a log file, keeping only lines from the last $keepDays days
+function rotateLog(string $logFile, int $keepDays = 3): void
+{
+    if (!file_exists($logFile)) return;
+
+    $cutoff = strtotime("-{$keepDays} days");
+    $lines  = file($logFile, FILE_IGNORE_NEW_LINES);
+    if ($lines === false) return;
+
+    $kept = array_filter($lines, function (string $line) use ($cutoff): bool {
+        // Lines start with [YYYY-MM-DD HH:MM:SS]
+        if (preg_match('/^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]/', $line, $m)) {
+            return strtotime($m[1]) >= $cutoff;
+        }
+        return true; // keep lines that don't match the format
+    });
+
+    file_put_contents($logFile, implode(PHP_EOL, $kept) . (count($kept) ? PHP_EOL : ''));
+}
+
+$storagePath = rtrim(getenv('STORAGE_PATH') ?: (dirname(__DIR__) . '/storage'), '/');
+rotateLog($storagePath . '/logs/imap.log');
+rotateLog($storagePath . '/logs/app.log');
+
 $totalProcessed = 0;
 
 try {
