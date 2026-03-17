@@ -92,6 +92,8 @@ class SettingsService
 
     public function getTicketPrefix(): string
     {
+        $env = getenv('TICKET_PREFIX');
+        if ($env) return (string)$env;
         return (string)$this->repo->get('ticket_prefix', 'HD');
     }
 

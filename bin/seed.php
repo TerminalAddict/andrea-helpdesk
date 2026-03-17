@@ -51,6 +51,15 @@ try {
     echo "  Name:  {$adminName}\n";
     echo "  Email: {$adminEmail}\n";
     echo "  Role:  admin\n";
+
+    // Sync env-based settings into DB
+    $envSettings = array_filter([
+        'ticket_prefix' => getenv('TICKET_PREFIX') ?: null,
+        'timezone'      => getenv('APP_TIMEZONE') ?: null,
+    ]);
+    foreach ($envSettings as $key => $value) {
+        $pdo->prepare("UPDATE settings SET value = ? WHERE key_name = ?")->execute([$value, $key]);
+    }
 } catch (PDOException $e) {
     echo "ERROR: " . $e->getMessage() . "\n";
     exit(1);
