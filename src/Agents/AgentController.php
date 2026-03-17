@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Andrea\Helpdesk\Agents;
 
+use Andrea\Helpdesk\Auth\PasswordService;
+use Andrea\Helpdesk\Core\Exceptions\HttpException;
 use Andrea\Helpdesk\Core\Request;
 use Andrea\Helpdesk\Core\Response;
 use Andrea\Helpdesk\Core\Exceptions\NotFoundException;
@@ -91,6 +93,42 @@ class AgentController
         if (!$agent) throw new NotFoundException('Agent not found');
         $this->repo->activate($agent['id']);
         Response::success(null, 'Agent activated');
+    }
+
+    public function updateProfile(Request $request): void
+    {
+        $agentId   = $request->agent->id;
+        $agent     = $this->repo->findById($agentId);
+        if (!$agent) throw new NotFoundException('Agent not found');
+
+        $data = [];
+
+        // Signature update
+        if ($request->input('signature') !== null) {
+            $data['signature'] = $request->input('signature');
+        }
+
+        // Password change — requires current password
+        $newPassword = $request->input('new_password');
+        if ($newPassword !== null && $newPassword !== '') {
+            $currentPassword = $request->input('current_password', '');
+            $passwords       = new PasswordService();
+            if (!$passwords->verify($currentPassword, $agent['password_hash'])) {
+                throw new HttpException('Current password is incorrect', 422);
+            }
+            if (!$passwords->meetsRequirements($newPassword)) {
+                throw new HttpException('New password must be at least 8 characters', 422);
+            }
+            $data['password_hash'] = $passwords->hash($newPassword);
+        }
+
+        if (!empty($data)) {
+            $this->repo->update($agentId, $data);
+        }
+
+        $updated = $this->repo->findById($agentId);
+        unset($updated['password_hash']);
+        Response::success($updated, 'Profile updated');
     }
 
     public function resetPassword(Request $request, array $params): void

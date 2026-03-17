@@ -15,6 +15,7 @@ const SettingsView = {
                 <li class="nav-item"><button class="nav-link" data-tab="slack">Slack</button></li>` : '';
         const tagTab    = (isAdmin || API.can('can_manage_tags')) ? `
                 <li class="nav-item"><button class="nav-link" data-tab="tags">Tags</button></li>` : '';
+        const profileTab = `<li class="nav-item"><button class="nav-link" data-tab="profile">My Profile</button></li>`;
 
         return `
         <div class="container-fluid p-4" style="max-width:900px;">
@@ -23,6 +24,7 @@ const SettingsView = {
             <ul class="nav nav-tabs mb-4" id="settings-tabs">
                 ${adminTabs}
                 ${tagTab}
+                ${profileTab}
             </ul>
 
             <div id="settings-content">
@@ -34,11 +36,19 @@ const SettingsView = {
     },
 
     async init() {
-        const firstTab = API.isAdmin() ? 'general' : 'tags';
+        const isAdmin  = API.isAdmin();
+        const canTags  = isAdmin || API.can('can_manage_tags');
+        const firstTab = isAdmin ? 'general' : (canTags ? 'tags' : 'profile');
         try {
-            if (API.isAdmin()) {
-                const res = await API.get('/admin/settings');
-                this.settings = res.data || {};
+            const fetches = [API.get('/auth/me'), API.get('/settings/public')];
+            if (isAdmin) fetches.push(API.get('/admin/settings'));
+            const results = await Promise.all(fetches);
+            this.currentAgent = results[0].data || {};
+            // Non-admins get global_signature from public settings; admins get full settings
+            if (isAdmin) {
+                this.settings = results[2].data || {};
+            } else {
+                this.settings = results[1].data || {};
             }
             this.renderTab(firstTab);
             this.bindTabSwitching();
@@ -114,6 +124,12 @@ const SettingsView = {
         if (tab === 'tags') {
             $('#settings-content').html(this.renderTagsPanel());
             this.loadTags();
+            return;
+        }
+
+        if (tab === 'profile') {
+            $('#settings-content').html(this.renderProfilePanel());
+            this.bindProfileSave();
             return;
         }
 
@@ -483,6 +499,84 @@ const SettingsView = {
             await this.loadTags();
             App.toast('Tag deleted');
         } catch (e) { App.toast(e.message, 'error'); }
+    },
+
+    renderProfilePanel() {
+        const agent         = this.currentAgent || {};
+        const globalSig     = this.settings.global_signature || '';
+        const globalSigHint = globalSig
+            ? `<div class="mb-4">
+                <label class="form-label fw-semibold">Global Signature <span class="text-muted fw-normal small">(set by admin — appended after your personal signature)</span></label>
+                <div class="border rounded p-3 bg-light font-monospace small" style="white-space:pre-wrap;">${App.escapeHtml(globalSig)}</div>
+               </div>`
+            : '';
+
+        return `
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="mb-3">Email Signature</h6>
+                <div class="mb-4">
+                    <label class="form-label" for="profile-signature">Personal Signature <span class="text-muted fw-normal small">(HTML, use {{agent_name}} as placeholder)</span></label>
+                    <textarea class="form-control font-monospace" id="profile-signature" rows="6">${App.escapeHtml(agent.signature || '')}</textarea>
+                    <div class="form-text">This signature is added to your outgoing replies. Leave blank to use only the global signature.</div>
+                </div>
+                ${globalSigHint}
+
+                <hr class="my-4">
+                <h6 class="mb-3">Change Password</h6>
+                <div class="mb-3" style="max-width:420px;">
+                    <label class="form-label" for="profile-current-password">Current Password</label>
+                    <input type="password" class="form-control" id="profile-current-password" autocomplete="current-password">
+                </div>
+                <div class="mb-3" style="max-width:420px;">
+                    <label class="form-label" for="profile-new-password">New Password</label>
+                    <input type="password" class="form-control" id="profile-new-password" autocomplete="new-password">
+                    <div class="form-text">Minimum 8 characters.</div>
+                </div>
+                <div class="mb-4" style="max-width:420px;">
+                    <label class="form-label" for="profile-confirm-password">Confirm New Password</label>
+                    <input type="password" class="form-control" id="profile-confirm-password" autocomplete="new-password">
+                </div>
+
+                <button class="btn btn-primary" id="btn-save-profile">
+                    <i class="bi bi-save me-1"></i>Save Profile
+                </button>
+            </div>
+        </div>`;
+    },
+
+    bindProfileSave() {
+        $('#btn-save-profile').on('click', () => this.saveProfile());
+    },
+
+    async saveProfile() {
+        const signature       = $('#profile-signature').val();
+        const currentPassword = $('#profile-current-password').val();
+        const newPassword     = $('#profile-new-password').val();
+        const confirmPassword = $('#profile-confirm-password').val();
+
+        if (newPassword && newPassword !== confirmPassword) {
+            App.toast('New passwords do not match', 'error');
+            return;
+        }
+
+        const payload = { signature };
+        if (newPassword) {
+            payload.current_password = currentPassword;
+            payload.new_password     = newPassword;
+        }
+
+        const btn = $('#btn-save-profile').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Saving…');
+        try {
+            const res = await API.put('/agent/profile', payload);
+            this.currentAgent = res.data || this.currentAgent;
+            $('#profile-current-password,#profile-new-password,#profile-confirm-password').val('');
+            App.toast('Profile saved');
+        } catch (e) {
+            App.toast(e.message, 'error');
+        } finally {
+            btn.prop('disabled', false).html('<i class="bi bi-save me-1"></i>Save Profile');
+        }
     },
 
     async testSmtp() {

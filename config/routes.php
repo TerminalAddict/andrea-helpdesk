@@ -75,6 +75,7 @@ return [
     ['POST',   '/api/customers/:id/set-password',   CustomerController::class, 'setPassword',  ['role:admin']],
 
     // ── Agents ───────────────────────────────────────────────────────────────
+    ['PUT',  '/api/agent/profile',            AgentController::class, 'updateProfile', ['auth:agent']],
     ['GET',  '/api/agents',                   AgentController::class, 'index',         ['auth:agent']],
     ['POST', '/api/agents',                   AgentController::class, 'store',         ['role:admin']],
     ['GET',  '/api/agents/:id',               AgentController::class, 'show',          ['auth:agent']],
