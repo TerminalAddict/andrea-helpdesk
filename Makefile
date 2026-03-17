@@ -3,7 +3,7 @@
 # Frontend library versions — bump these and run `make fetch-assets` to upgrade
 BOOTSTRAP_VERSION = 5.3.8
 BOOTSTRAP_ICONS_VERSION = 1.13.1
-JQUERY_VERSION          = 3.7.1
+JQUERY_VERSION          = 4.0.0
 VENDOR_DIR              = public_html/assets/vendor
 
 LOCAL_HOST  = your-local-server
