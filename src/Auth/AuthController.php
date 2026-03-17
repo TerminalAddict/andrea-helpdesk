@@ -114,10 +114,7 @@ class AuthController
     public function me(Request $request): void
     {
         if ($request->agent) {
-            $agent = $this->db->fetch("SELECT * FROM agents WHERE id = ? AND is_active = 1", [$request->agent->sub]);
-            if (!$agent) throw new AuthException();
-            unset($agent['password_hash']);
-            Response::success(['type' => 'agent', 'user' => $agent]);
+            Response::success(['type' => 'agent', 'user' => (array)$request->agent]);
         } elseif ($request->customer) {
             Response::success(['type' => 'customer', 'user' => (array)$request->customer]);
         } else {
