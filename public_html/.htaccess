@@ -19,6 +19,10 @@ AddDefaultCharset UTF-8
 
 RewriteEngine On
 
+# Pass Authorization header through to PHP (stripped by Apache mod_rewrite by default)
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+CGIPassAuth On
+
 # Allow CORS for API endpoints
 <IfModule mod_headers.c>
     <If "%{REQUEST_URI} =~ m#^/api/#">
