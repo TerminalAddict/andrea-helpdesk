@@ -1,8 +1,8 @@
 .DEFAULT_GOAL := help
 
 # Frontend library versions — bump these and run `make fetch-assets` to upgrade
-BOOTSTRAP_VERSION       = 5.3.3
-BOOTSTRAP_ICONS_VERSION = 1.11.3
+BOOTSTRAP_VERSION = 5.3.8
+BOOTSTRAP_ICONS_VERSION = 1.13.1
 JQUERY_VERSION          = 3.7.1
 VENDOR_DIR              = public_html/assets/vendor
 
@@ -15,13 +15,16 @@ RSYNC_EXCLUDE = --exclude=/vendor --exclude=.env --exclude=storage --exclude=.gi
 
 CRON_ENTRY  = "* * * * * php $(REMOTE_PATH)/bin/imap-poll.php >> $(REMOTE_PATH)/storage/logs/imap.log 2>&1"
 
-.PHONY: help install install-dev db-migrate db-seed fetch-assets \
+.PHONY: help install install-dev db-migrate db-seed update fetch-assets \
         deploy-local deploy-production \
         cron-install-local cron-install-production \
         logs-local logs-production storage-setup
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-28s\033[0m %s\n", $$1, $$2}'
+
+update: ## Check npm for latest Bootstrap, Bootstrap Icons, and jQuery — download and update Makefile if newer
+	@bash bin/update-assets.sh
 
 fetch-assets: ## Download Bootstrap, Bootstrap Icons, and jQuery locally (bump versions above to upgrade)
 	mkdir -p $(VENDOR_DIR)/bootstrap $(VENDOR_DIR)/bootstrap-icons/fonts $(VENDOR_DIR)/jquery
