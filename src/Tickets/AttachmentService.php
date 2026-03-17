@@ -46,7 +46,7 @@ class AttachmentService
             throw new HttpException("File size exceeds maximum allowed ({$maxMb} MB)", 400);
         }
 
-        $mimeType = mime_content_type($file['tmp_name']) ?: ($file['type'] ?? 'application/octet-stream');
+        $mimeType = mime_content_type($file['tmp_name']) ?: 'application/octet-stream';
         $originalName = $this->sanitiseFilename($file['name']);
 
         // Build storage path: {ticketId}/{uniqid}_{filename}
