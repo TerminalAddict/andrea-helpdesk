@@ -43,6 +43,13 @@ RewriteRule ^api/(.*)$ api.php [QSA,L]
 # Route /attachment/* to attachment.php
 RewriteRule ^attachment/([0-9]+)$ attachment.php?id=$1 [QSA,L]
 
+# Cache vendor assets for 1 year (they are versioned by Makefile)
+<IfModule mod_headers.c>
+    <FilesMatch "\.(css|js|woff|woff2|ico|png|svg|jpg|jpeg|gif|webp)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+</IfModule>
+
 # Serve existing files directly (assets, favicon, etc.)
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
