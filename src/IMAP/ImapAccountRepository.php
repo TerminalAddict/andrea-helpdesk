@@ -54,14 +54,15 @@ class ImapAccountRepository
             : null;
 
         return $this->db->insert(
-            "INSERT INTO imap_accounts (name, host, port, encryption, username, password, folder, delete_after_import, tag_id, is_enabled)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO imap_accounts (name, host, port, encryption, username, from_address, password, folder, delete_after_import, tag_id, is_enabled)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $data['name'],
                 $data['host'],
                 (int)($data['port'] ?? 993),
                 $data['encryption'] ?? 'ssl',
                 $data['username'],
+                $data['from_address'] ? trim($data['from_address']) : null,
                 $password,
                 $data['folder'] ?? 'INBOX',
                 (int)(bool)($data['delete_after_import'] ?? false),
@@ -76,7 +77,7 @@ class ImapAccountRepository
         $set    = [];
         $params = [];
 
-        $stringCols = ['name', 'host', 'encryption', 'username', 'folder'];
+        $stringCols = ['name', 'host', 'encryption', 'username', 'from_address', 'folder'];
         foreach ($stringCols as $col) {
             if (array_key_exists($col, $data)) {
                 $set[]    = "{$col} = ?";
@@ -114,6 +115,20 @@ class ImapAccountRepository
     public function delete(int $id): bool
     {
         return $this->db->execute("DELETE FROM imap_accounts WHERE id = ?", [$id]);
+    }
+
+    /**
+     * Given a list of tag IDs, return the first enabled IMAP account whose tag_id matches.
+     * Used to resolve the From address for outgoing ticket emails.
+     */
+    public function findByTagIds(array $tagIds): ?array
+    {
+        if (empty($tagIds)) return null;
+        $placeholders = implode(',', array_fill(0, count($tagIds), '?'));
+        return $this->db->fetch(
+            "SELECT * FROM imap_accounts WHERE tag_id IN ({$placeholders}) AND is_enabled = 1 ORDER BY id ASC LIMIT 1",
+            $tagIds
+        );
     }
 
     public function getDecryptedPassword(int $id): string

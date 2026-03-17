@@ -54,7 +54,8 @@ class AutoResponder
             $customer['name'] ?? '',
             $subject,
             $body,
-            $headers
+            $headers,
+            (int)$ticket['id']
         );
     }
 

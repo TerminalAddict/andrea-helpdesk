@@ -9,6 +9,7 @@ use PHPMailer\PHPMailer\Exception as MailerException;
 use Andrea\Helpdesk\Core\Database;
 use Andrea\Helpdesk\Settings\SettingsService;
 use Andrea\Helpdesk\Tickets\AttachmentService;
+use Andrea\Helpdesk\IMAP\ImapAccountRepository;
 
 class EmailNotifier
 {
@@ -48,6 +49,7 @@ class EmailNotifier
     {
         try {
             $mailer = $this->createMailer();
+            $this->applyTagFromAddress($mailer, (int)$ticket['id']);
             $mailer->addAddress($customer['email'], $customer['name'] ?? '');
 
             foreach ($ccEmails as $cc) {
@@ -210,10 +212,11 @@ class EmailNotifier
         }
     }
 
-    public function sendRaw(string $to, string $toName, string $subject, string $body, array $headers = []): bool
+    public function sendRaw(string $to, string $toName, string $subject, string $body, array $headers = [], ?int $ticketId = null): bool
     {
         try {
             $mailer = $this->createMailer();
+            if ($ticketId) $this->applyTagFromAddress($mailer, $ticketId);
             $mailer->addAddress($to, $toName);
             $mailer->Subject = $subject;
             $mailer->isHTML(true);
@@ -228,6 +231,32 @@ class EmailNotifier
             $this->logError('sendRaw: ' . $e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * If the ticket has a tag linked to an IMAP account with a from_address,
+     * override the mailer's From/Reply-To with that address.
+     */
+    private function applyTagFromAddress(PHPMailer $mailer, int $ticketId): void
+    {
+        $db     = Database::getInstance();
+        $tagIds = $db->fetchAll(
+            "SELECT tag_id FROM ticket_tag_map WHERE ticket_id = ? ORDER BY id ASC",
+            [$ticketId]
+        );
+        if (empty($tagIds)) return;
+
+        $repo    = new ImapAccountRepository();
+        $account = $repo->findByTagIds(array_column($tagIds, 'tag_id'));
+        if (!$account) return;
+
+        $fromAddress = !empty($account['from_address']) ? $account['from_address'] : $account['username'];
+        if (!$fromAddress) return;
+
+        $smtp = $this->settings->getSmtpConfig();
+        $mailer->setFrom($fromAddress, $smtp['from_name']);
+        $mailer->clearReplyTos();
+        $mailer->addReplyTo($fromAddress);
     }
 
     private function applySignature(string $body, array $agent): string

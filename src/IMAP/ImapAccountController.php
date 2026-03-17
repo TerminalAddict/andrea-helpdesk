@@ -36,6 +36,7 @@ class ImapAccountController
 
         $data['port']                = $request->input('port', 993);
         $data['encryption']          = $request->input('encryption', 'ssl');
+        $data['from_address']        = $request->input('from_address');
         $data['folder']              = $request->input('folder', 'INBOX');
         $data['delete_after_import'] = $request->input('delete_after_import', false);
         $data['tag_id']              = $request->input('tag_id');
@@ -55,7 +56,7 @@ class ImapAccountController
             return;
         }
 
-        $fields = ['name', 'host', 'port', 'encryption', 'username', 'folder',
+        $fields = ['name', 'host', 'port', 'encryption', 'username', 'from_address', 'folder',
                    'delete_after_import', 'tag_id', 'is_enabled'];
         $data   = [];
         foreach ($fields as $field) {

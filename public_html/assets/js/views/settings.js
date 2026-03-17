@@ -225,6 +225,11 @@ const SettingsView = {
                             <input type="email" class="form-control" id="imap-username">
                         </div>
                         <div class="mb-3">
+                            <label class="form-label">From Address <span class="text-muted small">(for outgoing emails)</span></label>
+                            <input type="email" class="form-control" id="imap-from-address" placeholder="Leave blank to use Username">
+                            <div class="form-text">Tickets tagged by this account will be sent from this address.</div>
+                        </div>
+                        <div class="mb-3">
                             <label class="form-label">Password <span class="text-danger">*</span></label>
                             <input type="password" class="form-control" id="imap-password" placeholder="Leave blank to keep current when editing">
                         </div>
@@ -281,7 +286,8 @@ const SettingsView = {
                         <div class="card-body py-2 px-3 d-flex align-items-center gap-3">
                             <div class="flex-grow-1">
                                 <div class="fw-semibold">${App.escapeHtml(a.name)}</div>
-                                <div class="small text-muted">${App.escapeHtml(a.username)}@${App.escapeHtml(a.host)}:${a.port}
+                                <div class="small text-muted">${App.escapeHtml(a.username)} · ${App.escapeHtml(a.host)}:${a.port}
+                                    ${a.from_address ? `· sends as <strong>${App.escapeHtml(a.from_address)}</strong>` : ''}
                                     ${a.tag_name ? `· <span class="badge bg-secondary">${App.escapeHtml(a.tag_name)}</span>` : ''}
                                     ${!a.is_enabled ? '· <span class="badge bg-light text-dark border">Disabled</span>' : ''}
                                 </div>
@@ -319,6 +325,7 @@ const SettingsView = {
             $('#imap-port').val(a.port);
             $('#imap-encryption').val(a.encryption);
             $('#imap-username').val(a.username);
+            $('#imap-from-address').val(a.from_address || '');
             $('#imap-password').val('');
             $('#imap-folder').val(a.folder);
             $('#imap-tag-id').val(a.tag_id || '');
@@ -328,7 +335,7 @@ const SettingsView = {
         } else {
             $('#imap-modal-title').text('Add IMAP Account');
             $('#imap-account-id').val('');
-            $('#imap-name,#imap-host,#imap-username,#imap-password').val('');
+            $('#imap-name,#imap-host,#imap-username,#imap-from-address,#imap-password').val('');
             $('#imap-port').val('993');
             $('#imap-encryption').val('ssl');
             $('#imap-folder').val('INBOX');
@@ -351,6 +358,7 @@ const SettingsView = {
             port:                $('#imap-port').val(),
             encryption:          $('#imap-encryption').val(),
             username:            $('#imap-username').val(),
+            from_address:        $('#imap-from-address').val() || null,
             password:            $('#imap-password').val(),
             folder:              $('#imap-folder').val(),
             tag_id:              $('#imap-tag-id').val() || null,
