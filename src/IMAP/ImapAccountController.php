@@ -102,65 +102,41 @@ class ImapAccountController
         $username   = $account['username'];
         $encryption = strtolower($account['encryption']);
 
-        // TCP connect first (works regardless of TLS)
-        $sock = @fsockopen($host, $port, $errno, $errstr, 15);
-        if (!$sock) {
-            Response::error("Cannot connect to {$host}:{$port} — {$errstr}");
-            return;
-        }
-        stream_set_timeout($sock, 15);
+        $scheme  = match($encryption) {
+            'ssl'  => 'imaps',
+            'tls'  => 'imap',
+            default => 'imap',
+        };
+        $url = "{$scheme}://{$host}:{$port}/";
 
-        // Upgrade to TLS immediately for implicit SSL (port 993)
-        if ($encryption === 'ssl') {
-            stream_context_set_option($sock, 'ssl', 'verify_peer',      false);
-            stream_context_set_option($sock, 'ssl', 'verify_peer_name', false);
-            $tlsOk = @stream_socket_enable_crypto($sock, true,
-                STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT | STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT);
-            if (!$tlsOk) {
-                $err = error_get_last();
-                fclose($sock);
-                Response::error('TLS handshake failed — ' . ($err['message'] ?? 'check server SSL/TLS configuration'));
-                return;
-            }
-        }
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL            => $url,
+            CURLOPT_USERNAME       => $username,
+            CURLOPT_PASSWORD       => $password,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
+            CURLOPT_CONNECTTIMEOUT => 15,
+            CURLOPT_TIMEOUT        => 15,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_USE_SSL        => $encryption === 'tls' ? CURLUSESSL_ALL : CURLUSESSL_NONE,
+        ]);
 
-        $greeting = fgets($sock, 1024);
-        if (!$greeting || strpos($greeting, '* OK') === false) {
-            fclose($sock);
-            Response::error('Connected but did not receive IMAP greeting: ' . trim($greeting ?: '(no response)'));
-            return;
-        }
+        curl_exec($ch);
+        $curlErrno = curl_errno($ch);
+        $curlError = curl_error($ch);
+        curl_close($ch);
 
-        // STARTTLS upgrade for explicit TLS (port 143)
-        if ($encryption === 'tls') {
-            fwrite($sock, "A1 STARTTLS\r\n");
-            $resp = fgets($sock, 1024);
-            if (!$resp || strpos($resp, 'A1 OK') === false) {
-                fclose($sock);
-                Response::error('STARTTLS not supported: ' . trim($resp ?: '(no response)'));
-                return;
-            }
-            stream_context_set_option($sock, 'ssl', 'verify_peer',      false);
-            stream_context_set_option($sock, 'ssl', 'verify_peer_name', false);
-            if (!@stream_socket_enable_crypto($sock, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
-                fclose($sock);
-                Response::error('STARTTLS upgrade failed');
-                return;
-            }
-        }
-
-        fwrite($sock, "A2 LOGIN \"{$username}\" \"{$password}\"\r\n");
-        $resp = fgets($sock, 1024);
-
-        fwrite($sock, "A3 LOGOUT\r\n");
-        fclose($sock);
-
-        if (strpos($resp, 'A2 OK') !== false) {
+        // curl IMAP error codes: 67 = bad credentials, 0 = success, 7 = can't connect
+        if ($curlErrno === 0 || $curlErrno === 78) {
+            // 0 = listed mailbox OK, 78 = remote file not found (valid login, folder may be empty)
             Response::success([], 'Connection successful — credentials accepted.');
-        } elseif (strpos($resp, 'A2 NO') !== false || strpos($resp, 'A2 BAD') !== false) {
-            Response::error('Connected but login failed — check username/password. Server: ' . trim($resp));
+        } elseif ($curlErrno === 67) {
+            Response::error('Connected but login failed — check username/password.');
+        } elseif ($curlErrno === 7) {
+            Response::error("Cannot connect to {$host}:{$port} — server unreachable.");
         } else {
-            Response::error('Unexpected server response: ' . trim($resp ?: '(no response)'));
+            Response::error("Connection failed (curl #{$curlErrno}): {$curlError}");
         }
     }
 }
