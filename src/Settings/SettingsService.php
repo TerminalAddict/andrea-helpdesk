@@ -66,10 +66,12 @@ class SettingsService
     public function getEmailConfig(): array
     {
         return [
-            'global_signature'       => $this->repo->get('global_signature', ''),
-            'auto_response_enabled'  => (bool)$this->repo->get('auto_response_enabled', true),
-            'auto_response_subject'  => $this->repo->get('auto_response_subject', 'Re: {{subject}} [{{ticket_number}}]'),
-            'auto_response_body'     => $this->repo->get('auto_response_body', ''),
+            'global_signature'            => $this->repo->get('global_signature', ''),
+            'auto_response_enabled'       => (bool)$this->repo->get('auto_response_enabled', true),
+            'auto_response_subject'       => $this->repo->get('auto_response_subject', 'Re: {{subject}} [{{ticket_number}}]'),
+            'auto_response_body'          => $this->repo->get('auto_response_body', ''),
+            'notify_agent_on_new_ticket'  => (bool)$this->repo->get('notify_agent_on_new_ticket', true),
+            'notify_agent_on_new_reply'   => (bool)$this->repo->get('notify_agent_on_new_reply', true),
         ];
     }
 

@@ -33,9 +33,12 @@ class NotificationService
 
         // 2. Notify all active agents by email
         try {
-            $agents = $db->fetchAll("SELECT email, name FROM agents WHERE is_active = 1");
-            if ($agents) {
-                $this->emailNotifier->sendNewTicketNotification($ticket, $customer, $agents);
+            $emailConfig = SettingsService::getInstance()->getEmailConfig();
+            if ($emailConfig['notify_agent_on_new_ticket']) {
+                $agents = $db->fetchAll("SELECT email, name FROM agents WHERE is_active = 1");
+                if ($agents) {
+                    $this->emailNotifier->sendNewTicketNotification($ticket, $customer, $agents);
+                }
             }
         } catch (\Throwable $e) {
             $this->log('onNewTicket agent email: ' . $e->getMessage());
@@ -73,6 +76,9 @@ class NotificationService
 
     public function onCustomerReply(array $ticket, array $reply, array $customer): void
     {
+        $emailConfig = SettingsService::getInstance()->getEmailConfig();
+        if (!$emailConfig['notify_agent_on_new_reply']) return;
+
         $db = Database::getInstance();
 
         try {
@@ -83,7 +89,7 @@ class NotificationService
                 $this->emailNotifier->sendAgentNotification(
                     $ticket['assigned_agent_id'],
                     "Customer replied: {$ticket['ticket_number']}",
-                    "<p><strong>{$customer['name']}</strong> replied to ticket <strong>{$ticket['ticket_number']}</strong>.</p>
+                    "<p><strong>" . htmlspecialchars($customer['name'] ?? $customer['email']) . "</strong> replied to ticket <strong>{$ticket['ticket_number']}</strong>.</p>
                      <blockquote>" . substr(strip_tags($reply['body_html']), 0, 500) . "</blockquote>
                      <p><a href='{$ticketUrl}'>View Ticket</a></p>"
                 );
@@ -94,7 +100,7 @@ class NotificationService
                     $this->emailNotifier->sendAgentNotification(
                         $agent['id'],
                         "Customer replied: {$ticket['ticket_number']}",
-                        "<p><strong>{$customer['name']}</strong> replied to ticket <strong>{$ticket['ticket_number']}</strong>.</p>
+                        "<p><strong>" . htmlspecialchars($customer['name'] ?? $customer['email']) . "</strong> replied to ticket <strong>{$ticket['ticket_number']}</strong>.</p>
                          <p><a href='{$ticketUrl}'>View Ticket</a></p>"
                     );
                 }

@@ -86,6 +86,7 @@ const SettingsView = {
                 { key: 'reply_to_address', label: 'Reply-To Email', type: 'email',    value: s.reply_to_address || '', hint: 'Replies to this address create/update tickets' },
                 { key: 'global_signature', label: 'Email Signature', type: 'textarea', value: s.global_signature || '', hint: 'Use {{agent_name}} as placeholder' },
                 { key: 'notify_agent_on_new_ticket', label: 'Notify agents on new ticket', type: 'checkbox', value: s.notify_agent_on_new_ticket },
+                { key: 'notify_agent_on_new_reply',  label: 'Notify agents on new customer reply', type: 'checkbox', value: s.notify_agent_on_new_reply },
             ]);
         } else if (tab === 'autoresponse') {
             html = this.form('autoresponse', [
@@ -499,7 +500,7 @@ const SettingsView = {
         const tabFields = {
             general:      ['company_name','app_url','timezone','date_format','ticket_prefix'],
             branding:     ['logo_url','primary_color','support_email_display'],
-            email:        ['smtp_host','smtp_port','smtp_encryption','smtp_username','smtp_password','smtp_from_address','smtp_from_name','reply_to_address','global_signature','notify_agent_on_new_ticket'],
+            email:        ['smtp_host','smtp_port','smtp_encryption','smtp_username','smtp_password','smtp_from_address','smtp_from_name','reply_to_address','global_signature','notify_agent_on_new_ticket','notify_agent_on_new_reply'],
             autoresponse: ['auto_response_enabled','auto_response_subject','auto_response_body'],
             imap:         [],
             slack:        ['slack_enabled','slack_webhook_url','slack_channel','slack_on_new_ticket','slack_on_assign'],
