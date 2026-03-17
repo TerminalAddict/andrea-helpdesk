@@ -85,13 +85,17 @@ class PortalController
             throw new HttpException('This ticket is closed', 400);
         }
 
-        $data = $request->validate(['body_html' => 'required']);
+        $data = $request->validate(['body' => 'required']);
+
+        $bodyText = $data['body'];
+        $bodyHtml = nl2br(htmlspecialchars($bodyText, ENT_QUOTES, 'UTF-8'));
 
         $replyService = new ReplyService();
         $reply        = $replyService->createCustomerReply(
             $ticket['id'],
             $request->customer->id,
-            $data['body_html']
+            $bodyHtml,
+            $bodyText
         );
 
         Response::created($reply, 'Reply added');

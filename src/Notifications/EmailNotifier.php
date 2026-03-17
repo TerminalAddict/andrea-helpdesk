@@ -242,7 +242,7 @@ class EmailNotifier
     {
         $db     = Database::getInstance();
         $tagIds = $db->fetchAll(
-            "SELECT tag_id FROM ticket_tag_map WHERE ticket_id = ? ORDER BY id ASC",
+            "SELECT tag_id FROM ticket_tag_map WHERE ticket_id = ? ORDER BY tag_id ASC",
             [$ticketId]
         );
         if (empty($tagIds)) return;

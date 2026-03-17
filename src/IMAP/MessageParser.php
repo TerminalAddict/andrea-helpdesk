@@ -70,8 +70,8 @@ class MessageParser
         }
         [$htmlBody, $textBody, $attachments] = $this->parseStructure($imap, $msgNum, $structure);
 
-        $result['body_html']   = $htmlBody;
-        $result['body_text']   = $textBody;
+        $result['body_html']   = $htmlBody ? $this->stripHtmlQuotes($htmlBody) : '';
+        $result['body_text']   = $textBody ? $this->stripPlainTextQuotes($textBody) : '';
         $result['attachments'] = $attachments;
 
         // Clean up message IDs - remove angle brackets
@@ -191,6 +191,53 @@ class MessageParser
         $types = ['text', 'multipart', 'message', 'application', 'audio', 'image', 'video', 'other'];
         $type  = $types[$structure->type] ?? 'application';
         return $type . '/' . strtolower($structure->subtype ?? 'octet-stream');
+    }
+
+    private function stripHtmlQuotes(string $html): string
+    {
+        // Gmail: <div class="gmail_attr">On … wrote:</div> + <blockquote class="gmail_quote">
+        $html = preg_replace('/<div[^>]+class="gmail_attr"[^>]*>.*?<\/div>\s*/si', '', $html);
+        $html = preg_replace('/<blockquote[^>]+class="gmail_quote"[^>]*>.*?<\/blockquote>\s*/si', '', $html);
+
+        // Yahoo Mail
+        $html = preg_replace('/<div[^>]+class="[^"]*yahoo_quoted[^"]*"[^>]*>.*?<\/div>\s*/si', '', $html);
+
+        // Outlook: <div id="divRplyFwdMsg"> and everything after it
+        $html = preg_replace('/<div[^>]+id="divRplyFwdMsg"[^>]*>.*$/si', '', $html);
+
+        // Outlook HR separator
+        $html = preg_replace('/<hr[^>]+id="stopSpelling"[^>]*\/?\>.*$/si', '', $html);
+
+        // Apple Mail / generic <blockquote type="cite">
+        $html = preg_replace('/<blockquote[^>]+type=["\']cite["\'][^>]*>.*?<\/blockquote>\s*/si', '', $html);
+
+        return trim($html);
+    }
+
+    private function stripPlainTextQuotes(string $text): string
+    {
+        $lines = preg_split('/\r?\n/', $text);
+        $out   = [];
+
+        for ($i = 0, $n = count($lines); $i < $n; $i++) {
+            $trimmed = ltrim($lines[$i]);
+
+            // Quoted line — stop
+            if (str_starts_with($trimmed, '>')) break;
+
+            // Separator line — stop
+            if (preg_match('/^[\-_]{2,}\s*(original message|forwarded message)/i', $trimmed)) break;
+
+            // "On DATE, NAME <email> wrote:" — may wrap across up to 3 lines
+            if (preg_match('/^On /i', $trimmed)) {
+                $chunk = implode(' ', array_map('trim', array_slice($lines, $i, 3)));
+                if (preg_match('/wrote:\s*$/si', $chunk)) break;
+            }
+
+            $out[] = $lines[$i];
+        }
+
+        return rtrim(implode("\n", $out));
     }
 
     private function extractRawHeader(string $rawHeaders, string $name): string

@@ -220,14 +220,15 @@ const TicketDetailView = {
                             <div id="participants-list">
                                 ${(t.participants || []).map(p =>
                                     `<div class="small d-flex justify-content-between align-items-center mb-1">
-                                        <span>${App.escapeHtml(p.name || p.email)}</span>
-                                        <a href="#" class="text-danger small participant-remove" data-email="${App.escapeHtml(p.email)}">×</a>
+                                        <span>${App.escapeHtml(p.customer_name || p.name || p.email)}</span>
+                                        <a href="#" class="text-danger small participant-remove" data-id="${p.id}">×</a>
                                     </div>`
                                 ).join('') || '<p class="small text-muted mb-1">No CC participants.</p>'}
                             </div>
-                            <div class="input-group input-group-sm mt-2">
-                                <input type="email" class="form-control" id="participant-email-input" placeholder="Add email…">
-                                <button class="btn btn-outline-secondary" id="btn-add-participant">Add</button>
+                            <div class="mt-2 position-relative">
+                                <input type="text" class="form-control form-control-sm" id="participant-email-input" placeholder="Search customer or enter email…" autocomplete="off">
+                                <div id="participant-suggestions" class="dropdown-menu w-100 p-0" style="display:none;position:absolute;z-index:1050;top:100%;left:0;"></div>
+                                <button class="btn btn-outline-secondary btn-sm w-100 mt-1" id="btn-add-participant">Add</button>
                             </div>
                         </div>
                     </div>
@@ -433,14 +434,47 @@ const TicketDetailView = {
             this.removeTag($(e.currentTarget).data('id'));
         });
 
-        // Participants
-        $('#btn-add-participant').on('click', () => this.addParticipant());
+        // Participants — typeahead
+        let _ptTimeout = null;
+        $('#participant-email-input').on('input', function() {
+            clearTimeout(_ptTimeout);
+            const q = $(this).val().trim();
+            if (q.length < 2) { $('#participant-suggestions').hide(); return; }
+            _ptTimeout = setTimeout(async () => {
+                try {
+                    const res = await API.get('/customers', { q, per_page: 8 });
+                    const customers = res.data || [];
+                    if (!customers.length) { $('#participant-suggestions').hide(); return; }
+                    const items = customers.map(c =>
+                        `<a href="#" class="dropdown-item small py-1 participant-suggestion"
+                            data-email="${App.escapeHtml(c.email)}" data-name="${App.escapeHtml(c.name || '')}">
+                            <span class="fw-semibold">${App.escapeHtml(c.name || c.email)}</span>
+                            <span class="text-muted ms-1">${App.escapeHtml(c.email)}</span>
+                        </a>`
+                    ).join('');
+                    $('#participant-suggestions').html(items).show();
+                } catch (e) { $('#participant-suggestions').hide(); }
+            }, 250);
+        });
         $('#participant-email-input').on('keydown', (e) => {
             if (e.key === 'Enter') { e.preventDefault(); this.addParticipant(); }
+            if (e.key === 'Escape') { $('#participant-suggestions').hide(); }
         });
+        $(document).on('click', '.participant-suggestion', (e) => {
+            e.preventDefault();
+            const email = $(e.currentTarget).data('email');
+            $('#participant-email-input').val(email);
+            $('#participant-suggestions').hide();
+        });
+        $(document).on('click', (e) => {
+            if (!$(e.target).closest('#participant-email-input, #participant-suggestions').length) {
+                $('#participant-suggestions').hide();
+            }
+        });
+        $('#btn-add-participant').on('click', () => this.addParticipant());
         $(document).on('click', '.participant-remove', (e) => {
             e.preventDefault();
-            this.removeParticipant($(e.currentTarget).data('email'));
+            this.removeParticipant($(e.currentTarget).data('id'));
         });
 
         // Dropdown actions
@@ -523,18 +557,19 @@ const TicketDetailView = {
     },
 
     async addParticipant() {
-        const email = $('#participant-email-input').val().trim();
-        if (!email) return;
+        const val = $('#participant-email-input').val().trim();
+        if (!val) return;
+        $('#participant-suggestions').hide();
         try {
-            await API.post('/tickets/' + this.ticket.id + '/participants', { email });
+            await API.post('/tickets/' + this.ticket.id + '/participants', { email: val });
             $('#participant-email-input').val('');
             await this.reload();
         } catch (e) { App.toast(e.message, 'error'); }
     },
 
-    async removeParticipant(email) {
+    async removeParticipant(participantId) {
         try {
-            await API.delete('/tickets/' + this.ticket.id + '/participants', { email });
+            await API.delete('/tickets/' + this.ticket.id + '/participants/' + participantId);
             await this.reload();
         } catch (e) { App.toast(e.message, 'error'); }
     },
