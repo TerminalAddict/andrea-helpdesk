@@ -102,30 +102,32 @@ class ImapAccountController
         $username   = $account['username'];
         $encryption = strtolower($account['encryption']);
 
-        // imaps:// handles implicit TLS; imap:// + CURLUSESSL_ALL handles STARTTLS
+        // imaps:// = implicit TLS (port 993); imap:// + CURLUSESSL_ALL = STARTTLS (port 143)
         if ($encryption === 'ssl') {
-            $url    = "imaps://{$host}:{$port}/";
-            $usessl = CURLUSESSL_NONE; // scheme already implies TLS
+            $url = "imaps://{$host}:{$port}/";
         } elseif ($encryption === 'tls') {
-            $url    = "imap://{$host}:{$port}/";
-            $usessl = CURLUSESSL_ALL;
+            $url = "imap://{$host}:{$port}/";
         } else {
-            $url    = "imap://{$host}:{$port}/";
-            $usessl = CURLUSESSL_NONE;
+            $url = "imap://{$host}:{$port}/";
         }
 
-        $ch = curl_init();
-        curl_setopt_array($ch, [
+        $opts = [
             CURLOPT_URL            => $url,
             CURLOPT_USERNAME       => $username,
             CURLOPT_PASSWORD       => $password,
             CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => false,
-            CURLOPT_USE_SSL        => $usessl,
+            CURLOPT_SSL_VERIFYHOST => 0,
             CURLOPT_CONNECTTIMEOUT => 15,
             CURLOPT_TIMEOUT        => 15,
             CURLOPT_RETURNTRANSFER => true,
-        ]);
+        ];
+        // Only set USE_SSL for STARTTLS — imaps:// handles TLS via the scheme
+        if ($encryption === 'tls') {
+            $opts[CURLOPT_USE_SSL] = CURLUSESSL_ALL;
+        }
+
+        $ch = curl_init();
+        curl_setopt_array($ch, $opts);
 
         curl_exec($ch);
         $curlErrno = curl_errno($ch);
