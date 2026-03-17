@@ -110,7 +110,13 @@ class ImapAccountController
 
         $poller = new ImapPoller($config, new MessageParser(), new ThreadMatcher(Database::getInstance()));
 
-        if (!$poller->connect()) {
+        // Suppress ImapPoller's echo output (designed for cron, not HTTP responses)
+        ob_start();
+
+        $connected = $poller->connect();
+
+        if (!$connected) {
+            ob_end_clean();
             Response::error('Failed to connect to IMAP server');
             return;
         }
@@ -118,6 +124,7 @@ class ImapAccountController
         $this->repo->recordConnected($id);
         $count = $poller->poll();
         $poller->disconnect();
+        ob_end_clean();
         $this->repo->recordPoll($id, $count);
 
         Response::success(
