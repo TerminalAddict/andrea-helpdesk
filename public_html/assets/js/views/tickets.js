@@ -182,6 +182,7 @@ const TicketsView = {
                 <td>${App.statusBadge(t.status)}</td>
                 <td>${App.priorityBadge(t.priority)}</td>
                 <td>${t.tag_names ? t.tag_names.split(',').map(tag => `<span class="badge bg-secondary me-1">${App.escapeHtml(tag)}</span>`).join('') : ''}</td>
+                <td class="small text-center text-muted">${t.reply_count > 0 ? t.reply_count : '–'}</td>
                 <td class="small">${App.escapeHtml(t.agent_name || '<em>Unassigned</em>')}</td>
                 <td class="small text-muted text-nowrap">${App.formatDate(t.created_at)}</td>
                 <td class="small text-muted text-nowrap">${App.formatDate(t.updated_at)}</td>
@@ -201,6 +202,7 @@ const TicketsView = {
                             <th>Status</th>
                             <th>Priority</th>
                             <th>Tags</th>
+                            <th class="text-center">Comments</th>
                             <th>Assigned To</th>
                             <th>Created</th>
                             <th>Updated</th>

@@ -118,7 +118,8 @@ class TicketRepository
         $items  = $this->db->fetchAll(
             "SELECT t.*, c.name AS customer_name, c.email AS customer_email,
                     a.name AS agent_name,
-                    GROUP_CONCAT(tg.name ORDER BY tg.name SEPARATOR ',') AS tag_names
+                    GROUP_CONCAT(tg.name ORDER BY tg.name SEPARATOR ',') AS tag_names,
+                    (SELECT COUNT(*) FROM replies r WHERE r.ticket_id = t.id AND r.author_type != 'system') AS reply_count
              FROM tickets t
              LEFT JOIN customers c ON c.id = t.customer_id
              LEFT JOIN agents a ON a.id = t.assigned_agent_id

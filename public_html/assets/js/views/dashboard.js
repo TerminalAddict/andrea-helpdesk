@@ -222,6 +222,7 @@ const DashboardView = {
                 <td class="text-truncate" style="max-width:200px;">${App.escapeHtml(t.subject)}</td>
                 <td>${App.priorityBadge(t.priority)}</td>
                 <td>${tags}</td>
+                <td class="small text-center text-muted">${t.reply_count > 0 ? t.reply_count : '–'}</td>
                 <td class="small text-muted">${App.escapeHtml(t.agent_name || '—')}</td>
                 <td class="small text-muted text-nowrap">${App.formatDate(t.updated_at)}</td>
             </tr>`;
@@ -235,7 +236,7 @@ const DashboardView = {
         $('#all-open-tickets-table').html(`
             <table class="table table-hover table-sm mb-0">
                 <thead class="table-light">
-                    <tr><th>Ticket</th><th>Subject</th><th>Priority</th><th>Tags</th><th>Assigned To</th><th>Updated</th></tr>
+                    <tr><th>Ticket</th><th>Subject</th><th>Priority</th><th>Tags</th><th class="text-center">Comments</th><th>Assigned To</th><th>Updated</th></tr>
                 </thead>
                 <tbody>${rows}</tbody>
             </table>${footer}`);
