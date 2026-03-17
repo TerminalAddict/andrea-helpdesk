@@ -83,6 +83,7 @@ class SettingsService
             'channel'        => $this->repo->get('slack_channel', '#helpdesk'),
             'on_new_ticket'  => (bool)$this->repo->get('slack_on_new_ticket', true),
             'on_assign'      => (bool)$this->repo->get('slack_on_assign', true),
+            'on_new_reply'   => (bool)$this->repo->get('slack_on_new_reply', true),
         ];
     }
 

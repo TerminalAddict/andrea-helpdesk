@@ -104,8 +104,9 @@ const SettingsView = {
                 { key: 'slack_enabled',      label: 'Enable Slack Notifications',  type: 'checkbox', value: s.slack_enabled },
                 { key: 'slack_webhook_url',  label: 'Webhook URL',                 type: 'text',     value: s.slack_webhook_url || '' },
                 { key: 'slack_channel',      label: 'Channel',                     type: 'text',     value: s.slack_channel || '#helpdesk' },
-                { key: 'slack_on_new_ticket', label: 'Notify on new tickets',      type: 'checkbox', value: s.slack_on_new_ticket },
-                { key: 'slack_on_assign',    label: 'Notify on ticket assignment', type: 'checkbox', value: s.slack_on_assign },
+                { key: 'slack_on_new_ticket', label: 'Notify on new tickets',           type: 'checkbox', value: s.slack_on_new_ticket },
+                { key: 'slack_on_assign',    label: 'Notify on ticket assignment',      type: 'checkbox', value: s.slack_on_assign },
+                { key: 'slack_on_new_reply', label: 'Notify on new customer reply',     type: 'checkbox', value: s.slack_on_new_reply },
             ]);
         }
 
@@ -503,7 +504,7 @@ const SettingsView = {
             email:        ['smtp_host','smtp_port','smtp_encryption','smtp_username','smtp_password','smtp_from_address','smtp_from_name','reply_to_address','global_signature','notify_agent_on_new_ticket','notify_agent_on_new_reply'],
             autoresponse: ['auto_response_enabled','auto_response_subject','auto_response_body'],
             imap:         [],
-            slack:        ['slack_enabled','slack_webhook_url','slack_channel','slack_on_new_ticket','slack_on_assign'],
+            slack:        ['slack_enabled','slack_webhook_url','slack_channel','slack_on_new_ticket','slack_on_assign','slack_on_new_reply'],
         };
 
         const payload = {};

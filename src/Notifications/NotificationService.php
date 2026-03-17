@@ -108,6 +108,12 @@ class NotificationService
         } catch (\Throwable $e) {
             $this->log('onCustomerReply: ' . $e->getMessage());
         }
+
+        try {
+            $this->slackNotifier->sendCustomerReplyAlert($ticket, $reply, $customer);
+        } catch (\Throwable $e) {
+            $this->log('onCustomerReply slack: ' . $e->getMessage());
+        }
     }
 
     public function onAgentReply(array $ticket, array $reply, array $agent, array $customer, array $ccEmails = [], array $attachmentIds = []): void

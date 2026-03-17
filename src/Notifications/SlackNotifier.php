@@ -45,6 +45,22 @@ class SlackNotifier
         return $this->post(['text' => $text, 'channel' => $config['channel']]);
     }
 
+    public function sendCustomerReplyAlert(array $ticket, array $reply, array $customer): bool
+    {
+        $config = $this->settings->getSlackConfig();
+        if (!$config['enabled'] || !$config['on_new_reply']) return false;
+
+        $appUrl        = getenv('APP_URL') ?: 'https://your-helpdesk-domain';
+        $ticketUrl     = "{$appUrl}/#/tickets/{$ticket['id']}";
+        $customerName  = $customer['name'] ?? $customer['email'];
+        $preview       = substr(strip_tags($reply['body_html'] ?? ''), 0, 200);
+
+        $text = ":speech_balloon: *<{$ticketUrl}|{$ticket['ticket_number']}>* — reply from *{$customerName}*: {$ticket['subject']}"
+              . ($preview ? "\n>{$preview}" : '');
+
+        return $this->post(['text' => $text, 'channel' => $config['channel']]);
+    }
+
     public function sendMessage(string $message): bool
     {
         $config = $this->settings->getSlackConfig();
