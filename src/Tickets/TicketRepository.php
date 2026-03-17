@@ -83,9 +83,10 @@ class TicketRepository
         }
 
         if (!empty($filters['q'])) {
-            $where[]  = '(t.subject LIKE ? OR t.ticket_number LIKE ? OR c.name LIKE ? OR c.email LIKE ?)';
+            $where[]  = '(t.subject LIKE ? OR t.ticket_number LIKE ? OR c.name LIKE ? OR c.email LIKE ?
+                          OR EXISTS (SELECT 1 FROM replies r WHERE r.ticket_id = t.id AND (r.body_text LIKE ? OR r.body_html LIKE ?)))';
             $q        = '%' . $filters['q'] . '%';
-            $params   = array_merge($params, [$q, $q, $q, $q]);
+            $params   = array_merge($params, [$q, $q, $q, $q, $q, $q]);
         }
 
         if (!empty($filters['from_date'])) {

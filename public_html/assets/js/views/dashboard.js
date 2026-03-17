@@ -19,6 +19,17 @@ const DashboardView = {
                 </div>`).join('')}
             </div>
 
+            <div class="mb-3">
+                <div class="input-group input-group-lg shadow-sm">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="search" class="form-control border-start-0 ps-0" id="dash-search" placeholder="Search tickets by subject, email, message content or comments…" autocomplete="off">
+                    <div class="input-group-text bg-white border-start-0 text-muted small d-none" id="dash-search-spinner">
+                        <div class="spinner-border spinner-border-sm"></div>
+                    </div>
+                </div>
+                <div id="dash-search-results" class="card border-0 shadow mt-1 d-none" style="max-height:420px;overflow-y:auto;"></div>
+            </div>
+
             <div class="row g-3">
                 <div class="col-md-6">
                     <div class="card border-0 shadow-sm">
@@ -100,6 +111,23 @@ const DashboardView = {
             $('#recent-tickets-table').html('<p class="text-muted p-3">No recent tickets.</p>');
         }
 
+        // Quick search
+        let searchTimer;
+        $('#dash-search').on('input', () => {
+            clearTimeout(searchTimer);
+            const q = $('#dash-search').val().trim();
+            if (!q) { $('#dash-search-results').addClass('d-none').empty(); return; }
+            searchTimer = setTimeout(() => this.runSearch(q), 350);
+        });
+        $(document).on('click.dashsearch', (e) => {
+            if (!$(e.target).closest('#dash-search, #dash-search-results').length) {
+                $('#dash-search-results').addClass('d-none');
+            }
+        });
+        $('#dash-search').on('focus', () => {
+            if ($('#dash-search-results').children().length) $('#dash-search-results').removeClass('d-none');
+        });
+
         // Tags for filter
         try {
             const res = await API.get('/tags');
@@ -125,6 +153,50 @@ const DashboardView = {
             this.renderAllOpenTable(res.data || []);
         } catch (e) {
             $('#all-open-tickets-table').html('<p class="text-muted p-3 mb-0">Failed to load tickets.</p>');
+        }
+    },
+
+    async runSearch(q) {
+        $('#dash-search-spinner').removeClass('d-none');
+        try {
+            const res     = await API.get('/tickets', { q, per_page: 20, sort: 'updated_at', dir: 'desc' });
+            const tickets = res.data || [];
+            const $box    = $('#dash-search-results').empty().removeClass('d-none');
+
+            if (!tickets.length) {
+                $box.html('<p class="text-muted p-3 mb-0 small">No tickets found for <strong>' + App.escapeHtml(q) + '</strong>.</p>');
+                return;
+            }
+
+            const rows = tickets.map(t => {
+                const tags = t.tag_names
+                    ? t.tag_names.split(',').map(tag => `<span class="badge bg-secondary me-1">${App.escapeHtml(tag)}</span>`).join('')
+                    : '';
+                return `<a class="d-flex align-items-start gap-3 p-3 text-decoration-none text-dark border-bottom dash-search-item"
+                           href="#/tickets/${t.id}" style="cursor:pointer;">
+                    <div class="flex-grow-1 overflow-hidden">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="font-monospace small text-muted">${App.escapeHtml(t.ticket_number)}</span>
+                            ${App.statusBadge(t.status)}
+                            ${App.priorityBadge(t.priority)}
+                            ${tags}
+                        </div>
+                        <div class="fw-semibold text-truncate mt-1">${App.escapeHtml(t.subject)}</div>
+                        <div class="small text-muted">${App.escapeHtml(t.customer_name || '')} ${t.customer_email ? '&lt;' + App.escapeHtml(t.customer_email) + '&gt;' : ''}</div>
+                    </div>
+                    <div class="small text-muted text-nowrap">${App.formatDate(t.updated_at)}</div>
+                </a>`;
+            }).join('');
+
+            $box.html(rows);
+            $box.find('.dash-search-item').on('click', () => {
+                $('#dash-search-results').addClass('d-none');
+                $('#dash-search').val('');
+            });
+        } catch (e) {
+            $('#dash-search-results').html('<p class="text-danger p-3 mb-0 small">' + App.escapeHtml(e.message) + '</p>').removeClass('d-none');
+        } finally {
+            $('#dash-search-spinner').addClass('d-none');
         }
     },
 
