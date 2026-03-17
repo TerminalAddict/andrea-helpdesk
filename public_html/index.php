@@ -1,10 +1,35 @@
+<?php
+$projectRoot = dirname(__DIR__);
+require $projectRoot . '/vendor/autoload.php';
+$dotenv = Dotenv\Dotenv::createUnsafeImmutable($projectRoot);
+$dotenv->safeLoad();
+
+$pageTitle  = 'Andrea Helpdesk';
+$faviconUrl = '/favicon.ico';
+try {
+    $pdo = new PDO(
+        'mysql:host=' . (getenv('DB_HOST') ?: 'localhost') .
+        ';port='      . (getenv('DB_PORT') ?: '3306') .
+        ';dbname='    . getenv('DB_DATABASE') .
+        ';charset=utf8mb4',
+        getenv('DB_USERNAME'),
+        getenv('DB_PASSWORD'),
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+    );
+    $rows = $pdo->query(
+        "SELECT key_name, value FROM settings WHERE key_name IN ('company_name','favicon_url')"
+    )->fetchAll(PDO::FETCH_KEY_PAIR);
+    if (!empty($rows['company_name'])) $pageTitle  = $rows['company_name'];
+    if (!empty($rows['favicon_url']))  $faviconUrl = $rows['favicon_url'];
+} catch (Throwable) {}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Andrea Helpdesk</title>
-    <link id="app-favicon" rel="icon" href="/favicon.ico">
+    <title><?= htmlspecialchars($pageTitle) ?></title>
+    <link id="app-favicon" rel="icon" href="<?= htmlspecialchars($faviconUrl) ?>">
     <link rel="stylesheet" href="/assets/vendor/bootstrap/bootstrap.min.css">
     <link rel="stylesheet" href="/assets/vendor/bootstrap-icons/bootstrap-icons.min.css">
     <link rel="stylesheet" href="/assets/css/app.css">
