@@ -144,6 +144,6 @@ class SettingsService
 
     private function getEncryptionKey(): string
     {
-        return getenv('JWT_SECRET') ?: 'fallback-insecure-key';
+        return (string)getenv('JWT_SECRET');
     }
 }

@@ -21,6 +21,13 @@ use Andrea\Helpdesk\IMAP\ImapPoller;
 use Andrea\Helpdesk\IMAP\MessageParser;
 use Andrea\Helpdesk\IMAP\ThreadMatcher;
 
+// Require JWT_SECRET
+$jwtSecret = getenv('JWT_SECRET');
+if (empty($jwtSecret) || strlen($jwtSecret) < 32) {
+    fwrite(STDERR, '[' . date('Y-m-d H:i:s') . '] FATAL: JWT_SECRET must be set to a random string of at least 32 characters.' . PHP_EOL);
+    exit(1);
+}
+
 // Set timezone
 $tz = getenv('APP_TIMEZONE') ?: 'UTC';
 date_default_timezone_set($tz);

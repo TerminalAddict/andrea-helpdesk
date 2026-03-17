@@ -16,7 +16,7 @@ class JwtService
 
     public function __construct()
     {
-        $this->secret     = getenv('JWT_SECRET') ?: 'changeme-insecure-default';
+        $this->secret     = (string)getenv('JWT_SECRET');
         $this->accessTtl  = (int)(getenv('JWT_ACCESS_TTL') ?: 900);
         $this->refreshTtl = (int)(getenv('JWT_REFRESH_TTL') ?: 2592000);
     }

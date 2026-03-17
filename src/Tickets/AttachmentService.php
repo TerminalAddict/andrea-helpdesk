@@ -134,7 +134,7 @@ class AttachmentService
 
     public function generateDownloadToken(int $attachmentId): string
     {
-        $secret  = getenv('JWT_SECRET') ?: 'fallback';
+        $secret  = (string)getenv('JWT_SECRET');
         $payload = json_encode(['id' => $attachmentId, 'exp' => time() + 86400]);
         return hash_hmac('sha256', $payload, $secret) . '.' . base64_encode($payload);
     }
@@ -148,7 +148,7 @@ class AttachmentService
         $payload = json_decode(base64_decode($payloadB64), true);
         if (!$payload) return false;
 
-        $secret       = getenv('JWT_SECRET') ?: 'fallback';
+        $secret       = (string)getenv('JWT_SECRET');
         $expectedHmac = hash_hmac('sha256', base64_decode($payloadB64), $secret);
 
         if (!hash_equals($expectedHmac, $hmac)) return false;

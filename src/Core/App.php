@@ -19,6 +19,13 @@ class App
 
     public function boot(): void
     {
+        // Require JWT_SECRET before anything else
+        $jwtSecret = getenv('JWT_SECRET');
+        if (empty($jwtSecret) || strlen($jwtSecret) < 32) {
+            http_response_code(500);
+            exit('Server misconfiguration: JWT_SECRET must be set to a random string of at least 32 characters.');
+        }
+
         // Set timezone
         $timezone = getenv('APP_TIMEZONE') ?: 'UTC';
         date_default_timezone_set($timezone);
