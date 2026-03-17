@@ -5,6 +5,7 @@ namespace Andrea\Helpdesk\KnowledgeBase;
 
 use Andrea\Helpdesk\Core\Request;
 use Andrea\Helpdesk\Core\Response;
+use Andrea\Helpdesk\Core\Exceptions\AuthException;
 use Andrea\Helpdesk\Core\Exceptions\NotFoundException;
 
 class KbController
@@ -51,7 +52,7 @@ class KbController
         if (!$request->agent && $request->bearerToken()) {
             try {
                 \Andrea\Helpdesk\Core\Middleware::run('auth:agent', $request);
-            } catch (\Throwable) {}
+            } catch (AuthException) {}
         }
 
         // Unpublished articles only visible to agents

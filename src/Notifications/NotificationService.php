@@ -90,7 +90,7 @@ class NotificationService
                     $ticket['assigned_agent_id'],
                     "Customer replied: {$ticket['ticket_number']}",
                     "<p><strong>" . htmlspecialchars($customer['name'] ?? $customer['email']) . "</strong> replied to ticket <strong>{$ticket['ticket_number']}</strong>.</p>
-                     <blockquote>" . substr(strip_tags($reply['body_html']), 0, 500) . "</blockquote>
+                     <blockquote>" . htmlspecialchars(substr(strip_tags($reply['body_html']), 0, 500)) . "</blockquote>
                      <p><a href='{$ticketUrl}'>View Ticket</a></p>"
                 );
             } else {
