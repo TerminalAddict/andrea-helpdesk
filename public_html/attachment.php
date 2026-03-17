@@ -92,9 +92,15 @@ try {
     }
 
     $storagePath = getenv('STORAGE_PATH') ?: '/var/www/andrea-helpdesk-storage';
-    $filePath = $storagePath . '/attachments/' . $attachment['stored_path'];
+    $attachmentsRoot = realpath($storagePath . '/attachments');
+    $filePath = realpath($storagePath . '/attachments/' . $attachment['stored_path']);
 
-    if (!file_exists($filePath) || !is_readable($filePath)) {
+    // Prevent path traversal: resolved path must stay inside the attachments directory
+    if (!$filePath || !$attachmentsRoot || !str_starts_with($filePath, $attachmentsRoot . '/')) {
+        sendError(403, 'Forbidden');
+    }
+
+    if (!is_readable($filePath)) {
         sendError(404, 'File not found');
     }
 
@@ -102,11 +108,13 @@ try {
     $mimeType = $attachment['mime_type'] ?: 'application/octet-stream';
     $fileSize = filesize($filePath);
 
-    // Inline for types browsers can render natively; force download for everything else
+    // Inline for types browsers can render safely; force download for everything else.
+    // text/html and image/svg+xml are intentionally excluded — both can execute JavaScript
+    // when rendered inline, creating a stored XSS vector in the helpdesk origin.
     $inlineTypes = [
-        'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+        'image/jpeg', 'image/png', 'image/gif', 'image/webp',
         'application/pdf',
-        'text/plain', 'text/html', 'text/csv',
+        'text/plain', 'text/csv',
         'video/mp4', 'video/webm',
         'audio/mpeg', 'audio/wav', 'audio/ogg',
     ];
