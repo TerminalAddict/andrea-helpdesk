@@ -71,6 +71,7 @@ return [
     ['PUT',    '/api/customers/:id',                CustomerController::class, 'update',      ['auth:agent']],
     ['DELETE', '/api/customers/:id',                CustomerController::class, 'destroy',     ['role:admin']],
     ['GET',    '/api/customers/:id/tickets',        CustomerController::class, 'tickets',     ['auth:agent']],
+    ['GET',    '/api/customers/:id/replies',        CustomerController::class, 'replies',     ['auth:agent']],
     ['POST',   '/api/customers/:id/portal-invite',   CustomerController::class, 'portalInvite', ['role:admin']],
     ['POST',   '/api/customers/:id/set-password',   CustomerController::class, 'setPassword',  ['role:admin']],
 

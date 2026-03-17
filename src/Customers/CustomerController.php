@@ -100,6 +100,17 @@ class CustomerController
         Response::paginated($result['items'], $result['total'], $page, $perPage);
     }
 
+    public function replies(Request $request, array $params): void
+    {
+        $customer = $this->repo->findById((int)$params['id']);
+        if (!$customer) throw new NotFoundException('Customer not found');
+
+        $page    = max(1, (int)$request->input('page', 1));
+        $perPage = max(1, min(100, (int)$request->input('per_page', 25)));
+        $result  = $this->repo->getReplies($customer['id'], $page, $perPage);
+        Response::paginated($result['items'], $result['total'], $page, $perPage);
+    }
+
     public function setPassword(Request $request, array $params): void
     {
         $customer = $this->repo->findById((int)$params['id']);
