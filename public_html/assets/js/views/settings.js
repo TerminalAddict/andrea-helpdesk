@@ -5,17 +5,24 @@ const SettingsView = {
     settings: {},
 
     render() {
+        const isAdmin   = API.isAdmin();
+        const adminTabs = isAdmin ? `
+                <li class="nav-item"><button class="nav-link" data-tab="general">General</button></li>
+                <li class="nav-item"><button class="nav-link" data-tab="branding">Branding</button></li>
+                <li class="nav-item"><button class="nav-link" data-tab="email">Email / SMTP</button></li>
+                <li class="nav-item"><button class="nav-link" data-tab="autoresponse">Auto-Response</button></li>
+                <li class="nav-item"><button class="nav-link" data-tab="imap">IMAP Polling</button></li>
+                <li class="nav-item"><button class="nav-link" data-tab="slack">Slack</button></li>` : '';
+        const tagTab    = (isAdmin || API.can('can_manage_tags')) ? `
+                <li class="nav-item"><button class="nav-link" data-tab="tags">Tags</button></li>` : '';
+
         return `
         <div class="container-fluid p-4" style="max-width:900px;">
             <h4 class="mb-4"><i class="bi bi-sliders me-2"></i>Settings</h4>
 
             <ul class="nav nav-tabs mb-4" id="settings-tabs">
-                <li class="nav-item"><button class="nav-link active" data-tab="general">General</button></li>
-                <li class="nav-item"><button class="nav-link" data-tab="branding">Branding</button></li>
-                <li class="nav-item"><button class="nav-link" data-tab="email">Email / SMTP</button></li>
-                <li class="nav-item"><button class="nav-link" data-tab="autoresponse">Auto-Response</button></li>
-                <li class="nav-item"><button class="nav-link" data-tab="imap">IMAP Polling</button></li>
-                <li class="nav-item"><button class="nav-link" data-tab="slack">Slack</button></li>
+                ${adminTabs}
+                ${tagTab}
             </ul>
 
             <div id="settings-content">
@@ -27,10 +34,13 @@ const SettingsView = {
     },
 
     async init() {
+        const firstTab = API.isAdmin() ? 'general' : 'tags';
         try {
-            const res = await API.get('/admin/settings');
-            this.settings = res.data || {};
-            this.renderTab('general');
+            if (API.isAdmin()) {
+                const res = await API.get('/admin/settings');
+                this.settings = res.data || {};
+            }
+            this.renderTab(firstTab);
             this.bindTabSwitching();
         } catch (e) {
             $('#settings-content').html('<div class="alert alert-danger">' + App.escapeHtml(e.message) + '</div>');
@@ -105,12 +115,26 @@ const SettingsView = {
             ]);
         }
 
+        if (tab === 'tags') {
+            $('#settings-content').html(this.renderTagsPanel());
+            this.loadTags();
+            return;
+        }
+
         $('#settings-content').html(html);
 
         // Bind save
         $('.btn-save-settings').on('click', (e) => {
             this.save($(e.currentTarget).data('tab'));
         });
+
+        // Add test SMTP button on email tab
+        if (tab === 'email') {
+            $('.btn-save-settings').after(
+                ' <button class="btn btn-outline-secondary btn-test-smtp ms-2"><i class="bi bi-envelope me-1"></i>Test SMTP</button>'
+            );
+            $('.btn-test-smtp').on('click', () => this.testSmtp());
+        }
     },
 
     form(tab, fields) {
@@ -155,6 +179,99 @@ const SettingsView = {
         </div>`;
     },
 
+    renderTagsPanel() {
+        return `
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="input-group mb-4" style="max-width:360px;">
+                    <input type="text" class="form-control" id="new-tag-name" placeholder="New tag name…">
+                    <button class="btn btn-primary" id="btn-add-tag-setting">
+                        <i class="bi bi-plus-lg me-1"></i>Add Tag
+                    </button>
+                </div>
+                <div id="tags-list">
+                    <div class="text-center py-3 text-muted"><div class="spinner-border spinner-border-sm"></div></div>
+                </div>
+            </div>
+        </div>`;
+    },
+
+    async loadTags() {
+        try {
+            const res  = await API.get('/tags');
+            const tags = res.data || [];
+            if (!tags.length) {
+                $('#tags-list').html('<p class="text-muted">No tags yet.</p>');
+            } else {
+                const rows = tags.map(t => `
+                    <div class="d-flex align-items-center gap-2 mb-2" id="tag-row-${t.id}">
+                        <input type="text" class="form-control form-control-sm" style="max-width:260px;" value="${App.escapeHtml(t.name)}" id="tag-name-${t.id}">
+                        <button class="btn btn-sm btn-outline-primary btn-rename-tag" data-id="${t.id}">
+                            <i class="bi bi-pencil"></i> Rename
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger btn-delete-tag" data-id="${t.id}">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>`).join('');
+                $('#tags-list').html(rows);
+            }
+
+            $('#btn-add-tag-setting').off('click').on('click', () => this.addTagSetting());
+            $('#new-tag-name').off('keydown').on('keydown', (e) => { if (e.key === 'Enter') this.addTagSetting(); });
+            $(document).off('click.tagsetting').on('click.tagsetting', '.btn-rename-tag', (e) => {
+                const id = $(e.currentTarget).data('id');
+                this.renameTag(id);
+            });
+            $(document).on('click.tagsetting', '.btn-delete-tag', (e) => {
+                const id = $(e.currentTarget).data('id');
+                this.deleteTagSetting(id);
+            });
+        } catch (e) {
+            $('#tags-list').html('<p class="text-danger">' + App.escapeHtml(e.message) + '</p>');
+        }
+    },
+
+    async addTagSetting() {
+        const name = $('#new-tag-name').val().trim();
+        if (!name) return;
+        try {
+            await API.post('/tags', { name });
+            $('#new-tag-name').val('');
+            await this.loadTags();
+            App.toast('Tag added');
+        } catch (e) { App.toast(e.message, 'error'); }
+    },
+
+    async renameTag(id) {
+        const name = $('#tag-name-' + id).val().trim();
+        if (!name) return;
+        try {
+            await API.put('/tags/' + id, { name });
+            App.toast('Tag renamed');
+        } catch (e) { App.toast(e.message, 'error'); }
+    },
+
+    async deleteTagSetting(id) {
+        if (!await App.confirm('Delete this tag? It will be removed from all tickets.', 'Delete Tag')) return;
+        try {
+            await API.delete('/tags/' + id);
+            await this.loadTags();
+            App.toast('Tag deleted');
+        } catch (e) { App.toast(e.message, 'error'); }
+    },
+
+    async testSmtp() {
+        const btn = $('.btn-test-smtp').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Testing…');
+        try {
+            const res = await API.post('/admin/settings/test-smtp', {});
+            App.toast(res.message || 'Test email sent', 'success');
+        } catch (e) {
+            App.toast(e.message || 'SMTP test failed', 'error');
+        } finally {
+            btn.prop('disabled', false).html('<i class="bi bi-envelope me-1"></i>Test SMTP');
+        }
+    },
+
     async save(tab) {
         const s = this.settings;
         const tabFields = {
@@ -186,9 +303,9 @@ const SettingsView = {
             // Clear password fields
             document.querySelectorAll('input[type="password"]').forEach(el => el.value = '');
             // Update public settings cache
-            if (tab === 'general') {
+            if (tab === 'general' || tab === 'branding') {
                 Object.assign(App.settings, payload);
-                if (payload.company_name) App.applyAppName(payload.company_name);
+                App.applyAppName(App.appName);
             }
             App.toast('Settings saved');
         } catch (e) {

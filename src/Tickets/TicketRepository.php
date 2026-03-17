@@ -116,11 +116,15 @@ class TicketRepository
         $offset = ($page - 1) * $perPage;
         $items  = $this->db->fetchAll(
             "SELECT t.*, c.name AS customer_name, c.email AS customer_email,
-                    a.name AS agent_name
+                    a.name AS agent_name,
+                    GROUP_CONCAT(tg.name ORDER BY tg.name SEPARATOR ',') AS tag_names
              FROM tickets t
              LEFT JOIN customers c ON c.id = t.customer_id
              LEFT JOIN agents a ON a.id = t.assigned_agent_id
+             LEFT JOIN ticket_tag_map ttm ON ttm.ticket_id = t.id
+             LEFT JOIN tags tg ON tg.id = ttm.tag_id
              WHERE {$whereClause}
+             GROUP BY t.id
              ORDER BY t.{$sort} {$dir}
              LIMIT {$perPage} OFFSET {$offset}",
             $params

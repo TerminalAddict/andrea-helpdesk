@@ -33,4 +33,15 @@ class TagRepository
     {
         return $this->db->insert("INSERT INTO tags (name) VALUES (?)", [trim($name)]);
     }
+
+    public function update(int $id, string $name): bool
+    {
+        return $this->db->execute("UPDATE tags SET name = ? WHERE id = ?", [trim($name), $id]);
+    }
+
+    public function delete(int $id): bool
+    {
+        $this->db->execute("DELETE FROM ticket_tag_map WHERE tag_id = ?", [$id]);
+        return $this->db->execute("DELETE FROM tags WHERE id = ?", [$id]);
+    }
 }

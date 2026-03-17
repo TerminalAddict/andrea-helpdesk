@@ -35,4 +35,27 @@ class TagController
         $tag = $this->repo->findById($id);
         Response::created($tag, 'Tag created');
     }
+
+    public function update(Request $request, array $params): void
+    {
+        $data = $request->validate(['name' => 'required|max:60']);
+        $tag  = $this->repo->findById((int)$params['id']);
+        if (!$tag) {
+            \Andrea\Helpdesk\Core\Response::error('Tag not found', 404);
+            return;
+        }
+        $this->repo->update((int)$params['id'], $data['name']);
+        Response::success($this->repo->findById((int)$params['id']), 'Tag updated');
+    }
+
+    public function destroy(Request $request, array $params): void
+    {
+        $tag = $this->repo->findById((int)$params['id']);
+        if (!$tag) {
+            \Andrea\Helpdesk\Core\Response::error('Tag not found', 404);
+            return;
+        }
+        $this->repo->delete((int)$params['id']);
+        Response::success(null, 'Tag deleted');
+    }
 }

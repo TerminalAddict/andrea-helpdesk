@@ -58,8 +58,10 @@ return [
     ['DELETE', '/api/attachments/:id',          AttachmentController::class, 'destroy', ['auth:agent']],
 
     // ── Tags ─────────────────────────────────────────────────────────────────
-    ['GET',  '/api/tags', TagController::class, 'index', ['auth:agent']],
-    ['POST', '/api/tags', TagController::class, 'store', ['auth:agent']],
+    ['GET',    '/api/tags',      TagController::class, 'index',   ['auth:agent']],
+    ['POST',   '/api/tags',      TagController::class, 'store',   ['auth:agent', 'permission:can_manage_tags']],
+    ['PUT',    '/api/tags/:id',  TagController::class, 'update',  ['auth:agent', 'permission:can_manage_tags']],
+    ['DELETE', '/api/tags/:id',  TagController::class, 'destroy', ['auth:agent', 'permission:can_manage_tags']],
 
     // ── Customers ─────────────────────────────────────────────────────────────
     ['GET',    '/api/customers',                    CustomerController::class, 'index',       ['auth:agent']],

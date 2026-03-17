@@ -97,10 +97,16 @@ const App = {
             return;
         }
 
-        // Admin route guard — /admin/reports is also accessible to agents with can_view_reports
+        // Admin route guard
         if (hash.startsWith('/admin/reports')) {
             if (!API.can('can_view_reports')) {
                 this.toast('You do not have permission to view reports', 'error');
+                window.location.hash = '#/';
+                return;
+            }
+        } else if (hash.startsWith('/admin/settings')) {
+            if (!API.isAdmin() && !API.can('can_manage_tags') && !API.can('can_manage_kb')) {
+                this.toast('You do not have permission to access settings', 'error');
                 window.location.hash = '#/';
                 return;
             }
@@ -152,7 +158,11 @@ const App = {
     applyAppName(name) {
         this.appName = name;
         document.title = name;
-        $('.navbar-brand').html(`<i class="bi bi-headset me-2"></i>${this.escapeHtml(name)}`);
+        const hasLogo = !!this.settings.logo_url;
+        const logo = hasLogo
+            ? `<img src="${this.escapeHtml(this.settings.logo_url)}" alt="${this.escapeHtml(name)}" style="max-height:32px;max-width:120px;object-fit:contain;" class="me-2">`
+            : `<i class="bi bi-headset me-2"></i>`;
+        $('.navbar-brand').html(`${logo}${this.escapeHtml(name)}`).toggleClass('pe-3', hasLogo);
     },
 
     navigate(path) {

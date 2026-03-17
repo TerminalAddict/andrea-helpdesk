@@ -53,6 +53,7 @@ class AgentController
         $data['can_edit_customers'] = $request->input('can_edit_customers', false);
         $data['can_view_reports']   = $request->input('can_view_reports', false);
         $data['can_manage_kb']      = $request->input('can_manage_kb', false);
+        $data['can_manage_tags']    = $request->input('can_manage_tags', false);
         $data['signature']          = $request->input('signature');
 
         $agent = $this->service->create($data);
@@ -66,7 +67,7 @@ class AgentController
 
         $data = [];
         foreach (['name', 'email', 'role', 'password', 'can_close_tickets', 'can_delete_tickets',
-                  'can_edit_customers', 'can_view_reports', 'can_manage_kb', 'signature', 'is_active'] as $field) {
+                  'can_edit_customers', 'can_view_reports', 'can_manage_kb', 'can_manage_tags', 'signature', 'is_active'] as $field) {
             if ($request->input($field) !== null) {
                 $data[$field] = $request->input($field);
             }

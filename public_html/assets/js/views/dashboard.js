@@ -87,18 +87,24 @@ const DashboardView = {
             return;
         }
 
-        const rows = tickets.map(t => `
+        const rows = tickets.map(t => {
+            const tags = t.tag_names
+                ? t.tag_names.split(',').map(tag => `<span class="badge bg-secondary me-1">${App.escapeHtml(tag)}</span>`).join('')
+                : '';
+            return `
             <tr style="cursor:pointer;" onclick="App.navigate('/tickets/${t.id}')">
                 <td><span class="font-monospace small">${App.escapeHtml(t.ticket_number)}</span></td>
-                <td class="text-truncate" style="max-width:200px;">${App.escapeHtml(t.subject)}</td>
+                <td class="text-truncate" style="max-width:160px;">${App.escapeHtml(t.subject)}</td>
                 <td>${App.statusBadge(t.status)}</td>
+                <td>${tags}</td>
                 <td class="small text-muted">${App.formatDate(t.updated_at)}</td>
-            </tr>`).join('');
+            </tr>`;
+        }).join('');
 
         $(selector).html(`
             <table class="table table-hover table-sm mb-0">
                 <thead class="table-light">
-                    <tr><th>Ticket</th><th>Subject</th><th>Status</th><th>Updated</th></tr>
+                    <tr><th>Ticket</th><th>Subject</th><th>Status</th><th>Tags</th><th>Updated</th></tr>
                 </thead>
                 <tbody>${rows}</tbody>
             </table>`);

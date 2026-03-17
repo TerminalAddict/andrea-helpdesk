@@ -267,11 +267,20 @@ class TicketController
 
     public function addTags(Request $request, array $params): void
     {
-        $tagIds   = $request->input('tag_ids', []);
         $ticketId = (int)$params['id'];
-        foreach ((array)$tagIds as $tagId) {
-            $this->repo->addTag($ticketId, (int)$tagId);
+        $tagRepo  = new \Andrea\Helpdesk\Tickets\TagRepository();
+
+        // Accept either a name (single tag) or tag_ids (array of existing IDs)
+        $name = $request->input('name');
+        if ($name) {
+            $tag = $tagRepo->findByName(trim($name)) ?? $tagRepo->findById($tagRepo->create(trim($name)));
+            $this->repo->addTag($ticketId, (int)$tag['id']);
+        } else {
+            foreach ((array)$request->input('tag_ids', []) as $tagId) {
+                $this->repo->addTag($ticketId, (int)$tagId);
+            }
         }
+
         Response::success($this->repo->getTags($ticketId));
     }
 

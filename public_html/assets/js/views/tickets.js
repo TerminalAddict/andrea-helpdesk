@@ -3,6 +3,7 @@
  */
 const TicketsView = {
     agents: [],
+    tags: [],
 
     render() {
         return `
@@ -43,12 +44,8 @@ const TicketsView = {
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <select class="form-select form-select-sm" id="filter-channel">
-                                <option value="">All Channels</option>
-                                <option value="email">Email</option>
-                                <option value="phone">Phone</option>
-                                <option value="web">Web</option>
-                                <option value="portal">Portal</option>
+                            <select class="form-select form-select-sm" id="filter-tag">
+                                <option value="">All Tags</option>
                             </select>
                         </div>
                         <div class="col-md-3">
@@ -77,12 +74,16 @@ const TicketsView = {
     },
 
     async init() {
-        // Load agents for filter
+        // Load agents and tags for filters
         try {
-            const res   = await API.get('/agents');
-            this.agents = res.data || [];
+            const [agentsRes, tagsRes] = await Promise.all([API.get('/agents'), API.get('/tags')]);
+            this.agents = agentsRes.data || [];
             this.agents.forEach(a => {
                 $('#filter-agent').append(`<option value="${a.id}">${App.escapeHtml(a.name)}</option>`);
+            });
+            this.tags = tagsRes.data || [];
+            this.tags.forEach(t => {
+                $('#filter-tag').append(`<option value="${t.id}">${App.escapeHtml(t.name)}</option>`);
             });
         } catch (e) {}
 
@@ -92,10 +93,10 @@ const TicketsView = {
             clearTimeout(searchTimer);
             searchTimer = setTimeout(() => this.loadTickets(), 400);
         });
-        $('#filter-status, #filter-priority, #filter-agent, #filter-channel').on('change', () => this.loadTickets());
+        $('#filter-status, #filter-priority, #filter-agent, #filter-tag').on('change', () => this.loadTickets());
         $('#filter-reset').on('click', () => {
             $('#filter-status').val('open');
-            $('#filter-priority, #filter-agent, #filter-channel').val('');
+            $('#filter-priority, #filter-agent, #filter-tag').val('');
             $('#filter-q').val('');
             this.loadTickets();
         });
@@ -108,7 +109,7 @@ const TicketsView = {
             status:      $('#filter-status').val() || undefined,
             priority:    $('#filter-priority').val() || undefined,
             assigned_to: $('#filter-agent').val() || undefined,
-            channel:     $('#filter-channel').val() || undefined,
+            tag_id:      $('#filter-tag').val() || undefined,
             q:           $('#filter-q').val() || undefined,
             page,
             per_page: 25,

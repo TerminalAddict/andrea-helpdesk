@@ -38,13 +38,14 @@ const Navbar = {
                 <a class="nav-link" href="#/admin/reports" data-route="/admin/reports">
                     <i class="bi bi-bar-chart"></i> Reports
                 </a>
-            </li>
+            </li>` : ''}
+            ${(isAdmin || API.can('can_manage_tags') || API.can('can_manage_kb')) ? `
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
                     <i class="bi bi-gear"></i> Admin
                 </a>
                 <ul class="dropdown-menu dropdown-menu-dark">
-                    <li><a class="dropdown-item" href="#/admin/agents"><i class="bi bi-people-fill me-2"></i>Agents</a></li>
+                    ${isAdmin ? `<li><a class="dropdown-item" href="#/admin/agents"><i class="bi bi-people-fill me-2"></i>Agents</a></li>` : ''}
                     <li><a class="dropdown-item" href="#/admin/settings"><i class="bi bi-sliders me-2"></i>Settings</a></li>
                 </ul>
             </li>` : ''}
@@ -59,8 +60,10 @@ const Navbar = {
         return `
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
             <div class="container-fluid">
-                <a class="navbar-brand fw-bold" href="#/">
-                    <i class="bi bi-headset me-2"></i>${App.escapeHtml(App.appName)}
+                <a class="navbar-brand fw-bold${App.settings.logo_url ? ' pe-3' : ''}" href="#/">
+                    ${App.settings.logo_url
+                        ? `<img src="${App.escapeHtml(App.settings.logo_url)}" alt="${App.escapeHtml(App.appName)}" style="max-height:32px;max-width:120px;object-fit:contain;" class="me-2">`
+                        : `<i class="bi bi-headset me-2"></i>`}${App.escapeHtml(App.appName)}
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
                     <span class="navbar-toggler-icon"></span>
@@ -75,7 +78,7 @@ const Navbar = {
                                 <i class="bi bi-person-circle me-1"></i>${App.escapeHtml(user.name || user.email)}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark">
-                                <li><span class="dropdown-item-text text-muted small">${App.escapeHtml(user.email || '')}</span></li>
+                                <li><span class="dropdown-item-text small" style="color:${API.isAdmin() ? '#a78bfa' : '#6ea8fe'};">${App.escapeHtml(user.email || '')}</span></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="#" id="nav-logout"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
                             </ul>

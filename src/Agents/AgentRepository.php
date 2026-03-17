@@ -40,8 +40,8 @@ class AgentRepository
     public function create(array $data): int
     {
         return $this->db->insert(
-            "INSERT INTO agents (name, email, password_hash, role, can_close_tickets, can_delete_tickets, can_edit_customers, can_view_reports, can_manage_kb, signature)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO agents (name, email, password_hash, role, can_close_tickets, can_delete_tickets, can_edit_customers, can_view_reports, can_manage_kb, can_manage_tags, signature)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $data['name'],
                 strtolower(trim($data['email'])),
@@ -52,6 +52,7 @@ class AgentRepository
                 $data['can_edit_customers'] ?? 0,
                 $data['can_view_reports'] ?? 0,
                 $data['can_manage_kb'] ?? 0,
+                $data['can_manage_tags'] ?? 0,
                 $data['signature'] ?? null,
             ]
         );
@@ -60,12 +61,12 @@ class AgentRepository
     public function update(int $id, array $data): bool
     {
         $allowed = ['name', 'email', 'password_hash', 'role', 'can_close_tickets',
-                    'can_delete_tickets', 'can_edit_customers', 'can_view_reports', 'can_manage_kb', 'signature', 'is_active'];
+                    'can_delete_tickets', 'can_edit_customers', 'can_view_reports', 'can_manage_kb', 'can_manage_tags', 'signature', 'is_active'];
         $set     = [];
         $params  = [];
 
         $boolCols = ['can_close_tickets', 'can_delete_tickets', 'can_edit_customers',
-                     'can_view_reports', 'can_manage_kb', 'is_active'];
+                     'can_view_reports', 'can_manage_kb', 'can_manage_tags', 'is_active'];
 
         foreach ($allowed as $col) {
             if (array_key_exists($col, $data)) {
