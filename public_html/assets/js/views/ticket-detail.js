@@ -256,8 +256,6 @@ const TicketDetailView = {
             const isSystem   = r.type === 'system';
             const isInternal = r.type === 'internal';
             const isAgent    = r.author_type === 'agent';
-            const cardClass  = isInternal ? 'border-warning' : (isAgent ? 'border-0' : 'border-0');
-            const bgClass    = isInternal ? 'bg-warning bg-opacity-10' : (isAgent ? 'bg-light' : 'bg-white');
 
             if (isSystem) {
                 return `<div class="text-center my-2">
@@ -273,11 +271,29 @@ const TicketDetailView = {
                 </a>`
             ).join('');
 
+            if (isInternal) {
+                return `
+                <div class="card shadow-sm mb-3" style="border-left:4px solid #f0ad4e;border-top:1px solid #fde8b5;border-right:1px solid #fde8b5;border-bottom:1px solid #fde8b5;background:#fffdf0;">
+                    <div class="card-header d-flex justify-content-between align-items-center py-2" style="background:#fff8dc;border-bottom:1px solid #fde8b5;">
+                        <div>
+                            <i class="bi bi-lock-fill text-warning me-1"></i>
+                            <span class="badge bg-warning text-dark me-2">Internal Note</span>
+                            <strong class="small">${App.escapeHtml(r.author_name || 'Agent')}</strong>
+                            <span class="text-muted small ms-2">${App.formatDate(r.created_at)}</span>
+                        </div>
+                        <span class="badge bg-warning text-dark bg-opacity-75 small">Only visible to agents</span>
+                    </div>
+                    <div class="card-body py-3">
+                        <div class="reply-body fst-italic">${this.renderBody(r.body, r.body_html)}</div>
+                        ${attachments ? `<div class="mt-2 pt-2 border-top">${attachments}</div>` : ''}
+                    </div>
+                </div>`;
+            }
+
             return `
-            <div class="card ${cardClass} shadow-sm mb-3 ${bgClass}">
-                <div class="card-header ${bgClass} d-flex justify-content-between align-items-center py-2 border-bottom">
+            <div class="card border-0 shadow-sm mb-3 ${isAgent ? 'bg-light' : 'bg-white'}">
+                <div class="card-header ${isAgent ? 'bg-light' : 'bg-white'} d-flex justify-content-between align-items-center py-2 border-bottom">
                     <div>
-                        ${isInternal ? '<span class="badge bg-warning text-dark me-2">Internal Note</span>' : ''}
                         <strong class="small">${App.escapeHtml(r.author_name || (isAgent ? 'Agent' : 'Customer'))}</strong>
                         <span class="text-muted small ms-2">${App.formatDate(r.created_at)}</span>
                     </div>

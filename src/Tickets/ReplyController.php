@@ -35,15 +35,18 @@ class ReplyController
         $ticket = $this->ticketRepo->findById((int)$params['id']);
         if (!$ticket) throw new NotFoundException('Ticket not found');
 
-        $data = $request->validate(['body_html' => 'required']);
+        $request->validate(['body' => 'required']);
 
-        $isPrivate = (bool)$request->input('is_private', false);
+        $body      = $request->input('body', '');
+        $bodyHtml  = $request->input('body_html') ?? nl2br(htmlspecialchars($body, ENT_QUOTES));
+        $type      = $request->input('type', 'reply');
+        $isPrivate = $type === 'internal' || (bool)$request->input('is_private', false);
         $ccEmails  = $request->input('cc_emails', []);
 
         $reply = $this->service->createAgentReply(
             $ticket['id'],
             $request->agent->id,
-            $data['body_html'],
+            $bodyHtml,
             $isPrivate,
             is_array($ccEmails) ? $ccEmails : []
         );

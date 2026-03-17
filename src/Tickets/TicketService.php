@@ -116,6 +116,15 @@ class TicketService
             );
         }
 
+        // Notify customer and agents
+        try {
+            $customer = $this->customerRepo->findById($data['customer_id']);
+            if ($customer) {
+                $notifications = new NotificationService();
+                $notifications->onNewTicket($ticket, $customer);
+            }
+        } catch (\Throwable) {}
+
         return ['ticket' => $ticket];
     }
 

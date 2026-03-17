@@ -29,13 +29,25 @@ class ReplyRepository
             [$ticketId]
         );
 
-        // Attach attachments to each reply
+        // Attach attachments and compute display fields
         foreach ($replies as &$reply) {
             $reply['attachments'] = $this->db->fetchAll(
                 "SELECT id, filename, mime_type, size_bytes, download_token, created_at
                  FROM attachments WHERE reply_id = ?",
                 [$reply['id']]
             );
+
+            // Computed fields for the frontend
+            if ($reply['author_type'] === 'system') {
+                $reply['type'] = 'system';
+            } elseif (!empty($reply['is_private'])) {
+                $reply['type'] = 'internal';
+            } else {
+                $reply['type'] = 'reply';
+            }
+
+            $reply['author_name'] = $reply['agent_name'] ?? $reply['customer_name'] ?? 'Unknown';
+            $reply['body']        = strip_tags($reply['body_html'] ?? $reply['body_text'] ?? '');
         }
 
         return $replies;
