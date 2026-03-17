@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS agents (
     can_edit_customers  TINYINT(1) NOT NULL DEFAULT 0,
     can_view_reports    TINYINT(1) NOT NULL DEFAULT 0,
     can_manage_kb       TINYINT(1) NOT NULL DEFAULT 0,
+    can_manage_tags     TINYINT(1) NOT NULL DEFAULT 0,
     signature           TEXT NULL COMMENT 'Per-agent email signature HTML',
     is_active           TINYINT(1) NOT NULL DEFAULT 1,
     last_login_at       DATETIME NULL,
@@ -200,7 +201,7 @@ CREATE TABLE IF NOT EXISTS imap_accounts (
     delete_after_import  TINYINT(1) NOT NULL DEFAULT 0,
     tag_id               INT UNSIGNED NULL,
     is_enabled           TINYINT(1) NOT NULL DEFAULT 1,
-    created_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================

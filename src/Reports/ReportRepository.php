@@ -68,6 +68,7 @@ class ReportRepository
                 AND t.deleted_at IS NULL
              WHERE a.is_active = 1
              GROUP BY a.id, a.name
+             HAVING ticket_count > 0
              ORDER BY ticket_count DESC",
             [$fromDt, $toDt]
         );
@@ -92,7 +93,9 @@ class ReportRepository
         $fromDt = $from . ' 00:00:00';
         $toDt   = $to . ' 23:59:59';
 
-        $agentClause = $agentId ? "AND t.assigned_agent_id = {$agentId}" : '';
+        $agentClause  = $agentId ? "AND t.assigned_agent_id = ?" : '';
+        $baseParams   = [$fromDt, $toDt];
+        $agentParams  = $agentId ? [$agentId] : [];
 
         $stats = $this->db->fetch(
             "SELECT
@@ -104,7 +107,7 @@ class ReportRepository
              WHERE t.closed_at IS NOT NULL AND t.deleted_at IS NULL
                AND t.closed_at BETWEEN ? AND ?
                {$agentClause}",
-            [$fromDt, $toDt]
+            array_merge($baseParams, $agentParams)
         );
 
         $tickets = $this->db->fetchAll(
@@ -116,7 +119,7 @@ class ReportRepository
                AND t.closed_at BETWEEN ? AND ?
                {$agentClause}
              ORDER BY close_minutes DESC LIMIT 50",
-            [$fromDt, $toDt]
+            array_merge($baseParams, $agentParams)
         );
 
         return [

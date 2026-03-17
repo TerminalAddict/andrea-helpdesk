@@ -180,6 +180,8 @@ class TicketRepository
 
     public function softDelete(int $id): bool
     {
+        $this->db->execute("DELETE FROM ticket_participants WHERE ticket_id = ?", [$id]);
+        $this->db->execute("DELETE FROM ticket_tag_map WHERE ticket_id = ?", [$id]);
         return $this->db->execute("UPDATE tickets SET deleted_at = NOW() WHERE id = ?", [$id]);
     }
 

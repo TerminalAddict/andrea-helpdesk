@@ -57,8 +57,8 @@ class AttachmentService
 
         // Ensure directory exists
         $dir = dirname($absolutePath);
-        if (!is_dir($dir)) {
-            mkdir($dir, 0750, true);
+        if (!is_dir($dir) && !mkdir($dir, 0750, true) && !is_dir($dir)) {
+            throw new HttpException('Storage directory could not be created', 500);
         }
 
         if (!move_uploaded_file($file['tmp_name'], $absolutePath)) {
@@ -93,8 +93,8 @@ class AttachmentService
         $absolutePath = $this->storagePath . '/attachments/' . $relativePath;
 
         $dir = dirname($absolutePath);
-        if (!is_dir($dir)) {
-            mkdir($dir, 0750, true);
+        if (!is_dir($dir) && !mkdir($dir, 0750, true) && !is_dir($dir)) {
+            throw new \RuntimeException('Storage directory could not be created');
         }
 
         file_put_contents($absolutePath, $data);
