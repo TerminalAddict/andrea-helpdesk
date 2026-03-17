@@ -74,7 +74,7 @@ class EmailNotifier
 
             // Email threading headers
             $messageId = $this->generateMessageId($ticketNumber);
-            $mailer->addCustomHeader('Message-ID', "<{$messageId}>");
+            $mailer->MessageID = "<{$messageId}>";
             $mailer->addCustomHeader('X-Ticket-ID', $ticketNumber);
 
             if (!empty($ticket['last_message_id'])) {
