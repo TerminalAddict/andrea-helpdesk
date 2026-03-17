@@ -20,7 +20,10 @@ const TicketNewView = {
                         <div class="row g-3">
                             <div class="col-md-8">
                                 <label class="form-label">Customer Email <span class="text-danger">*</span></label>
-                                <input type="email" class="form-control" id="nt-customer-email" required placeholder="customer@example.com">
+                                <div class="position-relative">
+                                    <input type="text" class="form-control" id="nt-customer-email" required placeholder="Search by name or email…" autocomplete="off">
+                                    <ul class="list-group shadow position-absolute w-100 z-3 d-none" id="nt-customer-suggestions" style="top:100%;max-height:220px;overflow-y:auto;"></ul>
+                                </div>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Customer Name</label>
@@ -102,10 +105,51 @@ const TicketNewView = {
             this._parentId = params.parent_id;
         }
 
+        // Customer autocomplete
+        let customerSearchTimer;
+        $('#nt-customer-email').on('input', () => {
+            clearTimeout(customerSearchTimer);
+            const q = $('#nt-customer-email').val().trim();
+            if (q.length < 2) { $('#nt-customer-suggestions').addClass('d-none').empty(); return; }
+            customerSearchTimer = setTimeout(() => this.searchCustomers(q), 300);
+        });
+
+        // Hide suggestions when clicking outside
+        $(document).on('click.newticket', (e) => {
+            if (!$(e.target).closest('#nt-customer-email, #nt-customer-suggestions').length) {
+                $('#nt-customer-suggestions').addClass('d-none');
+            }
+        });
+
         $('#new-ticket-form').on('submit', (e) => {
             e.preventDefault();
             this.submit();
         });
+    },
+
+    async searchCustomers(q) {
+        try {
+            const res = await API.get('/customers', { q, per_page: 8 });
+            const customers = res.data || [];
+            const $list = $('#nt-customer-suggestions');
+
+            if (!customers.length) { $list.addClass('d-none').empty(); return; }
+
+            $list.empty();
+            customers.forEach(c => {
+                const $item = $(`<li class="list-group-item list-group-item-action py-2" style="cursor:pointer;">
+                    <div class="fw-semibold small">${App.escapeHtml(c.name || c.email)}</div>
+                    <div class="text-muted small">${App.escapeHtml(c.email)}</div>
+                </li>`);
+                $item.on('click', () => {
+                    $('#nt-customer-email').val(c.email);
+                    $('#nt-customer-name').val(c.name || '');
+                    $list.addClass('d-none').empty();
+                });
+                $list.append($item);
+            });
+            $list.removeClass('d-none');
+        } catch (e) {}
     },
 
     async submit() {
