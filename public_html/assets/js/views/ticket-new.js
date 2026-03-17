@@ -58,6 +58,16 @@ const TicketNewView = {
                                 </select>
                             </div>
                             <div class="col-12">
+                                <label class="form-label">CC / Participants</label>
+                                <div class="border rounded p-2 d-flex flex-wrap gap-1 align-items-center" id="nt-cc-container" style="min-height:2.5rem;cursor:text;">
+                                    <div class="position-relative d-flex" style="min-width:220px;flex:1;">
+                                        <input type="text" class="form-control form-control-sm border-0 shadow-none p-0 ps-1" id="nt-cc-input" placeholder="Search name or email, press Enter to add…" autocomplete="off" style="outline:none;">
+                                        <ul class="list-group shadow position-absolute w-100 z-3 d-none" id="nt-cc-suggestions" style="top:100%;min-width:280px;max-height:200px;overflow-y:auto;"></ul>
+                                    </div>
+                                </div>
+                                <div class="form-text">CC'd participants receive copies of agent replies.</div>
+                            </div>
+                            <div class="col-12">
                                 <label class="form-label">Message <span class="text-danger">*</span></label>
                                 <textarea class="form-control" id="nt-body" rows="6" required placeholder="Describe the issue…"></textarea>
                             </div>
@@ -86,7 +96,8 @@ const TicketNewView = {
     },
 
     async init(params) {
-        this._params = params || {};
+        this._params       = params || {};
+        this._participants = [];
 
         // Load agents
         try {
@@ -127,6 +138,33 @@ const TicketNewView = {
             if (!$(e.target).closest('#nt-customer-email, #nt-customer-suggestions').length) {
                 $('#nt-customer-suggestions').addClass('d-none');
             }
+            if (!$(e.target).closest('#nt-cc-container, #nt-cc-suggestions').length) {
+                $('#nt-cc-suggestions').addClass('d-none');
+            }
+        });
+
+        // CC field — focus container clicks into input
+        $('#nt-cc-container').on('click', () => $('#nt-cc-input').focus());
+
+        // CC autocomplete
+        let ccSearchTimer;
+        $('#nt-cc-input').on('input', () => {
+            clearTimeout(ccSearchTimer);
+            const q = $('#nt-cc-input').val().trim();
+            if (q.length < 2) { $('#nt-cc-suggestions').addClass('d-none').empty(); return; }
+            ccSearchTimer = setTimeout(() => this.searchCcCustomers(q), 300);
+        });
+
+        // Enter or comma/tab on CC input adds raw email
+        $('#nt-cc-input').on('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ',' || e.key === 'Tab') {
+                e.preventDefault();
+                const val = $('#nt-cc-input').val().trim().replace(/,$/, '');
+                if (val) this.addCcParticipant(val, '');
+                $('#nt-cc-suggestions').addClass('d-none').empty();
+            } else if (e.key === 'Backspace' && !$('#nt-cc-input').val() && this._participants.length) {
+                this.removeCcParticipant(this._participants[this._participants.length - 1].email);
+            }
         });
 
         $('#new-ticket-form').on('submit', (e) => {
@@ -160,6 +198,47 @@ const TicketNewView = {
         } catch (e) {}
     },
 
+    async searchCcCustomers(q) {
+        try {
+            const res = await API.get('/customers', { q, per_page: 8 });
+            const customers = (res.data || []).filter(c => !this._participants.find(p => p.email === c.email));
+            const $list = $('#nt-cc-suggestions');
+            if (!customers.length) { $list.addClass('d-none').empty(); return; }
+            $list.empty();
+            customers.forEach(c => {
+                const $item = $(`<li class="list-group-item list-group-item-action py-2" style="cursor:pointer;">
+                    <div class="fw-semibold small">${App.escapeHtml(c.name || c.email)}</div>
+                    <div class="text-muted small">${App.escapeHtml(c.email)}</div>
+                </li>`);
+                $item.on('click', () => {
+                    this.addCcParticipant(c.email, c.name || '');
+                    $('#nt-cc-suggestions').addClass('d-none').empty();
+                    $('#nt-cc-input').val('').focus();
+                });
+                $list.append($item);
+            });
+            $list.removeClass('d-none');
+        } catch (e) {}
+    },
+
+    addCcParticipant(email, name) {
+        if (!email.includes('@')) return;
+        if (this._participants.find(p => p.email === email)) return;
+        this._participants.push({ email, name });
+        const $chip = $(`<span class="badge bg-secondary d-flex align-items-center gap-1 cc-chip" data-email="${App.escapeHtml(email)}" style="font-size:.8rem;font-weight:500;">
+            ${App.escapeHtml(name || email)}
+            <button type="button" class="btn-close btn-close-white" style="font-size:.6rem;" aria-label="Remove"></button>
+        </span>`);
+        $chip.find('.btn-close').on('click', () => this.removeCcParticipant(email));
+        $('#nt-cc-input').before($chip);
+        $('#nt-cc-input').val('');
+    },
+
+    removeCcParticipant(email) {
+        this._participants = this._participants.filter(p => p.email !== email);
+        $(`#nt-cc-container .cc-chip[data-email="${CSS.escape(email)}"]`).remove();
+    },
+
     async submit() {
         const email    = $('#nt-customer-email').val().trim();
         const name     = $('#nt-customer-name').val().trim();
@@ -187,6 +266,11 @@ const TicketNewView = {
 
             const res = await API.post('/tickets', payload);
             const ticketId = res.data.id;
+
+            // Add CC participants
+            for (const p of this._participants) {
+                await API.post('/tickets/' + ticketId + '/participants', { email: p.email, name: p.name });
+            }
 
             // Upload attachments
             for (const file of files) {
