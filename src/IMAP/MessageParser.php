@@ -123,7 +123,7 @@ class MessageParser
             $disposition = strtolower($structure->ifid ? 'inline' : ($structure->ifdisposition ? $structure->disposition : ''));
 
             if ($filename || $disposition === 'attachment') {
-                $data = $this->fetchPart($imap, $msgNum, $partNum ?: '1', $structure->encoding, false);
+                $data = $this->fetchPart($imap, $msgNum, $partNum ?: '1', $structure->encoding);
                 $attachments[] = [
                     'filename'  => $filename ?: 'attachment',
                     'data'      => $data,

@@ -57,7 +57,7 @@ class AttachmentService
 
         // Ensure directory exists
         $dir = dirname($absolutePath);
-        if (!is_dir($dir) && !mkdir($dir, 0750, true) && !is_dir($dir)) {
+        if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
             throw new HttpException('Storage directory could not be created', 500);
         }
 
@@ -98,7 +98,7 @@ class AttachmentService
         $absolutePath = $this->storagePath . '/attachments/' . $relativePath;
 
         $dir = dirname($absolutePath);
-        if (!is_dir($dir) && !mkdir($dir, 0750, true) && !is_dir($dir)) {
+        if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
             throw new \RuntimeException('Storage directory could not be created');
         }
 
