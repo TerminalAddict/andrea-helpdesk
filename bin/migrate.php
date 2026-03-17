@@ -38,10 +38,16 @@ try {
 
     $sql = file_get_contents($schemaFile);
 
-    // Split by semicolons (crude but works for this schema)
+    // Split by semicolons, strip comment lines from each chunk
     $statements = array_filter(
-        array_map('trim', explode(';', $sql)),
-        fn($s) => !empty($s) && !str_starts_with($s, '--')
+        array_map(function($chunk) {
+            $lines = array_filter(
+                explode("\n", $chunk),
+                fn($line) => !str_starts_with(ltrim($line), '--')
+            );
+            return trim(implode("\n", $lines));
+        }, explode(';', $sql)),
+        fn($s) => !empty($s)
     );
 
     $count = 0;
