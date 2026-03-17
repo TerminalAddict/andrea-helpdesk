@@ -75,8 +75,11 @@ try {
             continue;
         }
 
+        $accountRepo->recordConnected((int)$account['id']);
+
         $count = $poller->poll();
         $poller->disconnect();
+        $accountRepo->recordPoll((int)$account['id'], $count);
         $totalProcessed += $count;
 
         echo '[' . date('Y-m-d H:i:s') . "] Account {$account['name']}: processed {$count} message(s)." . PHP_EOL;

@@ -300,7 +300,14 @@ const SettingsView = {
             if (!accounts.length) {
                 $('#imap-accounts-list').html('<p class="text-muted">No IMAP accounts configured yet.</p>');
             } else {
-                const rows = accounts.map(a => `
+                const rows = accounts.map(a => {
+                    const connectedStr = a.last_connected_at
+                        ? `Last connected: ${App.formatDate(a.last_connected_at)}`
+                        : 'Never connected';
+                    const pollStr = a.last_poll_at
+                        ? `Last poll: ${App.formatDate(a.last_poll_at)} · ${a.last_poll_count} message(s) imported`
+                        : 'No polls recorded yet';
+                    return `
                     <div class="card mb-2 ${a.is_enabled ? '' : 'opacity-50'}">
                         <div class="card-body py-2 px-3 d-flex align-items-center gap-3">
                             <div class="flex-grow-1">
@@ -310,11 +317,17 @@ const SettingsView = {
                                     ${a.tag_name ? `· <span class="badge bg-secondary">${App.escapeHtml(a.tag_name)}</span>` : ''}
                                     ${!a.is_enabled ? '· <span class="badge bg-light text-dark border">Disabled</span>' : ''}
                                 </div>
+                                <div class="small text-muted mt-1">
+                                    <i class="bi bi-plug me-1"></i>${App.escapeHtml(connectedStr)}
+                                    &nbsp;·&nbsp;
+                                    <i class="bi bi-envelope-arrow-down me-1"></i>${App.escapeHtml(pollStr)}
+                                </div>
                             </div>
                             <button class="btn btn-sm btn-outline-primary btn-edit-imap" data-id="${a.id}"><i class="bi bi-pencil"></i></button>
                             <button class="btn btn-sm btn-outline-danger btn-delete-imap" data-id="${a.id}"><i class="bi bi-trash"></i></button>
                         </div>
-                    </div>`).join('');
+                    </div>`;
+                }).join('');
                 $('#imap-accounts-list').html(rows);
             }
 

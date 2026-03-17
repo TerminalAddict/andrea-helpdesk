@@ -131,6 +131,22 @@ class ImapAccountRepository
         );
     }
 
+    public function recordConnected(int $id): void
+    {
+        $this->db->execute(
+            "UPDATE imap_accounts SET last_connected_at = NOW() WHERE id = ?",
+            [$id]
+        );
+    }
+
+    public function recordPoll(int $id, int $count): void
+    {
+        $this->db->execute(
+            "UPDATE imap_accounts SET last_poll_at = NOW(), last_poll_count = ? WHERE id = ?",
+            [$count, $id]
+        );
+    }
+
     public function getDecryptedPassword(int $id): string
     {
         $row = $this->db->fetch("SELECT password FROM imap_accounts WHERE id = ?", [$id]);

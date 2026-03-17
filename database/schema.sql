@@ -203,6 +203,9 @@ CREATE TABLE IF NOT EXISTS imap_accounts (
     delete_after_import  TINYINT(1) NOT NULL DEFAULT 0,
     tag_id               INT UNSIGNED NULL,
     is_enabled           TINYINT(1) NOT NULL DEFAULT 1,
+    last_connected_at    DATETIME NULL DEFAULT NULL,
+    last_poll_at         DATETIME NULL DEFAULT NULL,
+    last_poll_count      INT UNSIGNED NOT NULL DEFAULT 0,
     created_at           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
