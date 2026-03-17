@@ -102,12 +102,17 @@ class ImapAccountController
         $username   = $account['username'];
         $encryption = strtolower($account['encryption']);
 
-        $scheme  = match($encryption) {
-            'ssl'  => 'imaps',
-            'tls'  => 'imap',
-            default => 'imap',
-        };
-        $url = "{$scheme}://{$host}:{$port}/";
+        // imaps:// handles implicit TLS; imap:// + CURLUSESSL_ALL handles STARTTLS
+        if ($encryption === 'ssl') {
+            $url    = "imaps://{$host}:{$port}/";
+            $usessl = CURLUSESSL_NONE; // scheme already implies TLS
+        } elseif ($encryption === 'tls') {
+            $url    = "imap://{$host}:{$port}/";
+            $usessl = CURLUSESSL_ALL;
+        } else {
+            $url    = "imap://{$host}:{$port}/";
+            $usessl = CURLUSESSL_NONE;
+        }
 
         $ch = curl_init();
         curl_setopt_array($ch, [
@@ -116,10 +121,10 @@ class ImapAccountController
             CURLOPT_PASSWORD       => $password,
             CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_SSL_VERIFYHOST => false,
+            CURLOPT_USE_SSL        => $usessl,
             CURLOPT_CONNECTTIMEOUT => 15,
             CURLOPT_TIMEOUT        => 15,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_USE_SSL        => $encryption === 'tls' ? CURLUSESSL_ALL : CURLUSESSL_NONE,
         ]);
 
         curl_exec($ch);
@@ -127,14 +132,16 @@ class ImapAccountController
         $curlError = curl_error($ch);
         curl_close($ch);
 
-        // curl IMAP error codes: 67 = bad credentials, 0 = success, 7 = can't connect
-        if ($curlErrno === 0 || $curlErrno === 78) {
-            // 0 = listed mailbox OK, 78 = remote file not found (valid login, folder may be empty)
+        // 0 = success, 21 = quote/list error (authenticated but bad folder — credentials ok),
+        // 67 = auth failed, 7 = can't connect, 28 = timeout
+        if ($curlErrno === 0 || $curlErrno === 21 || $curlErrno === 78) {
             Response::success([], 'Connection successful — credentials accepted.');
         } elseif ($curlErrno === 67) {
             Response::error('Connected but login failed — check username/password.');
         } elseif ($curlErrno === 7) {
             Response::error("Cannot connect to {$host}:{$port} — server unreachable.");
+        } elseif ($curlErrno === 28) {
+            Response::error("Connection timed out to {$host}:{$port} — check host/port and firewall.");
         } else {
             Response::error("Connection failed (curl #{$curlErrno}): {$curlError}");
         }
