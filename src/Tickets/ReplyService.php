@@ -62,26 +62,34 @@ class ReplyService
         $ticket = $this->db->fetch("SELECT * FROM tickets WHERE id = ? AND deleted_at IS NULL", [$ticketId]);
         if (!$ticket) throw new \InvalidArgumentException('Ticket not found');
 
-        $replyId = $this->replyRepo->create([
-            'ticket_id'      => $ticketId,
-            'author_type'    => 'customer',
-            'customer_id'    => $customerId,
-            'body_html'      => $bodyHtml,
-            'body_text'      => $bodyText ?: strip_tags($bodyHtml),
-            'is_private'     => 0,
-            'direction'      => 'inbound',
-            'raw_message_id' => $rawMessageId ?: null,
-            'in_reply_to'    => $inReplyTo ?: null,
-        ]);
+        $this->db->beginTransaction();
+        try {
+            $replyId = $this->replyRepo->create([
+                'ticket_id'      => $ticketId,
+                'author_type'    => 'customer',
+                'customer_id'    => $customerId,
+                'body_html'      => $bodyHtml,
+                'body_text'      => $bodyText ?: strip_tags($bodyHtml),
+                'is_private'     => 0,
+                'direction'      => 'inbound',
+                'raw_message_id' => $rawMessageId ?: null,
+                'in_reply_to'    => $inReplyTo ?: null,
+            ]);
 
-        // Reopen ticket if resolved/pending
-        if (in_array($ticket['status'], ['pending', 'resolved'], true)) {
-            $this->db->execute("UPDATE tickets SET status = 'open' WHERE id = ?", [$ticketId]);
-        }
+            // Reopen ticket if resolved/pending
+            if (in_array($ticket['status'], ['pending', 'resolved'], true)) {
+                $this->db->execute("UPDATE tickets SET status = 'open' WHERE id = ?", [$ticketId]);
+            }
 
-        // Update last_message_id
-        if ($rawMessageId) {
-            $this->db->execute("UPDATE tickets SET last_message_id = ? WHERE id = ?", [$rawMessageId, $ticketId]);
+            // Update last_message_id
+            if ($rawMessageId) {
+                $this->db->execute("UPDATE tickets SET last_message_id = ? WHERE id = ?", [$rawMessageId, $ticketId]);
+            }
+
+            $this->db->commit();
+        } catch (\Throwable $e) {
+            $this->db->rollback();
+            throw $e;
         }
 
         $reply    = $this->replyRepo->findById($replyId);

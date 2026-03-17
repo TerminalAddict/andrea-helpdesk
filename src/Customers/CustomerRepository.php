@@ -26,7 +26,7 @@ class CustomerRepository
     {
         return $this->db->fetch(
             "SELECT * FROM customers WHERE email = ? AND deleted_at IS NULL",
-            [$email]
+            [strtolower(trim($email))]
         );
     }
 

@@ -161,6 +161,22 @@ class TicketService
             // Move attachments
             $this->db->execute("UPDATE attachments SET ticket_id = ? WHERE ticket_id = ?", [$targetId, $sourceId]);
 
+            // Move participants (skip duplicates)
+            $this->db->execute(
+                "INSERT IGNORE INTO ticket_participants (ticket_id, customer_id, email, name)
+                 SELECT ?, customer_id, email, name FROM ticket_participants WHERE ticket_id = ?",
+                [$targetId, $sourceId]
+            );
+            $this->db->execute("DELETE FROM ticket_participants WHERE ticket_id = ?", [$sourceId]);
+
+            // Move tags (skip duplicates)
+            $this->db->execute(
+                "INSERT IGNORE INTO ticket_tag_map (ticket_id, tag_id)
+                 SELECT ?, tag_id FROM ticket_tag_map WHERE ticket_id = ?",
+                [$targetId, $sourceId]
+            );
+            $this->db->execute("DELETE FROM ticket_tag_map WHERE ticket_id = ?", [$sourceId]);
+
             // Close source ticket
             $this->ticketRepo->update($sourceId, [
                 'status'        => 'closed',

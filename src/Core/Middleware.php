@@ -36,7 +36,10 @@ class Middleware
         try {
             $jwtService = new JwtService();
             $payload    = $jwtService->verify($token);
+        } catch (AuthException $e) {
+            throw $e;
         } catch (\Throwable $e) {
+            error_log('Unexpected JWT verification error: ' . $e->getMessage());
             throw new AuthException('Invalid or expired token');
         }
 

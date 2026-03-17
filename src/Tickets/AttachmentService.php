@@ -86,6 +86,11 @@ class AttachmentService
      */
     public function storeRaw(int $ticketId, string $filename, string $data, string $mimeType, ?int $replyId = null): array
     {
+        if (strlen($data) > $this->maxSize) {
+            $maxMb = round($this->maxSize / 1048576, 1);
+            throw new \RuntimeException("Attachment '{$filename}' exceeds maximum size ({$maxMb} MB)");
+        }
+
         $originalName = $this->sanitiseFilename($filename);
         $subDir       = $ticketId . ($replyId ? "/{$replyId}" : '');
         $uniqueFile   = uniqid('', true) . '_' . $originalName;

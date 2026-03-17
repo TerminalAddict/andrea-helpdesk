@@ -187,11 +187,17 @@ class KbRepository
         $counter = 2;
 
         while (true) {
-            $excludeClause = $excludeId ? "AND id != {$excludeId}" : '';
-            $existing = $this->db->fetch(
-                "SELECT id FROM knowledge_base_articles WHERE slug = ? {$excludeClause} AND deleted_at IS NULL",
-                [$slug]
-            );
+            if ($excludeId) {
+                $existing = $this->db->fetch(
+                    "SELECT id FROM knowledge_base_articles WHERE slug = ? AND id != ? AND deleted_at IS NULL",
+                    [$slug, $excludeId]
+                );
+            } else {
+                $existing = $this->db->fetch(
+                    "SELECT id FROM knowledge_base_articles WHERE slug = ? AND deleted_at IS NULL",
+                    [$slug]
+                );
+            }
             if (!$existing) break;
             $slug = $base . '-' . $counter++;
         }
