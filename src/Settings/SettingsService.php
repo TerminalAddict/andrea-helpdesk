@@ -33,28 +33,33 @@ class SettingsService
 
     public function getSmtpConfig(): array
     {
+        $e = fn(string $key) => getenv($key) ?: null;
         return [
-            'host'         => $this->repo->get('smtp_host', ''),
-            'port'         => (int)$this->repo->get('smtp_port', 587),
-            'username'     => $this->repo->get('smtp_username', ''),
-            'password'     => $this->decrypt((string)$this->repo->get('smtp_password', '')),
-            'from_address' => $this->repo->get('smtp_from_address', ''),
-            'from_name'    => $this->repo->get('smtp_from_name', 'Andrea Helpdesk'),
-            'encryption'   => $this->repo->get('smtp_encryption', 'tls'),
-            'reply_to'     => $this->repo->get('reply_to_address', ''),
+            'host'         => $e('SMTP_HOST')         ?? $this->repo->get('smtp_host', ''),
+            'port'         => (int)($e('SMTP_PORT')   ?? $this->repo->get('smtp_port', 587)),
+            'username'     => $e('SMTP_USERNAME')      ?? $this->repo->get('smtp_username', ''),
+            'password'     => $e('SMTP_PASSWORD')      ?? $this->decrypt((string)$this->repo->get('smtp_password', '')),
+            'from_address' => $e('SMTP_FROM_ADDRESS')  ?? $this->repo->get('smtp_from_address', ''),
+            'from_name'    => $e('SMTP_FROM_NAME')     ?? $this->repo->get('smtp_from_name', 'Andrea Helpdesk'),
+            'encryption'   => $e('SMTP_ENCRYPTION')    ?? $this->repo->get('smtp_encryption', 'tls'),
+            'reply_to'     => $e('SMTP_REPLY_TO')      ?? $this->repo->get('reply_to_address', ''),
         ];
     }
 
     public function getImapConfig(): array
     {
+        $e = fn(string $key) => getenv($key) ?: null;
         return [
-            'host'                 => $this->repo->get('imap_host', ''),
-            'port'                 => (int)$this->repo->get('imap_port', 993),
-            'username'             => $this->repo->get('imap_username', ''),
-            'password'             => $this->decrypt((string)$this->repo->get('imap_password', '')),
-            'folder'               => $this->repo->get('imap_folder', 'INBOX'),
-            'encryption'           => $this->repo->get('imap_encryption', 'ssl'),
-            'delete_after_import'  => (bool)$this->repo->get('imap_delete_after_import', false),
+            'host'                => $e('IMAP_HOST')       ?? $this->repo->get('imap_host', ''),
+            'port'                => (int)($e('IMAP_PORT') ?? $this->repo->get('imap_port', 993)),
+            'username'            => $e('IMAP_USERNAME')    ?? $this->repo->get('imap_username', ''),
+            'password'            => $e('IMAP_PASSWORD')    ?? $this->decrypt((string)$this->repo->get('imap_password', '')),
+            'folder'              => $e('IMAP_FOLDER')      ?? $this->repo->get('imap_folder', 'INBOX'),
+            'encryption'          => $e('IMAP_ENCRYPTION')  ?? $this->repo->get('imap_encryption', 'ssl'),
+            'delete_after_import' => filter_var(
+                $e('IMAP_DELETE_AFTER_IMPORT') ?? $this->repo->get('imap_delete_after_import', false),
+                FILTER_VALIDATE_BOOLEAN
+            ),
         ];
     }
 
