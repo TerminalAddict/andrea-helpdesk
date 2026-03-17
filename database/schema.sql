@@ -300,6 +300,7 @@ INSERT INTO settings (key_name, value, type, group_name, label) VALUES
 -- Branding
 ('company_name',        'Andrea Helpdesk',   'string',  'branding', 'Company Name'),
 ('logo_url',            '',                  'string',  'branding', 'Logo URL'),
+('favicon_url',         '',                  'string',  'branding', 'Favicon URL'),
 ('primary_color',       '#0d6efd',           'string',  'branding', 'Primary Color'),
 ('accent_color',        '#6610f2',           'string',  'branding', 'Accent Color'),
 ('custom_css',          '',                  'string',  'branding', 'Custom CSS'),
