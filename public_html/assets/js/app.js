@@ -151,6 +151,7 @@ const App = {
             if (res.data) {
                 this.settings = res.data;
                 if (res.data.company_name) this.applyAppName(res.data.company_name);
+                if (res.data.favicon_url)  this.applyFavicon(res.data.favicon_url);
             }
         } catch (e) {}
     },
@@ -163,6 +164,11 @@ const App = {
             ? `<img src="${this.escapeHtml(this.settings.logo_url)}" alt="${this.escapeHtml(name)}" style="max-height:32px;max-width:120px;object-fit:contain;" class="me-2">`
             : `<i class="bi bi-headset me-2"></i>`;
         $('.navbar-brand').html(`${logo}${this.escapeHtml(name)}`).toggleClass('pe-3', hasLogo);
+    },
+
+    applyFavicon(url) {
+        const link = document.getElementById('app-favicon');
+        if (link && url) link.href = url;
     },
 
     navigate(path) {

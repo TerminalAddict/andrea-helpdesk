@@ -69,7 +69,8 @@ const SettingsView = {
             ]);
         } else if (tab === 'branding') {
             html = this.form('branding', [
-                { key: 'logo_url',              label: 'Logo URL',       type: 'text',  value: s.logo_url || '' },
+                { key: 'logo_url',              label: 'Logo URL',       type: 'text',  value: s.logo_url || '', hint: 'URL to your logo image (displayed in the navbar)' },
+                { key: 'favicon_url',           label: 'Favicon URL',    type: 'text',  value: s.favicon_url || '', hint: 'URL to a .ico, .png, or .svg (16×16 or 32×32 recommended). Applied instantly to all browser tabs.' },
                 { key: 'primary_color',         label: 'Primary Colour', type: 'color', value: s.primary_color || '#0d6efd' },
                 { key: 'support_email_display', label: 'Support Email (displayed)', type: 'email', value: s.support_email_display || '' },
             ]);
@@ -500,7 +501,7 @@ const SettingsView = {
         const s = this.settings;
         const tabFields = {
             general:      ['company_name','app_url','timezone','date_format','ticket_prefix'],
-            branding:     ['logo_url','primary_color','support_email_display'],
+            branding:     ['logo_url','favicon_url','primary_color','support_email_display'],
             email:        ['smtp_host','smtp_port','smtp_encryption','smtp_username','smtp_password','smtp_from_address','smtp_from_name','reply_to_address','global_signature','notify_agent_on_new_ticket','notify_agent_on_new_reply'],
             autoresponse: ['auto_response_enabled','auto_response_subject','auto_response_body'],
             imap:         [],
@@ -530,6 +531,7 @@ const SettingsView = {
             if (tab === 'general' || tab === 'branding') {
                 Object.assign(App.settings, payload);
                 App.applyAppName(App.appName);
+                if (payload.favicon_url !== undefined) App.applyFavicon(payload.favicon_url);
             }
             App.toast('Settings saved');
         } catch (e) {

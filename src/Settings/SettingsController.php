@@ -24,7 +24,7 @@ class SettingsController
      */
     public function publicSettings(Request $request): void
     {
-        $keys = ['company_name', 'logo_url', 'primary_color', 'date_format'];
+        $keys = ['company_name', 'logo_url', 'primary_color', 'date_format', 'favicon_url'];
         $data = [];
         foreach ($keys as $key) {
             $data[$key] = $this->repo->get($key);
