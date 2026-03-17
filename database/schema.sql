@@ -299,6 +299,7 @@ INSERT INTO settings (key_name, value, type, group_name, label) VALUES
 ('ticket_prefix',       'HD',               'string',  'general',  'Ticket Number Prefix'),
 ('timezone',            'Pacific/Auckland',  'string',  'general',  'Timezone'),
 ('date_format',         'd/m/Y H:i',         'string',  'general',  'Date/Time Format'),
+('imap_poll_mode',      'cron',              'string',  'general',  'IMAP Polling Mode'),
 
 -- Branding
 ('company_name',        'Andrea Helpdesk',   'string',  'branding', 'Company Name'),

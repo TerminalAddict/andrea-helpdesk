@@ -91,6 +91,7 @@ return [
     ['PUT',    '/api/admin/imap-accounts/:id',      ImapAccountController::class, 'update',  ['role:admin']],
     ['DELETE', '/api/admin/imap-accounts/:id',      ImapAccountController::class, 'destroy', ['role:admin']],
     ['POST',   '/api/admin/imap-accounts/:id/test', ImapAccountController::class, 'test',    ['role:admin']],
+    ['POST',   '/api/imap/trigger-poll',            ImapAccountController::class, 'triggerPoll', ['auth:agent']],
 
     ['GET',  '/api/admin/settings',             SettingsController::class, 'index',     ['role:admin']],
     ['PUT',  '/api/admin/settings',             SettingsController::class, 'update',    ['role:admin']],

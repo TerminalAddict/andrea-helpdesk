@@ -38,6 +38,7 @@ const App = {
             const user = await API.loadCurrentUser();
             if (user) {
                 Navbar.init();
+                this.startImapWebPoller();
             } else {
                 window.location.hash = '#/login';
                 return;
@@ -46,6 +47,13 @@ const App = {
 
         $(window).on('hashchange', () => this.route());
         this.route();
+    },
+
+    startImapWebPoller() {
+        if (this.settings.imap_poll_mode !== 'web') return;
+        const trigger = () => API.post('/imap/trigger-poll', {}).catch(() => {});
+        trigger();
+        setInterval(trigger, 60000);
     },
 
     getHash() {

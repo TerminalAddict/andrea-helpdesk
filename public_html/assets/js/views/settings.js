@@ -76,6 +76,8 @@ const SettingsView = {
                 { key: 'timezone',       label: 'Timezone',          type: 'text',   value: s.timezone || 'Pacific/Auckland', hint: 'e.g. Pacific/Auckland, UTC' },
                 { key: 'date_format',    label: 'Date Format',       type: 'text',   value: s.date_format || 'Y-m-d H:i', hint: 'PHP date() format string' },
                 { key: 'ticket_prefix',  label: 'Ticket Number Prefix', type: 'text', value: s.ticket_prefix || 'HD' },
+                { key: 'imap_poll_mode', label: 'IMAP Polling Mode', type: 'select', value: s.imap_poll_mode || 'cron',
+                  options: [['cron','Cron Job (recommended)'],['web','Web Triggered']] },
             ]);
         } else if (tab === 'branding') {
             html = this.form('branding', [
@@ -146,6 +148,34 @@ const SettingsView = {
                 ' <button class="btn btn-outline-secondary btn-test-smtp ms-2"><i class="bi bi-envelope me-1"></i>Test SMTP</button>'
             );
             $('.btn-test-smtp').on('click', () => this.testSmtp());
+        }
+
+        // Add IMAP poll mode instructions on general tab
+        if (tab === 'general') {
+            const appUrl  = this.settings.app_url || window.location.origin;
+            const cronCmd = `* * * * * php /path/to/helpdesk/bin/imap-poll.php >> /path/to/helpdesk/storage/logs/imap.log 2>&1`;
+            $('.btn-save-settings').closest('.card-body').find('#s-imap_poll_mode').closest('.mb-3').after(`
+                <div id="imap-poll-info-cron" class="mb-3 d-none">
+                    <div class="alert alert-secondary py-2 mb-0">
+                        <div class="fw-semibold small mb-1"><i class="bi bi-terminal me-1"></i>Cron Job Setup</div>
+                        <p class="small mb-2">Add the following line to your server crontab (<code>crontab -e</code> as the web server user, or use <code>make cron-install-production</code> from your local machine):</p>
+                        <code class="d-block bg-dark text-light rounded p-2 small user-select-all">${App.escapeHtml(cronCmd)}</code>
+                        <p class="small mt-2 mb-0 text-muted">Replace <code>/path/to/helpdesk/</code> with the actual path to this application on your server. The script uses a file lock so overlapping runs are safe.</p>
+                    </div>
+                </div>
+                <div id="imap-poll-info-web" class="mb-3 d-none">
+                    <div class="alert alert-info py-2 mb-0">
+                        <div class="fw-semibold small mb-1"><i class="bi bi-globe me-1"></i>Web Triggered Mode</div>
+                        <p class="small mb-0">The IMAP poller will be triggered automatically in the background whenever an agent visits the helpdesk. No cron job is required, but polling only occurs while at least one agent has the app open. A file lock prevents overlapping runs.</p>
+                    </div>
+                </div>`);
+
+            const updatePollInfo = (val) => {
+                $('#imap-poll-info-cron').toggleClass('d-none', val !== 'cron');
+                $('#imap-poll-info-web').toggleClass('d-none', val !== 'web');
+            };
+            $('#s-imap_poll_mode').on('change', function() { updatePollInfo(this.value); });
+            updatePollInfo($('#s-imap_poll_mode').val());
         }
     },
 
@@ -607,7 +637,7 @@ const SettingsView = {
     async save(tab) {
         const s = this.settings;
         const tabFields = {
-            general:      ['company_name','app_url','timezone','date_format','ticket_prefix'],
+            general:      ['company_name','app_url','timezone','date_format','ticket_prefix','imap_poll_mode'],
             branding:     ['logo_url','favicon_url','primary_color','support_email_display'],
             email:        ['smtp_host','smtp_port','smtp_encryption','smtp_username','smtp_password','smtp_from_address','smtp_from_name','reply_to_address','global_signature','notify_agent_on_new_ticket','notify_agent_on_new_reply'],
             autoresponse: ['auto_response_enabled','auto_response_subject','auto_response_body'],

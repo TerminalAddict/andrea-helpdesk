@@ -87,6 +87,18 @@ class ImapAccountController
         Response::success(null, 'IMAP account deleted');
     }
 
+    public function triggerPoll(Request $request): void
+    {
+        $script = dirname(__DIR__, 2) . '/bin/imap-poll.php';
+        if (!file_exists($script)) {
+            Response::error('Poll script not found', 500);
+            return;
+        }
+        $php = PHP_BINARY;
+        exec(escapeshellarg($php) . ' ' . escapeshellarg($script) . ' > /dev/null 2>&1 &');
+        Response::success(null, 'Poll triggered');
+    }
+
     public function test(Request $request, array $params): void
     {
         $id      = (int)$params['id'];
