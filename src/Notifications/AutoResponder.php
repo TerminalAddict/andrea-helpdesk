@@ -34,8 +34,11 @@ class AutoResponder
         $messageId    = $ticket['ticket_number'] . '.auto.' . time() . '@' . (parse_url(getenv('APP_URL') ?: '', PHP_URL_HOST) ?: 'helpdesk');
 
         $headers = [
-            'Message-ID'  => "<{$messageId}>",
-            'X-Ticket-ID' => $ticketNumber,
+            'Message-ID'               => "<{$messageId}>",
+            'X-Ticket-ID'              => $ticketNumber,
+            'Auto-Submitted'           => 'auto-replied',
+            'X-Auto-Response-Suppress' => 'All',
+            'Precedence'               => 'auto-reply',
         ];
 
         if (!empty($ticket['original_message_id'])) {

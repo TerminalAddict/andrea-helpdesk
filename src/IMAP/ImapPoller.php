@@ -99,6 +99,14 @@ class ImapPoller
         // Find existing ticket
         $existingTicket = $this->matcher->findExistingTicket($parsed);
 
+        // Skip auto-replies that would create a new ticket (loop prevention)
+        // If they match an existing thread we still add the reply — no auto-response is sent for replies
+        if ($parsed['is_auto_reply'] && !$existingTicket) {
+            $this->log("Skipping auto-reply (loop prevention): {$parsed['subject']}");
+            $this->markSeen($msgNum);
+            return false;
+        }
+
         if ($existingTicket) {
             $this->log("Matched existing ticket: {$existingTicket['ticket_number']}");
 

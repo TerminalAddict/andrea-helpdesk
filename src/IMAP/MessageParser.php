@@ -13,12 +13,23 @@ class MessageParser
         $header     = imap_headerinfo($imap, $msgNum);
         $rawHeaders = imap_fetchheader($imap, $msgNum);
 
+        $autoSubmitted  = strtolower(trim($this->extractRawHeader($rawHeaders, 'Auto-Submitted')));
+        $precedence     = strtolower(trim($this->extractRawHeader($rawHeaders, 'Precedence')));
+        $autoSuppress   = $this->extractRawHeader($rawHeaders, 'X-Auto-Response-Suppress');
+        $decodedSubject = $this->decodeSubject($header->subject ?? '(No Subject)');
+
+        $isAutoReply = ($autoSubmitted !== '' && $autoSubmitted !== 'no')
+            || in_array($precedence, ['auto-reply', 'bulk', 'junk'], true)
+            || $autoSuppress !== ''
+            || (bool)preg_match('/^(out of office|automatic reply|auto reply|auto-reply|vacation|away from|absence|autosvar|automatische antwort)/i', $decodedSubject);
+
         $result = [
-            'message_id'  => $this->extractRawHeader($rawHeaders, 'Message-ID'),
-            'in_reply_to' => $this->extractRawHeader($rawHeaders, 'In-Reply-To'),
-            'references'  => $this->extractRawHeader($rawHeaders, 'References'),
-            'x_ticket_id' => $this->extractRawHeader($rawHeaders, 'X-Ticket-ID'),
-            'subject'     => $this->decodeSubject($header->subject ?? '(No Subject)'),
+            'message_id'   => $this->extractRawHeader($rawHeaders, 'Message-ID'),
+            'in_reply_to'  => $this->extractRawHeader($rawHeaders, 'In-Reply-To'),
+            'references'   => $this->extractRawHeader($rawHeaders, 'References'),
+            'x_ticket_id'  => $this->extractRawHeader($rawHeaders, 'X-Ticket-ID'),
+            'is_auto_reply'=> $isAutoReply,
+            'subject'     => $decodedSubject,
             'from_email'  => '',
             'from_name'   => '',
             'reply_to'    => '',
