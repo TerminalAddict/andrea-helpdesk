@@ -302,9 +302,10 @@ const TicketDetailView = {
             const isAgent    = r.author_type === 'agent';
 
             if (isSystem) {
+                const agentPart = r.agent_name ? ` · ${App.escapeHtml(r.agent_name)}` : '';
                 return `<div class="text-center my-2">
                     <small class="text-muted fst-italic border rounded px-3 py-1 d-inline-block bg-light">
-                        ${App.escapeHtml(r.body)}
+                        ${App.escapeHtml(r.body)}${agentPart} · ${App.formatDate(r.created_at)}
                     </small>
                 </div>`;
             }

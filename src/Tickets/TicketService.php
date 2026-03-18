@@ -149,7 +149,7 @@ class TicketService
         // Add system note to parent
         $replyService = new ReplyService();
         $childNumber = $result['ticket']['ticket_number'];
-        $replyService->createSystemReply($parentId, "Sub-ticket {$childNumber} created.");
+        $replyService->createSystemReply($parentId, "Sub-ticket {$childNumber} created.", $agentId);
 
         return $result;
     }
@@ -194,8 +194,8 @@ class TicketService
 
             // Add system note to target
             $replyService = new ReplyService();
-            $replyService->createSystemReply($targetId, "Ticket {$source['ticket_number']} was merged into this ticket.");
-            $replyService->createSystemReply($sourceId, "This ticket was merged into {$target['ticket_number']}.");
+            $replyService->createSystemReply($targetId, "Ticket {$source['ticket_number']} was merged into this ticket.", $agentId);
+            $replyService->createSystemReply($sourceId, "This ticket was merged into {$target['ticket_number']}.", $agentId);
 
             $this->db->commit();
             return true;
@@ -227,7 +227,7 @@ class TicketService
         }
 
         $replyService = new ReplyService();
-        $replyService->createSystemReply($ticketId, "Status changed to {$status}.");
+        $replyService->createSystemReply($ticketId, "Status changed to {$status}.", $agentId);
 
         return $this->ticketRepo->update($ticketId, $updates);
     }

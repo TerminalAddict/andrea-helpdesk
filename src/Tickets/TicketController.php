@@ -109,11 +109,11 @@ class TicketController
         // Log audit trail for changes
         $replyService = new ReplyService();
         if (isset($data['subject']) && $data['subject'] !== $ticket['subject']) {
-            $replyService->createSystemReply($ticket['id'], "Subject changed to \"{$data['subject']}\".");
+            $replyService->createSystemReply($ticket['id'], "Subject changed to \"{$data['subject']}\".", $request->agent->id);
         }
         if ($newCustomer && (int)$data['customer_id'] !== (int)$ticket['customer_id']) {
             $label = $newCustomer['name'] ?: $newCustomer['email'];
-            $replyService->createSystemReply($ticket['id'], "Customer changed to {$label}.");
+            $replyService->createSystemReply($ticket['id'], "Customer changed to {$label}.", $request->agent->id);
         }
 
         // If assignment changed, notify new agent
@@ -148,7 +148,7 @@ class TicketController
         );
 
         $replyService = new ReplyService();
-        $replyService->createSystemReply($ticketId, 'Message body updated.');
+        $replyService->createSystemReply($ticketId, 'Message body updated.', $request->agent->id);
 
         Response::success(null, 'Reply updated');
     }

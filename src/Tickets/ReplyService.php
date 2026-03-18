@@ -103,11 +103,12 @@ class ReplyService
         return $reply ?? [];
     }
 
-    public function createSystemReply(int $ticketId, string $body): array
+    public function createSystemReply(int $ticketId, string $body, ?int $agentId = null): array
     {
         $replyId = $this->replyRepo->create([
             'ticket_id'   => $ticketId,
             'author_type' => 'system',
+            'agent_id'    => $agentId,
             'body_html'   => '<p><em>' . htmlspecialchars($body) . '</em></p>',
             'body_text'   => $body,
             'is_private'  => 0,
