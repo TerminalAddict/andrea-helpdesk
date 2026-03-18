@@ -630,6 +630,8 @@ const SettingsView = {
 
                 <hr class="my-4">
                 <h6 class="mb-3">Change Password</h6>
+                <form autocomplete="off" onsubmit="return false">
+                <input type="text" autocomplete="username" style="display:none;">
                 <div class="mb-3" style="max-width:420px;">
                     <label class="form-label" for="profile-current-password">Current Password</label>
                     <input type="password" class="form-control" id="profile-current-password" autocomplete="current-password">
@@ -643,6 +645,7 @@ const SettingsView = {
                     <label class="form-label" for="profile-confirm-password">Confirm New Password</label>
                     <input type="password" class="form-control" id="profile-confirm-password" autocomplete="new-password">
                 </div>
+                </form>
 
                 <button class="btn btn-primary" id="btn-save-profile">
                     <i class="bi bi-save me-1"></i>Save Profile
