@@ -401,6 +401,9 @@ const SettingsView = {
 
     openImapModal(id = null, accounts = []) {
         const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('imapAccountModal'));
+        document.getElementById('imapAccountModal').addEventListener('hide.bs.modal', () => {
+            if (document.activeElement) document.activeElement.blur();
+        }, { once: true });
 
         // Populate tag dropdown
         $('#imap-tag-id').html('<option value="">No tag</option>' +
