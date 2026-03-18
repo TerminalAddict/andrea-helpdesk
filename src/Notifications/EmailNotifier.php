@@ -130,7 +130,7 @@ class EmailNotifier
             $mailer->Subject = "[New Ticket] {$ticket['ticket_number']}: {$ticket['subject']}";
             $mailer->isHTML(true);
 
-            $appUrl = getenv('APP_URL') ?: 'https://your-helpdesk-domain';
+            $appUrl = $this->settings->get('app_url') ?: getenv('APP_URL') ?: '';
             $link   = "{$appUrl}/#/tickets/{$ticket['id']}";
 
             $mailer->Body = "

@@ -55,7 +55,7 @@ class NotificationService
     public function onTicketAssigned(array $ticket, array $assignedAgent): void
     {
         try {
-            $appUrl    = getenv('APP_URL') ?: 'https://your-helpdesk-domain';
+            $appUrl    = SettingsService::getInstance()->get('app_url') ?: getenv('APP_URL') ?: '';
             $ticketUrl = "{$appUrl}/#/tickets/{$ticket['id']}";
             $this->emailNotifier->sendAgentNotification(
                 $assignedAgent['id'],
@@ -82,7 +82,7 @@ class NotificationService
         $db = Database::getInstance();
 
         try {
-            $appUrl    = getenv('APP_URL') ?: 'https://your-helpdesk-domain';
+            $appUrl    = SettingsService::getInstance()->get('app_url') ?: getenv('APP_URL') ?: '';
             $ticketUrl = "{$appUrl}/#/tickets/{$ticket['id']}";
 
             if ($ticket['assigned_agent_id']) {

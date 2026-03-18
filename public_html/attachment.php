@@ -91,7 +91,7 @@ try {
         sendError(403, 'Forbidden');
     }
 
-    $storagePath = getenv('STORAGE_PATH') ?: '/var/www/andrea-helpdesk-storage';
+    $storagePath = getenv('STORAGE_PATH') ?: sys_get_temp_dir() . '/andrea-helpdesk-storage';
     $attachmentsRoot = realpath($storagePath . '/attachments');
     $filePath = realpath($storagePath . '/attachments/' . $attachment['stored_path']);
 

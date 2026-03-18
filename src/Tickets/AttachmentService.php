@@ -28,7 +28,7 @@ class AttachmentService
 
     public function __construct()
     {
-        $this->storagePath = rtrim(getenv('STORAGE_PATH') ?: '/var/www/andrea-helpdesk-storage', '/');
+        $this->storagePath = rtrim(getenv('STORAGE_PATH') ?: sys_get_temp_dir() . '/andrea-helpdesk-storage', '/');
         $this->maxSize     = (int)(getenv('MAX_ATTACHMENT_SIZE') ?: 10485760);
     }
 

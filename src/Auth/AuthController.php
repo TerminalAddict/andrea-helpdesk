@@ -152,7 +152,7 @@ class AuthController
             );
 
             try {
-                $appUrl   = getenv('APP_URL') ?: 'https://your-helpdesk-domain';
+                $appUrl   = \Andrea\Helpdesk\Settings\SettingsService::getInstance()->get('app_url') ?: getenv('APP_URL') ?: '';
                 $link     = "{$appUrl}/#/portal/login?token={$token}&email=" . urlencode($email);
                 $notifier = new EmailNotifier();
                 $notifier->sendPortalInvite($customer, $link);

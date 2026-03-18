@@ -27,7 +27,7 @@ class CustomerService
         $expires = new \DateTime('+1 hour');
         $this->repo->setPortalToken($customerId, $token, $expires);
 
-        $appUrl = getenv('APP_URL') ?: 'https://your-helpdesk-domain';
+        $appUrl = \Andrea\Helpdesk\Settings\SettingsService::getInstance()->get('app_url') ?: getenv('APP_URL') ?: '';
         $link   = "{$appUrl}/#/portal/login?token={$token}&email=" . urlencode($customer['email']);
 
         try {
