@@ -104,12 +104,14 @@ const CustomerDetailView = {
                             <hr class="my-2">
                             <p class="small text-muted mb-2">Set a new portal password for this customer.</p>
                             <div id="admin-set-pw-error" class="alert alert-danger d-none py-2 small"></div>
+                            <form autocomplete="off" onsubmit="return false">
                             <div class="mb-2">
-                                <input type="password" class="form-control form-control-sm" id="admin-pw-new" placeholder="New password (min 8 chars)">
+                                <input type="password" class="form-control form-control-sm" id="admin-pw-new" placeholder="New password (min 8 chars)" autocomplete="new-password">
                             </div>
                             <div class="mb-2">
-                                <input type="password" class="form-control form-control-sm" id="admin-pw-confirm" placeholder="Confirm password">
+                                <input type="password" class="form-control form-control-sm" id="admin-pw-confirm" placeholder="Confirm password" autocomplete="new-password">
                             </div>
+                            </form>
                             <button class="btn btn-sm btn-outline-secondary" id="btn-admin-set-pw">
                                 <span class="spinner-border spinner-border-sm d-none me-1" id="admin-pw-spinner"></span>
                                 <i class="bi bi-key me-1"></i>Set Password
