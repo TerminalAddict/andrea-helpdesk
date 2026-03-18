@@ -255,8 +255,10 @@ ENV;
 
 function splitSql(string $sql): array
 {
-    // Strip line comments
-    $sql = preg_replace('/--[^\n]*/', '', $sql) ?? $sql;
+    // Strip lines that begin with -- (avoids corrupting string values that contain --)
+    $lines = explode("\n", $sql);
+    $lines = array_filter($lines, fn($l) => !str_starts_with(ltrim($l), '--'));
+    $sql   = implode("\n", $lines);
     // Strip block comments
     $sql = preg_replace('/\/\*.*?\*\//s', '', $sql) ?? $sql;
     return explode(';', $sql);
