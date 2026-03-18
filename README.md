@@ -116,7 +116,28 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 
 ---
 
-## Quick Start
+## Installation
+
+### Option A — Web Installer (FTP / shared hosting)
+
+No SSH or command line required.
+
+1. **Upload files** — FTP the entire repository to your web root (e.g. `public_html/` or `httpdocs/`). The `public_html/` subdirectory should become your document root.
+2. **Upload Composer dependencies** — run `composer install --no-dev --optimize-autoloader` locally, then FTP the generated `vendor/` directory to the server alongside `public_html/`.
+3. **Create a storage directory** — create a folder *outside* the web root (e.g. `../helpdesk-storage/`) and ensure it is writable by the web server. The installer will create the required subdirectories.
+4. **Run the installer** — visit `https://yourdomain.com/install/` in your browser. The wizard will:
+   - Check PHP version and required extensions
+   - Test your database connection
+   - Write `.env`, create the database schema, seed the admin account, and download frontend assets
+5. **Log in** at `https://yourdomain.com/` with the admin credentials you set during installation.
+
+> **Note:** IMAP email polling requires a cron job (`php /path/to/bin/imap-poll.php`). Many shared hosts provide a cron manager in their control panel. Without cron, new emails won't be imported automatically — agents can still create tickets and reply via the UI.
+
+> **Security:** Delete or password-protect the `public_html/install/` directory after installation. The installer writes an `install.lock` file to prevent re-running, but removing the directory is best practice.
+
+---
+
+### Option B — Command Line (SSH / VPS)
 
 ```bash
 # 1. Clone and install dependencies
@@ -143,7 +164,7 @@ SMTP, IMAP accounts, branding, and all other runtime settings are configured thr
 
 ---
 
-## Deployment
+## Deployment (developer workflow)
 
 ```bash
 make deploy-production   # rsync to production server
