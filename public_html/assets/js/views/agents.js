@@ -160,7 +160,11 @@ const AgentsView = {
         $('#pw-required').show();
         $('#pw-hint').hide();
         $('#agent-modal-error').addClass('d-none');
-        new bootstrap.Modal(document.getElementById('agentModal')).show();
+        const modal = new bootstrap.Modal(document.getElementById('agentModal'));
+        document.getElementById('agentModal').addEventListener('hide.bs.modal', () => {
+            if (document.activeElement) document.activeElement.blur();
+        }, { once: true });
+        modal.show();
     },
 
     openEditModal(id) {
@@ -181,7 +185,11 @@ const AgentsView = {
             $(this).prop('checked', !!agent[$(this).val()]);
         });
 
-        new bootstrap.Modal(document.getElementById('agentModal')).show();
+        const modal = new bootstrap.Modal(document.getElementById('agentModal'));
+        document.getElementById('agentModal').addEventListener('hide.bs.modal', () => {
+            if (document.activeElement) document.activeElement.blur();
+        }, { once: true });
+        modal.show();
     },
 
     async saveAgent() {
