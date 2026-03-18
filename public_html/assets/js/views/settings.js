@@ -111,7 +111,7 @@ const SettingsView = {
                 { key: 'smtp_port',       label: 'SMTP Port',       type: 'number',   value: s.smtp_port || '587' },
                 { key: 'smtp_encryption', label: 'Encryption',      type: 'select',   value: s.smtp_encryption || 'tls',
                   options: [['tls','TLS (STARTTLS)'],['ssl','SSL'],['none','None']] },
-                { key: 'smtp_username',   label: 'SMTP Username',   type: 'email',    value: s.smtp_username || '' },
+                { key: 'smtp_username',   label: 'SMTP Username',   type: 'email',    value: s.smtp_username || '', autocomplete: 'username' },
                 { key: 'smtp_password',   label: 'SMTP Password',   type: 'password', value: '', placeholder: 'Leave blank to keep current' },
                 { key: 'smtp_from_address', label: 'From Email',    type: 'email',    value: s.smtp_from_address || '' },
                 { key: 'smtp_from_name',  label: 'From Name',       type: 'text',     value: s.smtp_from_name || '' },
@@ -220,7 +220,7 @@ const SettingsView = {
             } else if (f.type === 'password') {
                 input = `<input type="password" class="form-control" id="s-${f.key}" value="" autocomplete="new-password"${f.placeholder ? ` placeholder="${App.escapeHtml(f.placeholder)}"` : ''}>`;
             } else {
-                input = `<input type="${f.type}" class="form-control" id="s-${f.key}" value="${App.escapeHtml(f.value || '')}"${f.placeholder ? ` placeholder="${App.escapeHtml(f.placeholder)}"` : ''}>`;
+                input = `<input type="${f.type}" class="form-control" id="s-${f.key}" value="${App.escapeHtml(f.value || '')}"${f.placeholder ? ` placeholder="${App.escapeHtml(f.placeholder)}"` : ''}${f.autocomplete ? ` autocomplete="${f.autocomplete}"` : ''}>`;
             }
             return `<div class="mb-3">
                 <label class="form-label" for="s-${f.key}">${App.escapeHtml(f.label)}</label>
