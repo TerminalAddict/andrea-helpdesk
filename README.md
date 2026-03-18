@@ -1,4 +1,6 @@
-# <span>&#xe61c;</span> Andrea Helpdesk
+<img src="public_html/headset.svg" alt="Andrea Helpdesk" width="48" height="48">
+
+# Andrea Helpdesk
 
 A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL, and a Bootstrap 5 single-page application. No SaaS subscriptions. No per-agent fees. Your data stays on your server.
 
