@@ -163,6 +163,12 @@
         font-size: 0.75rem;
     }
 
+    /* Hide All Open Tickets filter dropdowns on mobile */
+    #dash-filter-tag,
+    #dash-filter-priority {
+        display: none !important;
+    }
+
     /* Dashboard search bar + New Ticket button: stack vertically */
     #dash-toolbar {
         flex-direction: column;
