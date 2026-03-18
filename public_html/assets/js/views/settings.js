@@ -217,6 +217,8 @@ const SettingsView = {
                 input = `<select class="form-select" id="s-${f.key}">${opts}</select>`;
             } else if (f.type === 'color') {
                 input = `<input type="color" class="form-control form-control-color" id="s-${f.key}" value="${App.escapeHtml(f.value || '#0d6efd')}">`;
+            } else if (f.type === 'password') {
+                input = `<input type="password" class="form-control" id="s-${f.key}" value="" autocomplete="new-password"${f.placeholder ? ` placeholder="${App.escapeHtml(f.placeholder)}"` : ''}>`;
             } else {
                 input = `<input type="${f.type}" class="form-control" id="s-${f.key}" value="${App.escapeHtml(f.value || '')}"${f.placeholder ? ` placeholder="${App.escapeHtml(f.placeholder)}"` : ''}>`;
             }
@@ -230,12 +232,14 @@ const SettingsView = {
         return `
         <div class="card border-0 shadow-sm">
             <div class="card-body">
+                <form autocomplete="off" onsubmit="return false">
                 ${inputs}
                 <div class="mt-3">
                     <button class="btn btn-primary btn-save-settings" data-tab="${tab}">
                         <i class="bi bi-save me-1"></i>Save Settings
                     </button>
                 </div>
+                </form>
             </div>
         </div>`;
     },
