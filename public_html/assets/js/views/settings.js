@@ -638,11 +638,29 @@ const SettingsView = {
                     <i class="bi bi-save me-1"></i>Save Profile
                 </button>
             </div>
+
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-white fw-semibold">
+                    <i class="bi bi-arrow-clockwise me-2"></i>Browser Cache
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">If changes to the app aren't appearing, use this to clear cached data and force a fresh reload.</p>
+                    <button class="btn btn-outline-secondary" id="btn-clear-cache">
+                        <i class="bi bi-trash me-1"></i>Clear Cache &amp; Reload
+                    </button>
+                </div>
+            </div>
         </div>`;
     },
 
     bindProfileSave() {
         $('#btn-save-profile').on('click', () => this.saveProfile());
+        $('#btn-clear-cache').on('click', () => {
+            const token = localStorage.getItem('andrea_refresh_token');
+            localStorage.clear();
+            if (token) localStorage.setItem('andrea_refresh_token', token);
+            location.reload(true);
+        });
     },
 
     async saveProfile() {
