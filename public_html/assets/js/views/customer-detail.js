@@ -105,6 +105,7 @@ const CustomerDetailView = {
                             <p class="small text-muted mb-2">Set a new portal password for this customer.</p>
                             <div id="admin-set-pw-error" class="alert alert-danger d-none py-2 small"></div>
                             <form autocomplete="off" onsubmit="return false">
+                            <input type="text" autocomplete="username" style="display:none;">
                             <div class="mb-2">
                                 <input type="password" class="form-control form-control-sm" id="admin-pw-new" placeholder="New password (min 8 chars)" autocomplete="new-password">
                             </div>
