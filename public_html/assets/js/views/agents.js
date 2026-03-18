@@ -44,7 +44,7 @@ const AgentsView = {
                             </div>
                             <div class="mb-3" id="agent-password-wrap">
                                 <label class="form-label">Password <span class="text-danger" id="pw-required">*</span></label>
-                                <input type="password" class="form-control" id="agent-password" placeholder="Leave blank to keep unchanged">
+                                <input type="password" class="form-control" id="agent-password" placeholder="Leave blank to keep unchanged" autocomplete="new-password">
                                 <div class="form-text" id="pw-hint" style="display:none;">Leave blank to keep existing password</div>
                             </div>
                             <div class="mb-3">
