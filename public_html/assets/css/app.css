@@ -193,6 +193,12 @@
         display: none;
     }
 
+    /* Tickets list: show only Ticket # and Subject on mobile */
+    #tickets-table-wrap th:nth-child(n+3),
+    #tickets-table-wrap td:nth-child(n+3) {
+        display: none;
+    }
+
     /* All other tables: hide less critical columns (7th onwards) */
     .table th:nth-child(n+7),
     .table td:nth-child(n+7) {
