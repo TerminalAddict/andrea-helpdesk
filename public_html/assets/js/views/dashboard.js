@@ -22,7 +22,7 @@ const DashboardView = {
             <div class="mb-3">
                 <div class="input-group input-group-lg shadow-sm">
                     <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-                    <input type="search" class="form-control border-start-0 ps-0" id="dash-search" placeholder="Search tickets by subject, email, message content or comments…" autocomplete="off">
+                    <input type="search" class="form-control border-start-0 ps-0" id="dash-search" placeholder="Search tickets and knowledge base…" autocomplete="off">
                     <div class="input-group-text bg-white border-start-0 text-muted small d-none" id="dash-search-spinner">
                         <div class="spinner-border spinner-border-sm"></div>
                     </div>
@@ -166,36 +166,63 @@ const DashboardView = {
     async runSearch(q) {
         $('#dash-search-spinner').removeClass('d-none');
         try {
-            const res     = await API.get('/tickets', { q, per_page: 20, sort: 'updated_at', dir: 'desc' });
-            const tickets = res.data || [];
-            const $box    = $('#dash-search-results').empty().removeClass('d-none');
+            const [ticketRes, kbRes] = await Promise.all([
+                API.get('/tickets',     { q, per_page: 10, sort: 'updated_at', dir: 'desc' }),
+                API.get('/kb/articles', { q, per_page: 5, is_published: 1 }),
+            ]);
+            const tickets  = ticketRes.data || [];
+            const articles = kbRes.data || [];
+            const $box     = $('#dash-search-results').empty().removeClass('d-none');
 
-            if (!tickets.length) {
-                $box.html('<p class="text-muted p-3 mb-0 small">No tickets found for <strong>' + App.escapeHtml(q) + '</strong>.</p>');
+            if (!tickets.length && !articles.length) {
+                $box.html('<p class="text-muted p-3 mb-0 small">No results for <strong>' + App.escapeHtml(q) + '</strong>.</p>');
                 return;
             }
 
-            const rows = tickets.map(t => {
-                const tags = t.tag_names
-                    ? t.tag_names.split(',').map(tag => `<span class="badge bg-secondary me-1">${App.escapeHtml(tag)}</span>`).join('')
-                    : '';
-                return `<a class="d-flex align-items-start gap-3 p-3 text-decoration-none text-dark border-bottom dash-search-item"
-                           href="#/tickets/${t.id}" style="cursor:pointer;">
-                    <div class="flex-grow-1 overflow-hidden">
-                        <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <span class="font-monospace small text-muted">${App.escapeHtml(t.ticket_number)}</span>
-                            ${App.statusBadge(t.status)}
-                            ${App.priorityBadge(t.priority)}
-                            ${tags}
-                        </div>
-                        <div class="fw-semibold text-truncate mt-1">${App.escapeHtml(t.subject)}</div>
-                        <div class="small text-muted">${App.escapeHtml(t.customer_name || '')} ${t.customer_email ? '&lt;' + App.escapeHtml(t.customer_email) + '&gt;' : ''}</div>
-                    </div>
-                    <div class="small text-muted text-nowrap">${App.formatDate(t.updated_at)}</div>
-                </a>`;
-            }).join('');
+            let html = '';
 
-            $box.html(rows);
+            if (tickets.length) {
+                html += `<div class="px-3 pt-2 pb-1 small text-muted fw-semibold text-uppercase" style="font-size:.7rem;letter-spacing:.05em;">
+                    <i class="bi bi-ticket-perforated me-1"></i>Tickets
+                </div>`;
+                html += tickets.map(t => {
+                    const tags = t.tag_names
+                        ? t.tag_names.split(',').map(tag => `<span class="badge bg-secondary me-1">${App.escapeHtml(tag)}</span>`).join('')
+                        : '';
+                    return `<a class="d-flex align-items-start gap-3 px-3 py-2 text-decoration-none text-dark border-bottom dash-search-item"
+                               href="#/tickets/${t.id}">
+                        <div class="flex-grow-1 overflow-hidden">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <span class="font-monospace small text-muted">${App.escapeHtml(t.ticket_number)}</span>
+                                ${App.statusBadge(t.status)}
+                                ${App.priorityBadge(t.priority)}
+                                ${tags}
+                            </div>
+                            <div class="fw-semibold text-truncate mt-1">${App.escapeHtml(t.subject)}</div>
+                            <div class="small text-muted">${App.escapeHtml(t.customer_name || '')} ${t.customer_email ? '&lt;' + App.escapeHtml(t.customer_email) + '&gt;' : ''}</div>
+                        </div>
+                        <div class="small text-muted text-nowrap">${App.formatDate(t.updated_at)}</div>
+                    </a>`;
+                }).join('');
+            }
+
+            if (articles.length) {
+                html += `<div class="px-3 pt-2 pb-1 small text-muted fw-semibold text-uppercase" style="font-size:.7rem;letter-spacing:.05em;">
+                    <i class="bi bi-book me-1"></i>Knowledge Base
+                </div>`;
+                html += articles.map(a =>
+                    `<a class="d-flex align-items-center gap-3 px-3 py-2 text-decoration-none text-dark border-bottom dash-search-item"
+                        href="#/kb/articles/${App.escapeHtml(a.slug)}">
+                        <i class="bi bi-file-text text-primary flex-shrink-0"></i>
+                        <div class="flex-grow-1 overflow-hidden">
+                            <div class="fw-semibold text-truncate">${App.escapeHtml(a.title)}</div>
+                            <div class="small text-muted">${App.escapeHtml(a.category_name || 'Uncategorised')}</div>
+                        </div>
+                    </a>`
+                ).join('');
+            }
+
+            $box.html(html);
             $box.find('.dash-search-item').on('click', () => {
                 $('#dash-search-results').addClass('d-none');
                 $('#dash-search').val('');
