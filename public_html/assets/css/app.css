@@ -335,3 +335,7 @@
 [data-theme="dark"] .btn-close {
     filter: invert(1) grayscale(100%) brightness(200%);
 }
+
+.dash-search-item.dash-search-active {
+    background-color: var(--bs-primary-bg-subtle, #cfe2ff);
+}

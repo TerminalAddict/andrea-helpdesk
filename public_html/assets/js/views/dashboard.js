@@ -129,6 +129,30 @@ const DashboardView = {
         $('#dash-search').on('focus', () => {
             if ($('#dash-search-results').children().length) $('#dash-search-results').removeClass('d-none');
         });
+        $('#dash-search').on('keydown', (e) => {
+            const $box   = $('#dash-search-results');
+            const $items = $box.find('.dash-search-item');
+            if (!$items.length || $box.hasClass('d-none')) return;
+            const $active = $items.filter('.dash-search-active');
+            let idx = $items.index($active);
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                idx = idx < $items.length - 1 ? idx + 1 : 0;
+                $items.removeClass('dash-search-active').eq(idx).addClass('dash-search-active')[0]
+                    ?.scrollIntoView({ block: 'nearest' });
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                idx = idx > 0 ? idx - 1 : $items.length - 1;
+                $items.removeClass('dash-search-active').eq(idx).addClass('dash-search-active')[0]
+                    ?.scrollIntoView({ block: 'nearest' });
+            } else if (e.key === 'Enter' && $active.length) {
+                e.preventDefault();
+                $active[0].click();
+            } else if (e.key === 'Escape') {
+                $box.addClass('d-none');
+            }
+        });
 
         // Tags for filter
         try {
