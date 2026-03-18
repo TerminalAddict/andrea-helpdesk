@@ -20,12 +20,17 @@ const DashboardView = {
             </div>
 
             <div class="mb-3">
-                <div class="input-group input-group-lg shadow-sm">
-                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-                    <input type="search" class="form-control border-start-0 ps-0" id="dash-search" placeholder="Search tickets and knowledge base…" autocomplete="off">
-                    <div class="input-group-text bg-white border-start-0 text-muted small d-none" id="dash-search-spinner">
-                        <div class="spinner-border spinner-border-sm"></div>
+                <div class="d-flex gap-2">
+                    <div class="input-group input-group-lg shadow-sm flex-grow-1">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="search" class="form-control border-start-0 ps-0" id="dash-search" placeholder="Search tickets and knowledge base…" autocomplete="off">
+                        <div class="input-group-text bg-white border-start-0 text-muted small d-none" id="dash-search-spinner">
+                            <div class="spinner-border spinner-border-sm"></div>
+                        </div>
                     </div>
+                    <a href="#/tickets/new" class="btn btn-primary btn-lg shadow-sm text-nowrap">
+                        <i class="bi bi-plus-lg me-1"></i>New Ticket
+                    </a>
                 </div>
                 <div id="dash-search-results" class="card border-0 shadow mt-1 d-none" style="max-height:420px;overflow-y:auto;"></div>
             </div>
