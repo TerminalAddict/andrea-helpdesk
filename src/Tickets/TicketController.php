@@ -88,12 +88,19 @@ class TicketController
         $ticket = $this->repo->findById((int)$params['id']);
         if (!$ticket) throw new NotFoundException('Ticket not found');
 
-        $allowed = ['subject', 'priority', 'assigned_agent_id'];
+        $allowed = ['subject', 'priority', 'assigned_agent_id', 'customer_id'];
         $data    = [];
         foreach ($allowed as $field) {
             if ($request->input($field) !== null) {
                 $data[$field] = $request->input($field);
             }
+        }
+
+        if (isset($data['customer_id'])) {
+            $customerRepo = new \Andrea\Helpdesk\Customers\CustomerRepository();
+            $customer = $customerRepo->findById((int)$data['customer_id']);
+            if (!$customer) throw new HttpException('Customer not found', 422);
+            $data['customer_id'] = (int)$data['customer_id'];
         }
 
         $this->repo->update($ticket['id'], $data);
@@ -110,6 +117,26 @@ class TicketController
         }
 
         Response::success($this->repo->findById($ticket['id']), 'Ticket updated');
+    }
+
+    public function updateReply(Request $request, array $params): void
+    {
+        $ticketId = (int)$params['id'];
+        $replyId  = (int)$params['reply_id'];
+
+        $reply = $this->db->fetch(
+            "SELECT id FROM replies WHERE id = ? AND ticket_id = ? AND author_type != 'system'",
+            [$replyId, $ticketId]
+        );
+        if (!$reply) throw new NotFoundException('Reply not found');
+
+        $body = trim($request->input('body', ''));
+        $this->db->execute(
+            "UPDATE replies SET body_html = ?, updated_at = NOW() WHERE id = ?",
+            [nl2br(htmlspecialchars($body, ENT_QUOTES, 'UTF-8')), $replyId]
+        );
+
+        Response::success(null, 'Reply updated');
     }
 
     public function destroy(Request $request, array $params): void

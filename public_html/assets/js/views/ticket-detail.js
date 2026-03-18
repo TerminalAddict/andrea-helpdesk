@@ -65,6 +65,8 @@ const TicketDetailView = {
                             <i class="bi bi-three-dots"></i>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#" id="btn-edit-ticket"><i class="bi bi-pencil me-2"></i>Edit Ticket</a></li>
+                            <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="#" id="btn-spawn-child"><i class="bi bi-diagram-2 me-2"></i>Create Child Ticket</a></li>
                             <li><a class="dropdown-item" href="#" id="btn-merge"><i class="bi bi-git me-2"></i>Merge into…</a></li>
                             <li><a class="dropdown-item" href="#" id="btn-link-related"><i class="bi bi-link-45deg me-2"></i>Link Related Ticket</a></li>
@@ -244,6 +246,43 @@ const TicketDetailView = {
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Edit Ticket Modal -->
+        <div class="modal fade" id="editTicketModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>Edit Ticket</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Subject</label>
+                            <input type="text" class="form-control" id="edit-ticket-subject">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Customer</label>
+                            <div class="position-relative">
+                                <input type="text" class="form-control" id="edit-ticket-customer" placeholder="Search by name or email…" autocomplete="off">
+                                <div id="edit-ticket-customer-suggestions" class="list-group position-absolute w-100" style="z-index:1060;display:none;max-height:200px;overflow-y:auto;"></div>
+                            </div>
+                            <input type="hidden" id="edit-ticket-customer-id">
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label">Message Body</label>
+                            <textarea class="form-control" id="edit-ticket-body" rows="10"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="btn-save-edit-ticket">
+                            <span class="spinner-border spinner-border-sm d-none me-1" id="edit-ticket-spinner"></span>
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>`;
 
         $('#ticket-detail-wrap').replaceWith(html);
@@ -398,6 +437,9 @@ const TicketDetailView = {
                 await this.setStatus($('#edit-status').val());
             } catch (e) { App.toast(e.message, 'error'); }
         });
+
+        // Edit ticket
+        $('#btn-edit-ticket').on('click', (e) => { e.preventDefault(); this.showEditModal(); });
 
         // Status buttons
         $('#btn-resolve').on('click', () => this.setStatus('resolved'));
@@ -646,6 +688,93 @@ const TicketDetailView = {
             App.toast('Draft KB article created — review and publish it in the Knowledge Base');
             App.navigate('/kb?edit=' + res.data.id);
         } catch (e) { App.toast(e.message, 'error'); }
+    },
+
+    showEditModal() {
+        const t = this.ticket;
+        const firstReply = (t.replies || []).find(r => r.author_type !== 'system');
+
+        $('#edit-ticket-subject').val(t.subject || '');
+        $('#edit-ticket-customer').val(t.customer_name + (t.customer_email ? ' <' + t.customer_email + '>' : ''));
+        $('#edit-ticket-customer-id').val(t.customer_id || '');
+
+        // Strip HTML to plain text for editing
+        const plainBody = firstReply
+            ? $('<div>').html(firstReply.body_html || '').text().trim()
+            : '';
+        $('#edit-ticket-body').val(plainBody);
+        this._editFirstReplyId = firstReply ? firstReply.id : null;
+        this._originalEditBody = plainBody;
+
+        // Customer typeahead
+        let customerTimer;
+        $('#edit-ticket-customer').off('input.editcust').on('input.editcust', () => {
+            clearTimeout(customerTimer);
+            $('#edit-ticket-customer-id').val('');
+            const q = $('#edit-ticket-customer').val().trim();
+            if (q.length < 2) { $('#edit-ticket-customer-suggestions').hide().empty(); return; }
+            customerTimer = setTimeout(async () => {
+                try {
+                    const res = await API.get('/customers', { q, per_page: 8 });
+                    const $sug = $('#edit-ticket-customer-suggestions').empty();
+                    (res.data || []).forEach(c => {
+                        $(`<a class="list-group-item list-group-item-action py-1 small" href="#">
+                            <strong>${App.escapeHtml(c.name)}</strong>
+                            <span class="text-muted ms-1">${App.escapeHtml(c.email)}</span>
+                        </a>`).on('click', e => {
+                            e.preventDefault();
+                            $('#edit-ticket-customer').val(c.name + ' <' + c.email + '>');
+                            $('#edit-ticket-customer-id').val(c.id);
+                            $sug.hide().empty();
+                        }).appendTo($sug);
+                    });
+                    if (res.data && res.data.length) $sug.show(); else $sug.hide();
+                } catch {}
+            }, 300);
+        });
+
+        $(document).off('click.editcust').on('click.editcust', e => {
+            if (!$(e.target).closest('#edit-ticket-customer, #edit-ticket-customer-suggestions').length) {
+                $('#edit-ticket-customer-suggestions').hide();
+            }
+        });
+
+        $('#btn-save-edit-ticket').off('click').on('click', () => this.saveEditTicket());
+
+        const modal = new bootstrap.Modal(document.getElementById('editTicketModal'));
+        document.getElementById('editTicketModal').addEventListener('hide.bs.modal', () => {
+            if (document.activeElement) document.activeElement.blur();
+            $(document).off('click.editcust');
+        }, { once: true });
+        modal.show();
+    },
+
+    async saveEditTicket() {
+        const subject    = $('#edit-ticket-subject').val().trim();
+        const customerId = $('#edit-ticket-customer-id').val();
+        const body       = $('#edit-ticket-body').val();
+
+        if (!subject) { App.toast('Subject is required', 'error'); return; }
+        if (!customerId) { App.toast('Please select a customer from the dropdown', 'error'); return; }
+
+        const btn = $('#btn-save-edit-ticket').prop('disabled', true);
+        $('#edit-ticket-spinner').removeClass('d-none');
+        try {
+            await API.put('/tickets/' + this.ticket.id, { subject, customer_id: parseInt(customerId) });
+
+            if (this._editFirstReplyId && body !== this._originalEditBody) {
+                await API.put('/tickets/' + this.ticket.id + '/replies/' + this._editFirstReplyId, { body });
+            }
+
+            bootstrap.Modal.getInstance(document.getElementById('editTicketModal')).hide();
+            App.toast('Ticket updated');
+            await this.reload();
+        } catch (e) {
+            App.toast(e.message, 'error');
+        } finally {
+            btn.prop('disabled', false);
+            $('#edit-ticket-spinner').addClass('d-none');
+        }
     },
 
     async deleteTicket() {

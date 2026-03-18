@@ -36,6 +36,7 @@ return [
     ['POST',   '/api/tickets',                              TicketController::class, 'store',           ['auth:agent']],
     ['GET',    '/api/tickets/:id',                          TicketController::class, 'show',            ['auth:agent']],
     ['PUT',    '/api/tickets/:id',                          TicketController::class, 'update',          ['auth:agent']],
+    ['PUT',    '/api/tickets/:id/replies/:reply_id',        TicketController::class, 'updateReply',      ['auth:agent']],
     ['DELETE', '/api/tickets/:id',                          TicketController::class, 'destroy',         ['auth:agent', 'permission:can_delete_tickets']],
     ['POST',   '/api/tickets/:id/assign',                   TicketController::class, 'assign',          ['auth:agent']],
     ['POST',   '/api/tickets/:id/status',                   TicketController::class, 'status',          ['auth:agent']],
