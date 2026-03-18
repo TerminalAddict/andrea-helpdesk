@@ -121,7 +121,8 @@ try {
     $disposition = in_array($mimeType, $inlineTypes, true) ? 'inline' : 'attachment';
 
     header('Content-Type: ' . $mimeType);
-    header('Content-Disposition: ' . $disposition . '; filename="' . addslashes($filename) . '"');
+    $encodedFilename = rawurlencode($filename);
+    header('Content-Disposition: ' . $disposition . '; filename="' . str_replace(['"', '\\'], '', $filename) . '"; filename*=UTF-8\'\'' . $encodedFilename);
     header('Content-Length: ' . $fileSize);
     header('X-Content-Type-Options: nosniff');
     header('Cache-Control: private, max-age=3600');

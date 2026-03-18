@@ -268,7 +268,7 @@ const DashboardView = {
                 ? t.tag_names.split(',').map(tag => `<span class="badge bg-secondary me-1">${App.escapeHtml(tag)}</span>`).join('')
                 : '';
             return `
-            <tr style="cursor:pointer;" onclick="App.navigate('/tickets/${t.id}')">
+            <tr class="dash-ticket-row" data-id="${t.id}" style="cursor:pointer;">
                 <td><span class="font-monospace small">${App.escapeHtml(t.ticket_number)}</span></td>
                 <td class="text-truncate" style="max-width:200px;">${App.escapeHtml(t.subject)}</td>
                 <td>${App.priorityBadge(t.priority)}</td>
@@ -291,6 +291,9 @@ const DashboardView = {
                 </thead>
                 <tbody>${rows}</tbody>
             </table>${footer}`);
+        $('#all-open-tickets-table').on('click', '.dash-ticket-row', function() {
+            App.navigate('/tickets/' + $(this).data('id'));
+        });
     },
 
     renderTable(selector, tickets, meta = {}, viewAllHref = null) {
@@ -304,7 +307,7 @@ const DashboardView = {
                 ? t.tag_names.split(',').map(tag => `<span class="badge bg-secondary me-1">${App.escapeHtml(tag)}</span>`).join('')
                 : '';
             return `
-            <tr style="cursor:pointer;" onclick="App.navigate('/tickets/${t.id}')">
+            <tr class="dash-ticket-row" data-id="${t.id}" style="cursor:pointer;">
                 <td><span class="font-monospace small">${App.escapeHtml(t.ticket_number)}</span></td>
                 <td class="text-truncate" style="max-width:160px;">${App.escapeHtml(t.subject)}</td>
                 <td>${App.statusBadge(t.status)}</td>
@@ -328,5 +331,8 @@ const DashboardView = {
                 </thead>
                 <tbody>${rows}</tbody>
             </table>${footer}`);
+        $(selector).on('click', '.dash-ticket-row', function() {
+            App.navigate('/tickets/' + $(this).data('id'));
+        });
     }
 };

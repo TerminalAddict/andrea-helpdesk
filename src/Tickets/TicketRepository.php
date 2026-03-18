@@ -200,16 +200,16 @@ class TicketRepository
         // INSERT ... ON DUPLICATE KEY UPDATE is atomic at the row level — no wrapping
         // transaction needed, and adding one here would conflict with any caller that
         // already has an open transaction (e.g. createFromEmail in TicketService).
+        // LAST_INSERT_ID(expr) sets the connection-scoped last insert id to the expression
+        // result, making the incremented value retrievable without a second SELECT that
+        // could race against another concurrent connection.
         $this->db->execute(
             "INSERT INTO ticket_number_sequences (date_key, last_seq) VALUES (?, 1)
-             ON DUPLICATE KEY UPDATE last_seq = last_seq + 1",
+             ON DUPLICATE KEY UPDATE last_seq = LAST_INSERT_ID(last_seq + 1)",
             [$date]
         );
-        $row = $this->db->fetch(
-            "SELECT last_seq FROM ticket_number_sequences WHERE date_key = ?",
-            [$date]
-        );
-        $seq = str_pad((string)$row['last_seq'], 4, '0', STR_PAD_LEFT);
+        $row = $this->db->fetch("SELECT LAST_INSERT_ID() AS seq");
+        $seq = str_pad((string)($row['seq'] ?? 1), 4, '0', STR_PAD_LEFT);
         return "{$prefix}-{$date}-{$seq}";
     }
 

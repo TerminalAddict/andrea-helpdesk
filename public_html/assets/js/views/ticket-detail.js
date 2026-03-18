@@ -614,7 +614,7 @@ const TicketDetailView = {
         const target = prompt('Enter ticket number to merge this ticket INTO:');
         if (!target) return;
         try {
-            const res = await API.get('/tickets', { q: target, per_page: 5 });
+            const res = await API.get('/tickets', { q: target, per_page: 20 });
             const match = (res.data || []).find(t => t.ticket_number === target.trim());
             if (!match) { App.toast('Ticket not found: ' + target, 'error'); return; }
             const confirmed = await App.confirm(`Merge ${this.ticket.ticket_number} into ${match.ticket_number}? This cannot be undone.`, 'Confirm Merge');
@@ -629,7 +629,7 @@ const TicketDetailView = {
         const target = prompt('Enter ticket number to link as related:');
         if (!target) return;
         try {
-            const res = await API.get('/tickets', { q: target, per_page: 5 });
+            const res = await API.get('/tickets', { q: target, per_page: 20 });
             const match = (res.data || []).find(t => t.ticket_number === target.trim());
             if (!match) { App.toast('Ticket not found: ' + target, 'error'); return; }
             await API.post('/tickets/' + this.ticket.id + '/relations', { related_ticket_id: match.id, relation_type: 'related' });

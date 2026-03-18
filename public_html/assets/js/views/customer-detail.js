@@ -161,7 +161,7 @@ const CustomerDetailView = {
     renderTicketsTable(tickets, meta = {}) {
         if (!tickets.length) return '<p class="text-muted p-4 text-center mb-0">No tickets found.</p>';
         const rows = tickets.map(t => `
-            <tr style="cursor:pointer;" onclick="App.navigate('/tickets/${t.id}')">
+            <tr class="cust-ticket-row" data-id="${t.id}" style="cursor:pointer;">
                 <td><span class="font-monospace small">${App.escapeHtml(t.ticket_number)}</span></td>
                 <td class="small">${App.escapeHtml(t.subject)}</td>
                 <td>${App.statusBadge(t.status)}</td>
@@ -274,6 +274,10 @@ const CustomerDetailView = {
     },
 
     bindEvents() {
+        $(document).on('click', '.cust-ticket-row', function() {
+            App.navigate('/tickets/' + $(this).data('id'));
+        });
+
         $('#btn-edit-cust').on('click', () => {
             $('#cust-view-mode').hide();
             $('#cust-edit-mode').show();

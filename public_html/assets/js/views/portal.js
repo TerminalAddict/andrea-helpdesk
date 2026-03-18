@@ -292,7 +292,7 @@ const PortalView = {
 
         const total = meta.total || 0;
         const rows = tickets.map(t => `
-            <tr style="cursor:pointer;" onclick="App.navigate('/portal/tickets/${t.id}')">
+            <tr class="portal-ticket-row" data-id="${t.id}" style="cursor:pointer;">
                 <td><span class="font-monospace small fw-semibold">${App.escapeHtml(t.ticket_number)}</span></td>
                 <td class="small">${App.escapeHtml(t.subject)}</td>
                 <td>${App.statusBadge(t.status)}</td>
@@ -311,6 +311,9 @@ const PortalView = {
                     <tbody>${rows}</tbody>
                 </table>
             </div>`);
+        $('#portal-tickets-wrap').on('click', '.portal-ticket-row', function() {
+            App.navigate('/portal/tickets/' + $(this).data('id'));
+        });
 
         // Pagination
         if (meta.last_page > 1) {

@@ -104,6 +104,10 @@ class AttachmentService
 
         file_put_contents($absolutePath, $data);
 
+        // Detect MIME from the saved file rather than trusting the sender-supplied Content-Type header.
+        $detectedMime = mime_content_type($absolutePath);
+        $mimeType     = $detectedMime ?: $mimeType ?: 'application/octet-stream';
+
         $db = Database::getInstance();
         $id = $db->insert(
             "INSERT INTO attachments (ticket_id, reply_id, filename, stored_path, mime_type, size_bytes)

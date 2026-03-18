@@ -100,10 +100,23 @@ const App = {
         const params   = matched ? matched.params : {};
 
         // Auth check
-        const isPublic = this.publicRoutes.some(p => hash.startsWith(p));
+        const isPublic  = this.publicRoutes.some(p => hash.startsWith(p));
+        const isPortal  = hash.startsWith('/portal');
         if (!isPublic && !API.isAuthenticated()) {
-            window.location.hash = '#/login';
+            window.location.hash = isPortal ? '#/portal/login' : '#/login';
             return;
+        }
+        // Redirect customer tokens away from agent routes (and agent tokens away from portal)
+        if (!isPublic && API.isAuthenticated()) {
+            const userType = API.currentUser?.type;
+            if (!isPortal && userType === 'customer') {
+                window.location.hash = '#/portal';
+                return;
+            }
+            if (isPortal && userType === 'agent') {
+                window.location.hash = '#/';
+                return;
+            }
         }
 
         // Admin route guard
@@ -147,7 +160,7 @@ const App = {
             $('#app').html(html);
             if (typeof view.init === 'function') await view.init(params);
         } catch (e) {
-            $('#app').html('<div class="container mt-5"><div class="alert alert-danger">Error loading page: ' + (e.message || 'Unknown error') + '</div></div>');
+            $('#app').html('<div class="container mt-5"><div class="alert alert-danger">Error loading page: ' + App.escapeHtml(e.message || 'Unknown error') + '</div></div>');
             console.error(e);
         }
 
@@ -177,7 +190,7 @@ const App = {
 
     applyFavicon(url) {
         const link = document.getElementById('app-favicon');
-        if (link && url) link.href = url;
+        if (link && url && /^https?:\/\//i.test(url)) link.href = url;
     },
 
     navigate(path) {
@@ -283,7 +296,7 @@ const App = {
             resolved: 'bg-success',
             closed:   'bg-secondary',
         };
-        return `<span class="badge ${map[status] || 'bg-light text-dark'}">${status}</span>`;
+        return `<span class="badge ${map[status] || 'bg-light text-dark'}">${App.escapeHtml(String(status))}</span>`;
     },
 
     priorityBadge(priority) {
@@ -293,7 +306,7 @@ const App = {
             normal: 'bg-info text-dark',
             low:    'bg-light text-dark border',
         };
-        return `<span class="badge ${map[priority] || 'bg-light text-dark'}">${priority}</span>`;
+        return `<span class="badge ${map[priority] || 'bg-light text-dark'}">${App.escapeHtml(String(priority))}</span>`;
     }
 };
 

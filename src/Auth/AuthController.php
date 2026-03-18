@@ -142,12 +142,13 @@ class AuthController
         );
 
         if ($customer) {
-            $token   = bin2hex(random_bytes(32));
-            $expires = date('Y-m-d H:i:s', time() + 3600);
+            $token      = bin2hex(random_bytes(32));
+            $tokenHash  = hash('sha256', $token);
+            $expires    = date('Y-m-d H:i:s', time() + 3600);
 
             $this->db->execute(
                 "UPDATE customers SET portal_token = ?, portal_token_expires = ? WHERE id = ?",
-                [$token, $expires, $customer['id']]
+                [$tokenHash, $expires, $customer['id']]
             );
 
             try {

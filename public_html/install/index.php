@@ -76,7 +76,12 @@ function testDb(array $db): string
         new PDO($dsn, $db['username'], $db['password'], [PDO::ATTR_TIMEOUT => 5]);
         return '';
     } catch (\PDOException $e) {
-        return 'Connection failed: ' . $e->getMessage();
+        // Return a generic message — the raw PDO message contains host/port/version details
+        $code = $e->getCode();
+        if ($code == 1045 || $code == 'HY000') return 'Connection failed: access denied — check username and password.';
+        if ($code == 2002 || $code == 2003)    return 'Connection failed: could not reach database host — check host and port.';
+        if ($code == 1049)                     return 'Connection failed: database does not exist.';
+        return 'Connection failed — check your database settings.';
     }
 }
 

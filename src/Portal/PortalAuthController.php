@@ -43,7 +43,7 @@ class PortalAuthController
                AND portal_token = ?
                AND portal_token_expires > NOW()
                AND deleted_at IS NULL",
-            [$email, $token]
+            [$email, hash('sha256', $token)]
         );
 
         if (!$customer) {

@@ -144,7 +144,7 @@ class CustomerRepository
     {
         return $this->db->fetch(
             "SELECT * FROM customers WHERE portal_token = ? AND portal_token_expires > NOW() AND deleted_at IS NULL",
-            [$token]
+            [hash('sha256', $token)]
         );
     }
 
