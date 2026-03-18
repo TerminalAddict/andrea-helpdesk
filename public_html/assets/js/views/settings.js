@@ -17,15 +17,31 @@ const SettingsView = {
                 <li class="nav-item"><button class="nav-link" data-tab="tags">Tags</button></li>` : '';
         const profileTab = `<li class="nav-item"><button class="nav-link" data-tab="profile">My Profile</button></li>`;
 
+        const adminOpts = isAdmin ? `
+                <option value="general">General</option>
+                <option value="branding">Branding</option>
+                <option value="email">Email / SMTP</option>
+                <option value="autoresponse">Auto-Response</option>
+                <option value="imap">IMAP Polling</option>
+                <option value="slack">Slack</option>` : '';
+        const tagOpt    = (isAdmin || API.can('can_manage_tags')) ? `<option value="tags">Tags</option>` : '';
+        const profileOpt = `<option value="profile">My Profile</option>`;
+
         return `
         <div class="container-fluid p-4" style="max-width:900px;">
             <h4 class="mb-4"><i class="bi bi-sliders me-2"></i>Settings</h4>
 
-            <ul class="nav nav-tabs mb-4" id="settings-tabs">
+            <ul class="nav nav-tabs mb-4 d-none d-md-flex" id="settings-tabs">
                 ${adminTabs}
                 ${tagTab}
                 ${profileTab}
             </ul>
+
+            <select class="form-select mb-4 d-md-none" id="settings-tab-select">
+                ${adminOpts}
+                ${tagOpt}
+                ${profileOpt}
+            </select>
 
             <div id="settings-content">
                 <div class="text-center py-5 text-muted">
@@ -59,13 +75,16 @@ const SettingsView = {
 
     bindTabSwitching() {
         $('#settings-tabs button').on('click', (e) => {
-            $('#settings-tabs button').removeClass('active');
-            $(e.currentTarget).addClass('active');
             this.renderTab($(e.currentTarget).data('tab'));
+        });
+        $('#settings-tab-select').on('change', (e) => {
+            this.renderTab($(e.currentTarget).val());
         });
     },
 
     renderTab(tab) {
+        $('#settings-tabs button').removeClass('active').filter(`[data-tab="${tab}"]`).addClass('active');
+        $('#settings-tab-select').val(tab);
         const s = this.settings;
         let html = '';
 
