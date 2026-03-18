@@ -183,7 +183,17 @@
         -webkit-overflow-scrolling: touch;
     }
 
-    /* All tables: hide less critical columns (7th onwards) */
+    /* Dashboard tables: show only Ticket + Subject on mobile */
+    #my-tickets-table th:nth-child(n+3),
+    #my-tickets-table td:nth-child(n+3),
+    #recent-tickets-table th:nth-child(n+3),
+    #recent-tickets-table td:nth-child(n+3),
+    #all-open-tickets-table th:nth-child(n+3),
+    #all-open-tickets-table td:nth-child(n+3) {
+        display: none;
+    }
+
+    /* All other tables: hide less critical columns (7th onwards) */
     .table th:nth-child(n+7),
     .table td:nth-child(n+7) {
         display: none;
