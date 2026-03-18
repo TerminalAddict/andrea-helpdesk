@@ -269,7 +269,9 @@ const SettingsView = {
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
+                        <form autocomplete="off" onsubmit="return false">
                         <input type="hidden" id="imap-account-id">
+                        <input type="text" autocomplete="username" style="display:none;">
                         <div class="mb-3">
                             <label class="form-label">Account Name <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="imap-name" placeholder="e.g. support@mydomain.com">
@@ -303,7 +305,7 @@ const SettingsView = {
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Password <span class="text-danger">*</span></label>
-                            <input type="password" class="form-control" id="imap-password" placeholder="Leave blank to keep current when editing">
+                            <input type="password" class="form-control" id="imap-password" placeholder="Leave blank to keep current when editing" autocomplete="new-password">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Folder / Mailbox</label>
@@ -328,6 +330,7 @@ const SettingsView = {
                                 <label class="form-check-label" for="imap-is-enabled">Enabled</label>
                             </div>
                         </div>
+                        </form>
                     </div>
                     <div class="modal-footer">
                         <button class="btn btn-outline-secondary me-auto" id="btn-test-imap-account">
