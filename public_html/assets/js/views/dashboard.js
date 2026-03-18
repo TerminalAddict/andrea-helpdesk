@@ -212,7 +212,7 @@ const DashboardView = {
                 </div>`;
                 html += articles.map(a =>
                     `<a class="d-flex align-items-center gap-3 px-3 py-2 text-decoration-none text-dark border-bottom dash-search-item"
-                        href="#/kb/articles/${App.escapeHtml(a.slug)}">
+                        href="#/kb/${App.escapeHtml(a.slug)}">
                         <i class="bi bi-file-text text-primary flex-shrink-0"></i>
                         <div class="flex-grow-1 overflow-hidden">
                             <div class="fw-semibold text-truncate">${App.escapeHtml(a.title)}</div>
