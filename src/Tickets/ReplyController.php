@@ -37,11 +37,12 @@ class ReplyController
 
         $request->validate(['body' => 'required']);
 
-        $body      = $request->input('body', '');
-        $bodyHtml  = $request->input('body_html') ?? nl2br(htmlspecialchars($body, ENT_QUOTES));
-        $type      = $request->input('type', 'reply');
-        $isPrivate = $type === 'internal' || (bool)$request->input('is_private', false);
-        $ccEmails  = $request->input('cc_emails', []);
+        $body             = $request->input('body', '');
+        $bodyHtml         = $request->input('body_html') ?? nl2br(htmlspecialchars($body, ENT_QUOTES));
+        $type             = $request->input('type', 'reply');
+        $isPrivate        = $type === 'internal' || (bool)$request->input('is_private', false);
+        $ccEmails         = $request->input('cc_emails', []);
+        $includeSignature = $request->input('include_signature') !== '0';
 
         // Save any uploaded files before creating the reply so they can be emailed
         $attachmentIds = [];
@@ -66,7 +67,8 @@ class ReplyController
             $bodyHtml,
             $isPrivate,
             is_array($ccEmails) ? $ccEmails : [],
-            $attachmentIds
+            $attachmentIds,
+            $includeSignature
         );
 
         // Link attachments to the reply now that we have its ID

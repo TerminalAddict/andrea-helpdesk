@@ -97,6 +97,9 @@ const TicketDetailView = {
                         <div class="card-body">
                             <textarea class="form-control" id="reply-body" rows="6" placeholder="Write your reply…"></textarea>
 
+                            <!-- Signature preview -->
+                            <div id="reply-signature-preview" class="mt-2 pt-2 border-top text-muted small" style="white-space:pre-wrap;display:none;"></div>
+
                             <!-- Attachments -->
                             <div class="mt-2">
                                 <label class="btn btn-sm btn-outline-secondary" for="reply-files">
@@ -106,8 +109,8 @@ const TicketDetailView = {
                                 <div id="reply-attachments-preview" class="d-flex flex-wrap gap-1 mt-1"></div>
                             </div>
                         </div>
-                        <div class="card-footer bg-white d-flex justify-content-between align-items-center">
-                            <div class="d-flex align-items-center gap-2">
+                        <div class="card-footer bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
                                 <select class="form-select form-select-sm" id="reply-status-change" style="width:auto;">
                                     <option value="">Keep status</option>
                                     <option value="open">Set Open</option>
@@ -115,6 +118,10 @@ const TicketDetailView = {
                                     <option value="resolved">Set Resolved</option>
                                     <option value="closed">Set Closed</option>
                                 </select>
+                                <div class="form-check mb-0" id="reply-signature-toggle-wrap">
+                                    <input class="form-check-input" type="checkbox" id="reply-include-signature" checked>
+                                    <label class="form-check-label small" for="reply-include-signature">Attach my personal signature</label>
+                                </div>
                             </div>
                             <button class="btn btn-primary btn-sm" id="btn-send-reply">
                                 <span class="spinner-border spinner-border-sm d-none me-1" id="reply-spinner"></span>
@@ -447,11 +454,29 @@ const TicketDetailView = {
         $('#btn-close').on('click',   () => this.setStatus('closed'));
         $('#btn-reopen').on('click',  () => this.setStatus('open'));
 
+        // Signature preview — hide toggle entirely if agent has no personal signature
+        const agentSig = API.currentUser?.signature || '';
+        if (!agentSig) $('#reply-signature-toggle-wrap').hide();
+
+        const updateSignaturePreview = () => {
+            const checked = $('#reply-include-signature').is(':checked');
+            if (checked && agentSig) {
+                $('#reply-signature-preview').html(agentSig).show();
+            } else {
+                $('#reply-signature-preview').hide();
+            }
+        };
+        updateSignaturePreview();
+        $('#reply-include-signature').on('change', updateSignaturePreview);
+
         // Reply type toggle
         $('input[name="replyType"]').on('change', function() {
             const isNote = $(this).val() === 'note';
             $('#reply-to-label').toggle(!isNote);
             $('#reply-status-change').closest('.d-flex').toggle(!isNote);
+            $('#reply-signature-toggle-wrap').toggle(!isNote);
+            if (isNote) $('#reply-signature-preview').hide();
+            else updateSignaturePreview();
             $('#btn-send-reply').html(isNote
                 ? '<i class="bi bi-sticky me-1"></i>Add Note'
                 : '<i class="bi bi-send me-1"></i>Send Reply');
@@ -558,10 +583,11 @@ const TicketDetailView = {
     },
 
     async sendReply() {
-        const type   = $('input[name="replyType"]:checked').val();
-        const body   = $('#reply-body').val().trim();
-        const status = $('#reply-status-change').val();
-        const files  = document.getElementById('reply-files').files;
+        const type             = $('input[name="replyType"]:checked').val();
+        const body             = $('#reply-body').val().trim();
+        const status           = $('#reply-status-change').val();
+        const files            = document.getElementById('reply-files').files;
+        const includeSignature = type !== 'note' && $('#reply-include-signature').is(':checked');
 
         if (!body) { App.toast('Reply body is required', 'warning'); return; }
 
@@ -573,6 +599,7 @@ const TicketDetailView = {
             const fd = new FormData();
             fd.append('body', body);
             fd.append('type', type === 'note' ? 'internal' : 'reply');
+            if (!includeSignature) fd.append('include_signature', '0');
             if (status) fd.append('status_after', status);
             for (const file of files) fd.append('file[]', file);
 

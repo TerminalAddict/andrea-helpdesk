@@ -17,7 +17,7 @@ class ReplyService
         $this->replyRepo = new ReplyRepository();
     }
 
-    public function createAgentReply(int $ticketId, int $agentId, string $bodyHtml, bool $isPrivate = false, array $ccEmails = [], array $attachmentIds = []): array
+    public function createAgentReply(int $ticketId, int $agentId, string $bodyHtml, bool $isPrivate = false, array $ccEmails = [], array $attachmentIds = [], bool $includeSignature = true): array
     {
         $ticket = $this->db->fetch("SELECT * FROM tickets WHERE id = ? AND deleted_at IS NULL", [$ticketId]);
         if (!$ticket) throw new \InvalidArgumentException('Ticket not found');
@@ -50,7 +50,7 @@ class ReplyService
             $customer = $this->db->fetch("SELECT * FROM customers WHERE id = ?", [$ticket['customer_id']]);
             if ($customer) {
                 $notificationService = new NotificationService();
-                $notificationService->onAgentReply($ticket, $reply, $agent, $customer, $ccEmails, $attachmentIds);
+                $notificationService->onAgentReply($ticket, $reply, $agent, $customer, $ccEmails, $attachmentIds, $includeSignature);
             }
         }
 

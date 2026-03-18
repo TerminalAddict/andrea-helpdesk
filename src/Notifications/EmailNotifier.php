@@ -46,7 +46,7 @@ class EmailNotifier
         return $mailer;
     }
 
-    public function sendTicketReply(array $ticket, array $reply, array $agent, array $customer, array $ccEmails = [], array $attachmentIds = []): bool
+    public function sendTicketReply(array $ticket, array $reply, array $agent, array $customer, array $ccEmails = [], array $attachmentIds = [], bool $includeSignature = true): bool
     {
         try {
             $mailer = $this->createMailer();
@@ -83,7 +83,7 @@ class EmailNotifier
                 $mailer->addCustomHeader('References', "<{$lastId}>");
             }
 
-            $body = $this->applySignature($reply['body_html'], $agent);
+            $body = $includeSignature ? $this->applySignature($reply['body_html'], $agent) : $reply['body_html'];
             $mailer->isHTML(true);
             $mailer->Body    = $body;
             $mailer->AltBody = strip_tags($body);
