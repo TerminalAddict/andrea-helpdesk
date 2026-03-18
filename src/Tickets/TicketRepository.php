@@ -160,7 +160,7 @@ class TicketRepository
     public function update(int $id, array $data): bool
     {
         $allowed = ['subject', 'status', 'priority', 'assigned_agent_id', 'closed_at',
-                    'first_response_at', 'last_message_id', 'merged_into_id'];
+                    'first_response_at', 'last_message_id', 'merged_into_id', 'customer_id'];
         $set     = [];
         $params  = [];
 

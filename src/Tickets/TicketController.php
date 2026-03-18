@@ -96,14 +96,25 @@ class TicketController
             }
         }
 
+        $newCustomer = null;
         if (isset($data['customer_id'])) {
             $customerRepo = new \Andrea\Helpdesk\Customers\CustomerRepository();
-            $customer = $customerRepo->findById((int)$data['customer_id']);
-            if (!$customer) throw new HttpException('Customer not found', 422);
+            $newCustomer  = $customerRepo->findById((int)$data['customer_id']);
+            if (!$newCustomer) throw new HttpException('Customer not found', 422);
             $data['customer_id'] = (int)$data['customer_id'];
         }
 
         $this->repo->update($ticket['id'], $data);
+
+        // Log audit trail for changes
+        $replyService = new ReplyService();
+        if (isset($data['subject']) && $data['subject'] !== $ticket['subject']) {
+            $replyService->createSystemReply($ticket['id'], "Subject changed to \"{$data['subject']}\".");
+        }
+        if ($newCustomer && (int)$data['customer_id'] !== (int)$ticket['customer_id']) {
+            $label = $newCustomer['name'] ?: $newCustomer['email'];
+            $replyService->createSystemReply($ticket['id'], "Customer changed to {$label}.");
+        }
 
         // If assignment changed, notify new agent
         if (isset($data['assigned_agent_id']) && $data['assigned_agent_id'] != $ticket['assigned_agent_id']) {
@@ -135,6 +146,9 @@ class TicketController
             "UPDATE replies SET body_html = ?, updated_at = NOW() WHERE id = ?",
             [nl2br(htmlspecialchars($body, ENT_QUOTES, 'UTF-8')), $replyId]
         );
+
+        $replyService = new ReplyService();
+        $replyService->createSystemReply($ticketId, 'Message body updated.');
 
         Response::success(null, 'Reply updated');
     }
