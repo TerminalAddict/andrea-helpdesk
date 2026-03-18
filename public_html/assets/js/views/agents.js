@@ -40,7 +40,7 @@ const AgentsView = {
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Email <span class="text-danger">*</span></label>
-                                <input type="email" class="form-control" id="agent-email" required>
+                                <input type="email" class="form-control" id="agent-email" required autocomplete="username">
                             </div>
                             <div class="mb-3" id="agent-password-wrap">
                                 <label class="form-label">Password <span class="text-danger" id="pw-required">*</span></label>
