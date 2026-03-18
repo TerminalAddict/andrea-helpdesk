@@ -339,3 +339,10 @@
 .dash-search-item.dash-search-active {
     background-color: var(--bs-primary-bg-subtle, #cfe2ff);
 }
+
+.list-group-item.nt-suggestion-active {
+    background-color: var(--bs-primary-bg-subtle, #cfe2ff);
+}
+.dropdown-item.pt-suggestion-active {
+    background-color: var(--bs-primary-bg-subtle, #cfe2ff);
+}

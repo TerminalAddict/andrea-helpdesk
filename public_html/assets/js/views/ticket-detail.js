@@ -457,8 +457,25 @@ const TicketDetailView = {
             }, 250);
         });
         $('#participant-email-input').on('keydown', (e) => {
-            if (e.key === 'Enter') { e.preventDefault(); this.addParticipant(); }
-            if (e.key === 'Escape') { $('#participant-suggestions').hide(); }
+            const $list  = $('#participant-suggestions');
+            const $items = $list.find('.dropdown-item');
+            const $active = $items.filter('.pt-suggestion-active');
+            let idx = $items.index($active);
+
+            if (e.key === 'ArrowDown' && $list.is(':visible') && $items.length) {
+                e.preventDefault();
+                idx = idx < $items.length - 1 ? idx + 1 : 0;
+                $items.removeClass('pt-suggestion-active').eq(idx).addClass('pt-suggestion-active')[0]?.scrollIntoView({ block: 'nearest' });
+            } else if (e.key === 'ArrowUp' && $list.is(':visible') && $items.length) {
+                e.preventDefault();
+                idx = idx > 0 ? idx - 1 : $items.length - 1;
+                $items.removeClass('pt-suggestion-active').eq(idx).addClass('pt-suggestion-active')[0]?.scrollIntoView({ block: 'nearest' });
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if ($active.length) { $active[0].click(); } else { this.addParticipant(); }
+            } else if (e.key === 'Escape') {
+                $list.hide();
+            }
         });
         $(document).on('click', '.participant-suggestion', (e) => {
             e.preventDefault();

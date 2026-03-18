@@ -132,6 +132,27 @@ const TicketNewView = {
             if (q.length < 2) { $('#nt-customer-suggestions').addClass('d-none').empty(); return; }
             customerSearchTimer = setTimeout(() => this.searchCustomers(q), 300);
         });
+        $('#nt-customer-email').on('keydown', (e) => {
+            const $list  = $('#nt-customer-suggestions');
+            const $items = $list.find('li');
+            if (!$items.length || $list.hasClass('d-none')) return;
+            const $active = $items.filter('.nt-suggestion-active');
+            let idx = $items.index($active);
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                idx = idx < $items.length - 1 ? idx + 1 : 0;
+                $items.removeClass('nt-suggestion-active').eq(idx).addClass('nt-suggestion-active')[0]?.scrollIntoView({ block: 'nearest' });
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                idx = idx > 0 ? idx - 1 : $items.length - 1;
+                $items.removeClass('nt-suggestion-active').eq(idx).addClass('nt-suggestion-active')[0]?.scrollIntoView({ block: 'nearest' });
+            } else if (e.key === 'Enter' && $active.length) {
+                e.preventDefault();
+                $active[0].click();
+            } else if (e.key === 'Escape') {
+                $list.addClass('d-none');
+            }
+        });
 
         // Hide suggestions when clicking outside
         $(document).on('click.newticket', (e) => {
@@ -155,13 +176,31 @@ const TicketNewView = {
             ccSearchTimer = setTimeout(() => this.searchCcCustomers(q), 300);
         });
 
-        // Enter or comma/tab on CC input adds raw email
+        // Enter or comma/tab on CC input adds raw email; arrow keys navigate suggestions
         $('#nt-cc-input').on('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ',' || e.key === 'Tab') {
+            const $list  = $('#nt-cc-suggestions');
+            const $items = $list.find('li');
+            const $active = $items.filter('.nt-suggestion-active');
+
+            if (e.key === 'ArrowDown' && !$list.hasClass('d-none') && $items.length) {
                 e.preventDefault();
-                const val = $('#nt-cc-input').val().trim().replace(/,$/, '');
-                if (val) this.addCcParticipant(val, '');
-                $('#nt-cc-suggestions').addClass('d-none').empty();
+                const idx = $items.index($active);
+                const next = idx < $items.length - 1 ? idx + 1 : 0;
+                $items.removeClass('nt-suggestion-active').eq(next).addClass('nt-suggestion-active')[0]?.scrollIntoView({ block: 'nearest' });
+            } else if (e.key === 'ArrowUp' && !$list.hasClass('d-none') && $items.length) {
+                e.preventDefault();
+                const idx = $items.index($active);
+                const prev = idx > 0 ? idx - 1 : $items.length - 1;
+                $items.removeClass('nt-suggestion-active').eq(prev).addClass('nt-suggestion-active')[0]?.scrollIntoView({ block: 'nearest' });
+            } else if (e.key === 'Enter' || e.key === ',' || e.key === 'Tab') {
+                e.preventDefault();
+                if ($active.length) {
+                    $active[0].click();
+                } else {
+                    const val = $('#nt-cc-input').val().trim().replace(/,$/, '');
+                    if (val) this.addCcParticipant(val, '');
+                    $list.addClass('d-none').empty();
+                }
             } else if (e.key === 'Backspace' && !$('#nt-cc-input').val() && this._participants.length) {
                 this.removeCcParticipant(this._participants[this._participants.length - 1].email);
             }
