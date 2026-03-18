@@ -926,7 +926,7 @@ Manage multiple inbound email accounts.
 
 ### `GET /api/admin/imap-accounts`
 
-List all IMAP accounts. Passwords are masked.
+List all IMAP accounts. Passwords are masked. Each account includes `last_connected_at`, `last_poll_at` (every poll run), `last_poll_count` (messages in last run), and `last_import_at` (last run that actually imported at least one email — `null` if no emails have ever been imported).
 
 ### `POST /api/admin/imap-accounts`
 

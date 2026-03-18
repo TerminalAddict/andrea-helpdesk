@@ -334,9 +334,9 @@ const SettingsView = {
                     const connectedStr = a.last_connected_at
                         ? `Last connected: ${App.formatDate(a.last_connected_at)}`
                         : 'Never connected';
-                    const pollStr = a.last_poll_at
-                        ? `Last poll: ${App.formatDate(a.last_poll_at)} · ${a.last_poll_count} message(s) imported`
-                        : 'No polls recorded yet';
+                    const pollStr = a.last_import_at
+                        ? `Last email imported: ${App.formatDate(a.last_import_at)}`
+                        : 'No emails imported yet';
                     return `
                     <div class="card mb-2 ${a.is_enabled ? '' : 'opacity-50'}">
                         <div class="card-body py-2 px-3 d-flex align-items-center gap-3">

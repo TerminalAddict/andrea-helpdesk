@@ -208,6 +208,7 @@ CREATE TABLE IF NOT EXISTS imap_accounts (
     last_connected_at    DATETIME NULL DEFAULT NULL,
     last_poll_at         DATETIME NULL DEFAULT NULL,
     last_poll_count      INT UNSIGNED NOT NULL DEFAULT 0,
+    last_import_at       DATETIME NULL DEFAULT NULL COMMENT 'Last time at least one email was actually imported',
     created_at           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

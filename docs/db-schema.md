@@ -364,8 +364,9 @@ Configuration for inbound email accounts polled by `bin/imap-poll.php`.
 | `tag_id` | INT UNSIGNED | YES | NULL | Automatically apply this tag to tickets created from this account |
 | `is_enabled` | TINYINT(1) | NO | 1 | Disabled accounts are skipped by the poller |
 | `last_connected_at` | DATETIME | YES | NULL | Last time a connection was successfully established |
-| `last_poll_at` | DATETIME | YES | NULL | Last time the folder was polled |
+| `last_poll_at` | DATETIME | YES | NULL | Last time the folder was polled (updated every run, even when no emails arrive) |
 | `last_poll_count` | INT UNSIGNED | NO | 0 | Number of messages imported in the last poll run |
+| `last_import_at` | DATETIME | YES | NULL | Last time at least one email was actually imported. Only updated when `last_poll_count > 0`, so this accurately reflects the most recent inbound email |
 | `created_at` | TIMESTAMP | NO | CURRENT_TIMESTAMP | |
 
 **Notes:**

@@ -142,7 +142,7 @@ class ImapAccountRepository
     public function recordPoll(int $id, int $count): void
     {
         $this->db->execute(
-            "UPDATE imap_accounts SET last_poll_at = NOW(), last_poll_count = ? WHERE id = ?",
+            "UPDATE imap_accounts SET last_poll_at = NOW(), last_poll_count = ?" . ($count > 0 ? ", last_import_at = NOW()" : "") . " WHERE id = ?",
             [$count, $id]
         );
     }
