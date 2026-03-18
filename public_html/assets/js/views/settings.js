@@ -300,7 +300,7 @@ const SettingsView = {
                         </div>
                         <div class="mb-3">
                             <label class="form-label">From Address <span class="text-muted small">(for outgoing emails)</span></label>
-                            <input type="email" class="form-control" id="imap-from-address" placeholder="Leave blank to use Username">
+                            <input type="email" class="form-control" id="imap-from-address" placeholder="Leave blank to use Username" autocomplete="username">
                             <div class="form-text">Tickets tagged by this account will be sent from this address.</div>
                         </div>
                         <div class="mb-3">
