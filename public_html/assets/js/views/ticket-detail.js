@@ -693,7 +693,7 @@ const TicketDetailView = {
 
     showEditModal() {
         const t = this.ticket;
-        const firstReply = (t.replies || []).find(r => r.author_type !== 'system');
+        const firstReply = (t.replies || []).find(r => r.author_type === 'agent');
 
         $('#edit-ticket-subject').val(t.subject || '');
         $('#edit-ticket-customer').val(t.customer_name + (t.customer_email ? ' <' + t.customer_email + '>' : ''));

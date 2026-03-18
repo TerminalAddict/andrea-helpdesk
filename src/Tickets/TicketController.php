@@ -96,6 +96,10 @@ class TicketController
             }
         }
 
+        if (isset($data['subject']) && strlen($data['subject']) > 255) {
+            throw new HttpException('Subject must not exceed 255 characters', 422);
+        }
+
         $newCustomer = null;
         if (isset($data['customer_id'])) {
             $customerRepo = new \Andrea\Helpdesk\Customers\CustomerRepository();
@@ -136,10 +140,18 @@ class TicketController
         $replyId  = (int)$params['reply_id'];
 
         $reply = $this->db->fetch(
-            "SELECT id FROM replies WHERE id = ? AND ticket_id = ? AND author_type != 'system'",
+            "SELECT id, author_type, agent_id FROM replies WHERE id = ? AND ticket_id = ? AND author_type != 'system'",
             [$replyId, $ticketId]
         );
         if (!$reply) throw new NotFoundException('Reply not found');
+
+        // Only allow editing agent replies; admins may edit any agent reply, agents only their own
+        if ($reply['author_type'] !== 'agent') {
+            throw new HttpException('Customer replies cannot be edited', 403);
+        }
+        if ($request->agent->role !== 'admin' && (int)$reply['agent_id'] !== $request->agent->id) {
+            throw new HttpException('You can only edit your own replies', 403);
+        }
 
         $body = trim($request->input('body', ''));
         $this->db->execute(
