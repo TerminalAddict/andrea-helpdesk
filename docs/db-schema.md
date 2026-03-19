@@ -551,8 +551,8 @@ The following settings are seeded by `schema.sql`. Values shown are the defaults
 | Key | Default | Type | Description |
 |-----|---------|------|-------------|
 | `company_name` | `Andrea Helpdesk` | string | Displayed in page title, emails, and portal |
-| `logo_url` | `` | string | Absolute URL to logo image shown in the navbar |
-| `favicon_url` | `` | string | Absolute URL to favicon (must start with `https://` or `http://`) |
+| `logo_url` | `/Andrea-Helpdesk.png` | string | URL to logo image shown in the navbar. Accepts root-relative paths (e.g. `/my-logo.png`) or absolute URLs. Falls back to `/Andrea-Helpdesk.png` if empty. |
+| `favicon_url` | `/Andrea-Helpdesk-favicon.png` | string | URL to favicon. Accepts root-relative paths or absolute URLs. Falls back to `/Andrea-Helpdesk-favicon.png` if empty. |
 | `primary_color` | `#0d6efd` | string | Bootstrap primary colour override (CSS hex) |
 | `accent_color` | `#6610f2` | string | Accent colour (currently unused; reserved for theming) |
 | `custom_css` | `` | string | Raw CSS injected into `<style>` in the SPA shell |
