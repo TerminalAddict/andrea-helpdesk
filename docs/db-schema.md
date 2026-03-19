@@ -79,6 +79,7 @@ People who submit support requests. Customers do not have accounts in the tradit
 | `portal_password_hash` | VARCHAR(255) | YES | NULL | bcrypt hash of customer portal password. NULL means password login is not set up for this customer |
 | `portal_token` | VARCHAR(64) | YES | NULL | SHA-256 hex hash of the one-time magic-link token. Raw token is sent in email; only the hash is stored |
 | `portal_token_expires` | DATETIME | YES | NULL | Expiry timestamp for the magic-link token (typically 1 hour after generation) |
+| `suppress_emails` | TINYINT(1) | NO | 0 | When `1`, all outbound emails to this customer are suppressed globally (auto-responder and agent replies). Overrides per-ticket suppression — if either is set, no email is sent. |
 | `created_at` | DATETIME | NO | CURRENT_TIMESTAMP | |
 | `updated_at` | DATETIME | NO | CURRENT_TIMESTAMP ON UPDATE | |
 | `deleted_at` | DATETIME | YES | NULL | Soft-delete timestamp; NULL means active |
@@ -106,9 +107,9 @@ Provides a collision-free counter for generating ticket numbers in the format `P
 **Primary key:** `date_key`
 
 **Notes:**
-- One row per calendar day, created automatically on first ticket of that day.
+- One row per calendar day, created automatically on the first ticket of that day.
 - `TicketRepository::generateTicketNumber()` uses an atomic `INSERT ... ON DUPLICATE KEY UPDATE last_seq = LAST_INSERT_ID(last_seq + 1)` pattern. `LAST_INSERT_ID()` is then read in the same connection to get the just-assigned sequence number, avoiding race conditions between concurrent requests.
-- Sequence numbers are zero-padded to 4 digits: `HD-2026-03-17-0001`. If daily volume exceeds 9999 tickets the format simply extends to 5+ digits.
+- The first ticket of each day starts at a **random number between 128 and 512** (chosen with `random_int(128, 512)`); subsequent tickets that day increment from there. This means ticket numbers are not zero-padded and do not start from 1. Example: `HD-2026-03-20-347`, `HD-2026-03-20-348`.
 
 ---
 
@@ -131,6 +132,7 @@ Core entity. Each row is one support ticket.
 | `reply_to_address` | VARCHAR(255) | YES | NULL | Custom reply-to address for this ticket (overrides global setting) |
 | `parent_ticket_id` | INT UNSIGNED | YES | NULL | FK → tickets.id. Set when this ticket is a child/sub-ticket of another |
 | `merged_into_id` | INT UNSIGNED | YES | NULL | FK → tickets.id. Set on the losing ticket when two tickets are merged; the winning ticket's ID goes here |
+| `suppress_emails` | TINYINT(1) | NO | 0 | When `1`, all outbound customer-facing emails for this ticket are suppressed (auto-responder and agent replies). Can be toggled from the Ticket Info sidebar; each toggle is recorded as a system event in the thread. Slack and agent notifications are unaffected. |
 | `first_response_at` | DATETIME | YES | NULL | Timestamp of first agent reply. Used for SLA response-time reporting |
 | `closed_at` | DATETIME | YES | NULL | Timestamp when status was last set to `closed` |
 | `created_at` | DATETIME | NO | CURRENT_TIMESTAMP | |

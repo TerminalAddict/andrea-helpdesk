@@ -17,8 +17,9 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Tags** — assign multiple tags per ticket; filter the ticket list by tag
 - **Participants (CC)** — add customers as CC participants; they receive reply notifications and can respond via email or portal
 - **Private notes** — internal replies visible only to agents, never to customers
-- **Ticket prefix** — configurable ticket number prefix (e.g. `HD-2026-03-17-0001`)
-- **Atomic ticket numbering** — sequence generated with `INSERT … ON DUPLICATE KEY UPDATE` to prevent duplicates under load
+- **Ticket prefix** — configurable ticket number prefix (e.g. `HD-2026-03-17-485`)
+- **Atomic ticket numbering** — sequence generated with `INSERT … ON DUPLICATE KEY UPDATE` to prevent duplicates under load; each day's sequence starts at a random number between 128 and 512
+- **Per-ticket email suppression** — toggle in the Ticket Info sidebar silently stops all outbound customer emails for a single ticket without affecting Slack or agent notifications; each toggle is recorded as a system event in the thread
 
 ### Email Integration
 - **IMAP polling** — polls one or more mailboxes every minute via cron; handles plain text and HTML emails
@@ -30,6 +31,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **RFC 5322 compliant** — single `Message-ID` header on all outbound mail (Gmail / strict server compatible)
 - **Per-tag from-address** — replies can be sent from the address associated with a ticket's tag (e.g. `support@yourdomain.com` vs `billing@yourdomain.com`)
 - **Loop prevention** — auto-reply and bulk/junk precedence headers are detected and skipped
+- **Per-customer email suppression** — flag on the customer record silences all outbound emails to that customer across every ticket; combines with the per-ticket flag (either is sufficient to suppress)
 
 ### Attachments
 - **Upload in replies** — agents and customers can attach files to any reply

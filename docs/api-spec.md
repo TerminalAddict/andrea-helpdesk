@@ -296,8 +296,9 @@ Update a ticket's subject, priority, assigned agent, or customer. Changes are re
 | `priority` | string | `urgent`, `high`, `normal`, `low` |
 | `assigned_agent_id` | int\|null | Assign or unassign |
 | `customer_id` | int | Change the primary customer on the ticket |
+| `suppress_emails` | bool | `1` to suppress all outbound customer emails for this ticket; `0` to resume. Does not affect Slack or agent notifications. |
 
-If `assigned_agent_id` changes, an assignment notification is sent to the new agent. If `subject` or `customer_id` changes, a system event is added to the ticket thread recording the change and the agent who made it.
+If `assigned_agent_id` changes, an assignment notification is sent to the new agent. If `subject`, `customer_id`, or `suppress_emails` changes, a system event is added to the ticket thread recording the change and the agent who made it.
 
 **Response `200`** — updated ticket object.
 
@@ -632,13 +633,14 @@ Update a customer.
 
 **Request body** (all optional)
 
-| Field | Type |
-|-------|------|
-| `name` | string |
-| `email` | string |
-| `phone` | string |
-| `company` | string |
-| `notes` | string |
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | |
+| `email` | string | |
+| `phone` | string | |
+| `company` | string | |
+| `notes` | string | |
+| `suppress_emails` | bool | `1` to suppress all outbound emails to this customer globally; `0` to resume. Applies across all tickets — if either the customer or the ticket has suppression enabled, no email is sent. |
 
 **Response `200`** — updated customer object.
 
