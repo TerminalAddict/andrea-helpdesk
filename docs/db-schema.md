@@ -540,7 +540,8 @@ The following settings are seeded by `schema.sql`. Values shown are the defaults
 
 | Key | Default | Type | Description |
 |-----|---------|------|-------------|
-| `ticket_prefix` | `HD` | string | Prefix for ticket numbers (e.g. `HD-2026-03-17-0001`) |
+| `ticket_prefix` | `HD` | string | Prefix for ticket numbers (e.g. `HD-2026-03-17-485`) |
+| `app_url` | `` | string | Absolute base URL of the helpdesk (e.g. `https://support.example.com`). Used in outbound email links and Slack alerts. Must be set after install. |
 | `timezone` | `Pacific/Auckland` | string | PHP timezone string for date display |
 | `date_format` | `d/m/Y H:i` | string | PHP `date()` format string |
 | `imap_poll_mode` | `cron` | string | `cron` = external crontab; any other value reserved for future webhook/long-poll modes |
@@ -555,6 +556,7 @@ The following settings are seeded by `schema.sql`. Values shown are the defaults
 | `primary_color` | `#0d6efd` | string | Bootstrap primary colour override (CSS hex) |
 | `accent_color` | `#6610f2` | string | Accent colour (currently unused; reserved for theming) |
 | `custom_css` | `` | string | Raw CSS injected into `<style>` in the SPA shell |
+| `support_email_display` | `` | string | Support email address shown to customers in the portal (display only; does not affect routing) |
 
 ### Email (SMTP)
 
@@ -569,6 +571,8 @@ The following settings are seeded by `schema.sql`. Values shown are the defaults
 | `smtp_encryption` | `tls` | string | `tls`, `ssl`, or `none` |
 | `reply_to_address` | `` | string | Global Reply-To address (optional) |
 | `global_signature` | `<p>--<br>Andrea Helpdesk</p>` | string | Default HTML signature appended to all outbound emails unless overridden per-agent |
+| `notify_agent_on_new_ticket` | `1` | boolean | Send an email to all active agents when a new ticket is created |
+| `notify_agent_on_new_reply` | `1` | boolean | Send an email to the assigned agent (or all agents if unassigned) when a customer replies |
 | `auto_response_enabled` | `1` | boolean | Whether to send an automatic acknowledgement on new tickets |
 | `auto_response_subject` | `Re: {{subject}} [{{ticket_number}}]` | string | Auto-response subject template |
 | `auto_response_body` | *(HTML template)* | string | Auto-response body HTML template. Placeholders: `{{customer_name}}`, `{{ticket_number}}`, `{{subject}}`, `{{global_signature}}` |
