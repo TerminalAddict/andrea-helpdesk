@@ -273,6 +273,10 @@ class EmailNotifier
 
         $signature = '';
         if ($agentSignature) {
+            // If no HTML tags are present, treat as plain text and convert newlines to <br>
+            if (!str_contains($agentSignature, '<')) {
+                $agentSignature = nl2br(htmlspecialchars($agentSignature, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
+            }
             $signature .= '<br><br>' . $agentSignature;
         }
         if ($globalSignature) {
