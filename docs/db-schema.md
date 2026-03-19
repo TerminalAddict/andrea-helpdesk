@@ -90,7 +90,7 @@ People who submit support requests. Customers do not have accounts in the tradit
 
 **Notes:**
 - Soft-deleted customers (`deleted_at IS NOT NULL`) are excluded from all normal queries but their tickets and replies remain intact.
-- The magic-link flow: `AuthController` generates `bin2hex(random_bytes(32))`, stores `hash('sha256', $token)` in `portal_token`, and emails the raw token. `PortalAuthController` receives the raw token, hashes it, and queries by hash. This prevents token exposure if the DB is dumped.
+- The magic-link flow: both `AuthController` (customer self-request) and `CustomerService` (agent-sent invite) generate `bin2hex(random_bytes(32))`, store `hash('sha256', $token)` in `portal_token`, and email the raw token. `PortalAuthController` receives the raw token, hashes it, and queries by hash. This prevents token exposure if the DB is dumped.
 - Customers can have both a password and a magic-link token simultaneously.
 
 ---
@@ -541,7 +541,7 @@ The following settings are seeded by `schema.sql`. Values shown are the defaults
 | Key | Default | Type | Description |
 |-----|---------|------|-------------|
 | `ticket_prefix` | `HD` | string | Prefix for ticket numbers (e.g. `HD-2026-03-17-485`) |
-| `app_url` | `` | string | Absolute base URL of the helpdesk (e.g. `https://support.example.com`). Used in outbound email links and Slack alerts. Must be set after install. |
+| `app_url` | `` | string | Absolute base URL of the helpdesk (e.g. `https://support.example.com`). Used in outbound email links and Slack alerts. Must be set after install. Trailing slashes are stripped automatically when building URLs. |
 | `timezone` | `Pacific/Auckland` | string | PHP timezone string for date display |
 | `date_format` | `d/m/Y H:i` | string | PHP `date()` format string |
 | `imap_poll_mode` | `cron` | string | `cron` = external crontab; any other value reserved for future webhook/long-poll modes |

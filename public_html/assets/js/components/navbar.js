@@ -60,10 +60,8 @@ const Navbar = {
         return `
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
             <div class="container-fluid">
-                <a class="navbar-brand fw-bold${App.settings.logo_url ? ' pe-3' : ''}" href="#/">
-                    ${App.settings.logo_url
-                        ? `<img src="${App.escapeHtml(App.settings.logo_url)}" alt="${App.escapeHtml(App.appName)}" style="max-height:32px;max-width:120px;object-fit:contain;" class="me-2">`
-                        : `<i class="bi bi-headset me-2"></i>`}${App.escapeHtml(App.appName)}
+                <a class="navbar-brand fw-bold pe-3" href="#/">
+                    <img src="${App.escapeHtml(App.settings.logo_url || '/Andrea-Helpdesk.png')}" alt="${App.escapeHtml(App.appName)}" style="max-height:32px;max-width:120px;object-fit:contain;" class="me-2">${App.escapeHtml(App.appName)}
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
                     <span class="navbar-toggler-icon"></span>

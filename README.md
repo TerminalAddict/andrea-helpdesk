@@ -1,4 +1,4 @@
-<img src="public_html/headset.svg" alt="Andrea Helpdesk" width="48" height="48">
+<img src="public_html/Andrea-Helpdesk.png" alt="Andrea Helpdesk" width="48" height="48">
 
 # Andrea Helpdesk
 

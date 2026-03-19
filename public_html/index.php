@@ -5,7 +5,7 @@ $dotenv = Dotenv\Dotenv::createUnsafeImmutable($projectRoot);
 $dotenv->safeLoad();
 
 $pageTitle  = 'Andrea Helpdesk';
-$faviconUrl = '/favicon.svg';
+$faviconUrl = '/Andrea-Helpdesk-favicon.png';
 try {
     $pdo = new PDO(
         'mysql:host=' . (getenv('DB_HOST') ?: 'localhost') .
