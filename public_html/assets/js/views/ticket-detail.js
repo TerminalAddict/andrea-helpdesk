@@ -177,6 +177,16 @@ const TicketDetailView = {
                                 <label class="form-label small text-muted mb-1">Updated</label>
                                 <div class="small">${App.formatDate(t.updated_at)}</div>
                             </div>
+                            <hr class="my-2">
+                            <div class="d-flex align-items-center justify-content-between gap-2">
+                                <label class="form-check-label small fw-semibold text-danger mb-0" for="toggle-suppress-emails" style="cursor:pointer;">
+                                    <i class="bi bi-envelope-slash me-1"></i>Suppress emails
+                                </label>
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" id="toggle-suppress-emails" ${t.suppress_emails ? 'checked' : ''}>
+                                </div>
+                            </div>
+                            ${t.suppress_emails ? `<div class="mt-1"><span class="badge bg-danger w-100 text-wrap" style="font-size:.75rem;"><i class="bi bi-exclamation-triangle me-1"></i>No emails will be sent from this ticket</span></div>` : ''}
                         </div>
                     </div>
 
@@ -445,6 +455,18 @@ const TicketDetailView = {
             try {
                 await this.setStatus($('#edit-status').val());
             } catch (e) { App.toast(e.message, 'error'); }
+        });
+
+        $('#toggle-suppress-emails').on('change', async function() {
+            const suppress = $(this).is(':checked') ? 1 : 0;
+            try {
+                await API.put('/tickets/' + ticketId, { suppress_emails: suppress });
+                App.toast(suppress ? 'Email suppression enabled' : 'Email suppression disabled', suppress ? 'warning' : 'success');
+                await TicketDetailView.reload();
+            } catch (e) {
+                App.toast(e.message, 'error');
+                $(this).prop('checked', !suppress); // revert on failure
+            }
         });
 
         // Edit ticket

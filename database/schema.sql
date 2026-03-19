@@ -78,6 +78,7 @@ CREATE TABLE IF NOT EXISTS tickets (
     reply_to_address    VARCHAR(255) NULL,
     parent_ticket_id    INT UNSIGNED NULL COMMENT 'Set for child/sub-tickets',
     merged_into_id      INT UNSIGNED NULL COMMENT 'Set on the losing ticket when merged',
+    suppress_emails     TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'When 1, all outbound customer emails are suppressed for this ticket',
     first_response_at   DATETIME NULL COMMENT 'Time of first agent reply (SLA)',
     closed_at           DATETIME NULL,
     created_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

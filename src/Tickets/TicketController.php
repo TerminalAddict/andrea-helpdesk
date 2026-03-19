@@ -88,12 +88,16 @@ class TicketController
         $ticket = $this->repo->findById((int)$params['id']);
         if (!$ticket) throw new NotFoundException('Ticket not found');
 
-        $allowed = ['subject', 'priority', 'assigned_agent_id', 'customer_id'];
+        $allowed = ['subject', 'priority', 'assigned_agent_id', 'customer_id', 'suppress_emails'];
         $data    = [];
         foreach ($allowed as $field) {
             if ($request->input($field) !== null) {
                 $data[$field] = $request->input($field);
             }
+        }
+
+        if (isset($data['suppress_emails'])) {
+            $data['suppress_emails'] = (int)(bool)$data['suppress_emails'];
         }
 
         if (isset($data['subject']) && strlen($data['subject']) > 255) {
@@ -118,6 +122,10 @@ class TicketController
         if ($newCustomer && (int)$data['customer_id'] !== (int)$ticket['customer_id']) {
             $label = $newCustomer['name'] ?: $newCustomer['email'];
             $replyService->createSystemReply($ticket['id'], "Customer changed to {$label}.", $request->agent->id);
+        }
+        if (isset($data['suppress_emails']) && $data['suppress_emails'] !== (int)$ticket['suppress_emails']) {
+            $msg = $data['suppress_emails'] ? 'Email suppression enabled — no outbound emails will be sent for this ticket.' : 'Email suppression disabled — outbound emails resumed.';
+            $replyService->createSystemReply($ticket['id'], $msg, $request->agent->id);
         }
 
         // If assignment changed, notify new agent
