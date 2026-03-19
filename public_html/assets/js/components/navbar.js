@@ -139,7 +139,7 @@ const Navbar = {
     async fetchOpenTicketCount() {
         if (!API.isAgent()) return;
         try {
-            const res = await API.get('/tickets', { status: 'open', per_page: 1 });
+            const res = await API.get('/tickets', { status: 'active', per_page: 1 });
             this.setTicketBadge(res.meta ? res.meta.total : 0);
         } catch (e) {}
     }
