@@ -84,6 +84,9 @@ class SettingsService
             'on_new_ticket'  => (bool)$this->repo->get('slack_on_new_ticket', true),
             'on_assign'      => (bool)$this->repo->get('slack_on_assign', true),
             'on_new_reply'   => (bool)$this->repo->get('slack_on_new_reply', true),
+            'unfurl_links'   => (bool)$this->repo->get('slack_unfurl_links', true),
+            'icon_url'       => $this->repo->get('slack_icon_url', ''),
+            'icon_emoji'     => $this->repo->get('slack_icon_emoji', ''),
         ];
     }
 

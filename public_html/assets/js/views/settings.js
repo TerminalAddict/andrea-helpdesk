@@ -132,13 +132,28 @@ const SettingsView = {
             this.loadImapAccounts();
             return;
         } else if (tab === 'slack') {
+            const emojiPicks = [
+                ['😇','angel'],['🥸','disguised_face'],['🤖','robot_face'],
+                ['🔔','bell'],['💬','speech_balloon'],['🎫','ticket'],
+                ['📋','clipboard'],['⭐','star'],['⚡','zap'],['🎧','headphones'],
+            ].map(([em, code]) =>
+                `<button type="button" class="btn btn-sm btn-outline-secondary me-1 mb-1 slack-emoji-pick" data-code=":${code}:" title=":${code}:">${em} <span class="text-muted" style="font-size:.7rem;">:${code}:</span></button>`
+            ).join('');
             html = this.form('slack', [
-                { key: 'slack_enabled',      label: 'Enable Slack Notifications',  type: 'checkbox', value: s.slack_enabled },
-                { key: 'slack_webhook_url',  label: 'Webhook URL',                 type: 'text',     value: s.slack_webhook_url || '' },
-                { key: 'slack_channel',      label: 'Channel',                     type: 'text',     value: s.slack_channel || '#helpdesk' },
-                { key: 'slack_on_new_ticket', label: 'Notify on new tickets',           type: 'checkbox', value: s.slack_on_new_ticket },
-                { key: 'slack_on_assign',    label: 'Notify on ticket assignment',      type: 'checkbox', value: s.slack_on_assign },
-                { key: 'slack_on_new_reply', label: 'Notify on new customer reply',     type: 'checkbox', value: s.slack_on_new_reply },
+                { key: 'slack_enabled',       label: 'Enable Slack Notifications',   type: 'checkbox', value: s.slack_enabled },
+                { key: 'slack_webhook_url',   label: 'Webhook URL',                  type: 'text',     value: s.slack_webhook_url || '' },
+                { key: 'slack_channel',       label: 'Channel',                      type: 'text',     value: s.slack_channel || '#helpdesk' },
+                { key: 'slack_on_new_ticket', label: 'Notify on new tickets',        type: 'checkbox', value: s.slack_on_new_ticket },
+                { key: 'slack_on_assign',     label: 'Notify on ticket assignment',  type: 'checkbox', value: s.slack_on_assign },
+                { key: 'slack_on_new_reply',  label: 'Notify on new customer reply', type: 'checkbox', value: s.slack_on_new_reply },
+                { key: 'slack_unfurl_links',  label: 'Show link previews',           type: 'checkbox', value: s.slack_unfurl_links !== undefined ? s.slack_unfurl_links : true,
+                  hint: 'When enabled, Slack will expand ticket links into a rich preview card.' },
+                { key: 'slack_icon_url',      label: 'Bot icon — image URL',         type: 'text',     value: s.slack_icon_url || '',
+                  placeholder: 'https://example.com/icon.png',
+                  hint: 'URL of an image to use as the Slack bot icon. If set, this overrides the emoji icon below.' },
+                { key: 'slack_icon_emoji',    label: 'Bot icon — emoji',             type: 'text',     value: s.slack_icon_emoji || '',
+                  placeholder: ':robot_face:',
+                  hint_html: `<div class="mt-2 mb-1">Quick pick:</div>${emojiPicks}<div class="form-text mt-1">Or type any emoji code set up in your Slack workspace, e.g. <code>:paul:</code></div>` },
             ]);
         }
 
@@ -160,6 +175,13 @@ const SettingsView = {
         $('.btn-save-settings').on('click', (e) => {
             this.save($(e.currentTarget).data('tab'));
         });
+
+        // Slack emoji quick-pick buttons
+        if (tab === 'slack') {
+            $('#settings-content').on('click', '.slack-emoji-pick', function() {
+                $('#s-slack_icon_emoji').val($(this).data('code'));
+            });
+        }
 
         // Add test SMTP button on email tab
         if (tab === 'email') {
@@ -226,6 +248,7 @@ const SettingsView = {
                 <label class="form-label" for="s-${f.key}">${App.escapeHtml(f.label)}</label>
                 ${input}
                 ${f.hint ? `<div class="form-text">${App.escapeHtml(f.hint)}</div>` : ''}
+                ${f.hint_html || ''}
             </div>`;
         }).join('');
 
@@ -733,7 +756,7 @@ const SettingsView = {
             email:        ['smtp_host','smtp_port','smtp_encryption','smtp_username','smtp_password','smtp_from_address','smtp_from_name','reply_to_address','global_signature','notify_agent_on_new_ticket','notify_agent_on_new_reply'],
             autoresponse: ['auto_response_enabled','auto_response_subject','auto_response_body'],
             imap:         [],
-            slack:        ['slack_enabled','slack_webhook_url','slack_channel','slack_on_new_ticket','slack_on_assign','slack_on_new_reply'],
+            slack:        ['slack_enabled','slack_webhook_url','slack_channel','slack_on_new_ticket','slack_on_assign','slack_on_new_reply','slack_unfurl_links','slack_icon_url','slack_icon_emoji'],
         };
 
         const payload = {};

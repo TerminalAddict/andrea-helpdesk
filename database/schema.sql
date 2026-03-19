@@ -340,6 +340,10 @@ INSERT INTO settings (key_name, value, type, group_name, label) VALUES
 ('slack_webhook_url',   '',                  'string',  'slack',    'Slack Webhook URL'),
 ('slack_channel',       '#helpdesk',         'string',  'slack',    'Slack Channel'),
 ('slack_on_new_ticket', '1',                 'boolean', 'slack',    'Notify on New Ticket'),
-('slack_on_assign',     '1',                 'boolean', 'slack',    'Notify on Ticket Assignment')
+('slack_on_assign',     '1',                 'boolean', 'slack',    'Notify on Ticket Assignment'),
+('slack_on_new_reply',  '1',                 'boolean', 'slack',    'Notify on New Customer Reply'),
+('slack_unfurl_links',  '1',                 'boolean', 'slack',    'Show Link Previews'),
+('slack_icon_url',      '',                  'string',  'slack',    'Bot Icon Image URL'),
+('slack_icon_emoji',    '',                  'string',  'slack',    'Bot Icon Emoji')
 
 ON DUPLICATE KEY UPDATE label = VALUES(label);

@@ -74,6 +74,15 @@ class SlackNotifier
         $config = $this->settings->getSlackConfig();
         if (empty($config['webhook_url'])) return false;
 
+        $payload['unfurl_links'] = $config['unfurl_links'];
+        $payload['unfurl_media'] = $config['unfurl_links'];
+
+        if (!empty($config['icon_url'])) {
+            $payload['icon_url'] = $config['icon_url'];
+        } elseif (!empty($config['icon_emoji'])) {
+            $payload['icon_emoji'] = $config['icon_emoji'];
+        }
+
         $json    = json_encode($payload);
         $context = stream_context_create([
             'http' => [
