@@ -13,7 +13,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Ticket threading** — replies are threaded using `Message-ID`, `In-Reply-To`, and `References` headers so email conversations stay together
 - **Parent / child tickets** — link related tickets in a hierarchy, displayed inline in the ticket list
 - **Priorities** — Urgent, High, Normal, Low with colour-coded badges
-- **Statuses** — Open, Pending, Resolved, Closed
+- **Statuses** — New, Open, Waiting for Reply, Replied, Pending, Resolved, Closed with automatic transitions (customer reply → Waiting for Reply; agent reply → Replied; reopens closed/resolved tickets on customer reply)
 - **Tags** — assign multiple tags per ticket; filter the ticket list by tag
 - **Participants (CC)** — add customers as CC participants; they receive reply notifications and can respond via email or portal
 - **Private notes** — internal replies visible only to agents, never to customers
@@ -50,7 +50,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Role-based access** — `admin` and `agent` roles; admins bypass all permission checks
 - **Granular permissions** — per-agent toggles for: close tickets, delete tickets, edit customers, view reports, manage knowledge base, manage tags
 - **Agent assignment** — assign tickets to specific agents; filter by assigned agent
-- **Signatures** — per-agent email signature appended to all outbound replies
+- **Signatures** — per-agent HTML email signature; agents can toggle signature inclusion per reply via a checkbox in the reply composer
 - **Dark / light theme** — each agent selects their own UI theme; preference is persisted in the database
 - **Pagination preference** — configurable per-agent page size for ticket lists
 
@@ -65,7 +65,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Global email signature** — appended to all outbound agent emails
 
 ### Reporting
-- **Dashboard** — live stats: open tickets, unassigned tickets, tickets by priority, recent activity
+- **Dashboard** — live stats: New, Waiting for Reply, Pending, and Resolved ticket counts; recent activity by agent
 - **Reports** — ticket volume over time, resolution times, agent workload breakdowns
 
 ### Settings (Admin UI)

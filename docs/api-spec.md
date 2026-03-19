@@ -228,7 +228,7 @@ List tickets with optional filters.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `status` | string | `open`, `pending`, `resolved`, `closed` |
+| `status` | string | Any single status: `new`, `open`, `waiting_for_reply`, `replied`, `pending`, `resolved`, `closed`. Use `active` to return all non-resolved, non-closed tickets. |
 | `priority` | string | `urgent`, `high`, `normal`, `low` |
 | `assigned_to` | int | Agent ID. Use `unassigned` for unassigned tickets |
 | `customer_id` | int | Filter by customer |
@@ -237,7 +237,7 @@ List tickets with optional filters.
 | `from` | date | Created on or after (YYYY-MM-DD) |
 | `to` | date | Created on or before (YYYY-MM-DD) |
 | `tag_id` | int | Filter by tag |
-| `sort` | string | Column to sort by. Default: `updated_at` |
+| `sort` | string | Column to sort by: `ticket_number`, `status`, `priority`, `created_at`, `updated_at`. Default: `updated_at` |
 | `dir` | string | `asc` or `desc`. Default: `desc` |
 | `page` | int | Page number. Default: `1` |
 | `per_page` | int | Results per page. Default: `25`, max `100` |
@@ -286,17 +286,18 @@ Get a single ticket with its full thread (replies, attachments, participants, ta
 
 ### `PUT /api/tickets/:id`
 
-Update a ticket's subject, priority, or assigned agent.
+Update a ticket's subject, priority, assigned agent, or customer. Changes are recorded as system events in the ticket thread (audit trail).
 
 **Request body** (all fields optional)
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `subject` | string | New subject |
+| `subject` | string | New subject (max 255 chars) |
 | `priority` | string | `urgent`, `high`, `normal`, `low` |
 | `assigned_agent_id` | int\|null | Assign or unassign |
+| `customer_id` | int | Change the primary customer on the ticket |
 
-If `assigned_agent_id` changes, an assignment notification is sent to the new agent.
+If `assigned_agent_id` changes, an assignment notification is sent to the new agent. If `subject` or `customer_id` changes, a system event is added to the ticket thread recording the change and the agent who made it.
 
 **Response `200`** — updated ticket object.
 
@@ -334,7 +335,7 @@ Change ticket status. Closing/resolving requires `can_close_tickets` permission 
 
 | Field | Type | Required |
 |-------|------|----------|
-| `status` | string | yes — `open`, `pending`, `resolved`, `closed` |
+| `status` | string | yes — `new`, `open`, `waiting_for_reply`, `replied`, `pending`, `resolved`, `closed` |
 
 **Response `200`** — updated ticket object.
 
@@ -480,7 +481,8 @@ Post a reply to a ticket. Emails the customer and CC participants (unless `is_pr
 | `type` | string | no | `reply` (default) or `internal` |
 | `is_private` | bool | no | `true` = internal note, not sent to customer |
 | `cc_emails` | string[] | no | Additional email addresses to CC on this reply |
-| `status_after` | string | no | Update ticket status after posting (`open`, `pending`, `resolved`, `closed`) |
+| `status_after` | string | no | Override ticket status after posting: `new`, `open`, `waiting_for_reply`, `replied`, `pending`, `resolved`, `closed`. If omitted, agent replies automatically set status to `replied` (unless already resolved/closed) |
+| `include_signature` | string | no | Pass `0` to send without the agent's personal signature. Default: signature is included |
 | `file` | file | no | One or more file attachments |
 
 **Response `201`** — reply object.
@@ -987,7 +989,10 @@ Ticket counts by status for the period.
 ```json
 {
   "data": {
+    "new": 5,
     "open": 14,
+    "waiting_for_reply": 8,
+    "replied": 11,
     "pending": 3,
     "resolved": 42,
     "closed": 108

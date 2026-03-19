@@ -121,7 +121,7 @@ Core entity. Each row is one support ticket.
 | `id` | INT UNSIGNED | NO | AUTO_INCREMENT | Primary key |
 | `ticket_number` | VARCHAR(40) | NO | | Human-readable unique identifier, e.g. `HD-2026-03-17-0001` |
 | `subject` | VARCHAR(255) | NO | | Ticket subject line |
-| `status` | ENUM('open','pending','resolved','closed') | NO | 'open' | Current status |
+| `status` | ENUM('new','open','waiting_for_reply','replied','pending','resolved','closed') | NO | 'new' | Current status |
 | `priority` | ENUM('low','normal','high','urgent') | NO | 'normal' | Priority level |
 | `channel` | ENUM('email','web','phone','portal') | NO | 'email' | How the ticket was created |
 | `customer_id` | INT UNSIGNED | NO | | FK → customers.id. The primary customer for this ticket |
@@ -164,13 +164,21 @@ Core entity. Each row is one support ticket.
 **Status lifecycle:**
 
 ```
-open → pending (waiting for customer response)
-     → resolved (agent considers it done, awaiting confirmation)
-     → closed (finished)
-pending → open (customer replies)
-resolved → open (customer replies or agent re-opens)
-closed → open (can be re-opened)
+new              → replied           (agent sends first reply)
+                 → any status        (agent manually changes)
+open             → replied           (agent sends reply)
+                 → pending           (agent sets — waiting for customer)
+                 → resolved / closed (agent closes)
+waiting_for_reply → replied          (agent sends reply)
+replied          → waiting_for_reply (customer sends reply)
+pending          → waiting_for_reply (customer sends reply)
+resolved         → waiting_for_reply (customer replies — ticket automatically reopens)
+closed           → waiting_for_reply (customer replies — ticket automatically reopens)
 ```
+
+Automatic transitions (no agent action required):
+- **Any customer reply** sets status to `waiting_for_reply`, even on resolved or closed tickets.
+- **Any non-private agent reply** (without an explicit `status_after`) sets status to `replied`; tickets already `resolved` or `closed` are not affected.
 
 **Notes:**
 - Soft-deleted tickets (`deleted_at IS NOT NULL`) are hidden from all normal queries. The API exposes a `GET /api/tickets?include_deleted=1` option for admins.
@@ -245,7 +253,7 @@ Every message in a ticket thread — inbound emails, outbound agent replies, int
 | `fk_replies_customer` | `customer_id` | `customers(id)` | SET NULL |
 
 **Notes:**
-- `system` replies are used for status-change events (e.g. "Ticket closed by agent") that appear in the thread timeline but are never emailed.
+- `system` replies are used for audit-trail events (e.g. "Status changed to Resolved.", "Subject changed to …", "Customer changed to …") that appear in the thread timeline but are never emailed. The `agent_id` field is populated when a system event is triggered by an agent action, so the event displays the responsible agent's name and a timestamp in the UI.
 - Private (`is_private = 1`) replies are excluded from customer portal API responses. They are visible to all agents.
 - `first_response_at` on the parent ticket is set to the `created_at` of the first reply where `author_type = 'agent'` and `is_private = 0`.
 
