@@ -7,3 +7,5 @@ composer.lock
 .DS_Store
 Thumbs.db
 /public_html/assets/js/vendor/
+CLAUDE.md
+Makefile.local

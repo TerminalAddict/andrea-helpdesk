@@ -7,10 +7,13 @@ JQUERY_VERSION          = 4.0.0
 DOMPURIFY_VERSION       = 3.2.4
 VENDOR_DIR              = public_html/assets/vendor
 
-LOCAL_HOST  = your-local-server
-PROD_HOST   = your-prod-server
-REMOTE_USER = deploy
-REMOTE_PATH = \/var\/www\/html\/andrea-helpdesk
+# Deployment configuration — copy Makefile.local.example to Makefile.local and set your values
+LOCAL_HOST  ?= your-local-server
+PROD_HOST   ?= your-prod-server
+REMOTE_USER ?= deploy
+REMOTE_PATH ?= /var/www/html/andrea-helpdesk
+-include Makefile.local
+
 RSYNC_OPTS  = -avz --delete
 RSYNC_EXCLUDE = --exclude=/vendor --exclude=.env --exclude=storage --exclude=.git --exclude=*.swp
 
@@ -63,13 +66,13 @@ storage-setup: ## Create storage directory structure
 	touch storage/logs/app.log storage/logs/imap.log
 	@echo "Storage directories created."
 
-deploy-local: ## Deploy to local dev server (your-local-server)
+deploy-local: ## Deploy to local dev server
 	rsync $(RSYNC_OPTS) $(RSYNC_EXCLUDE) ./ $(REMOTE_USER)@$(LOCAL_HOST):$(REMOTE_PATH)/
 	ssh $(REMOTE_USER)@$(LOCAL_HOST) "cd $(REMOTE_PATH) && composer install --no-dev --optimize-autoloader"
 	ssh $(REMOTE_USER)@$(LOCAL_HOST) "mkdir -p $(REMOTE_PATH)/storage/attachments $(REMOTE_PATH)/storage/logs"
 	@echo "Deployed to $(LOCAL_HOST)"
 
-deploy-production: ## Deploy to production server (your-prod-server)
+deploy-production: ## Deploy to production server
 	rsync $(RSYNC_OPTS) $(RSYNC_EXCLUDE) ./ $(REMOTE_USER)@$(PROD_HOST):$(REMOTE_PATH)/
 	ssh $(REMOTE_USER)@$(PROD_HOST) "cd $(REMOTE_PATH) && composer install --no-dev --optimize-autoloader"
 	ssh $(REMOTE_USER)@$(PROD_HOST) "mkdir -p $(REMOTE_PATH)/storage/attachments $(REMOTE_PATH)/storage/logs"

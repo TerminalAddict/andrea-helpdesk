@@ -1,0 +1,6 @@
+# Copy this file to Makefile.local and fill in your server details.
+# Makefile.local is gitignored and never committed.
+LOCAL_HOST  = your-local-server
+PROD_HOST   = your-prod-server
+REMOTE_USER = your-ssh-user
+REMOTE_PATH = /var/www/html/your-helpdesk
