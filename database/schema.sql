@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS tickets (
     id                  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     ticket_number       VARCHAR(40) NOT NULL,
     subject             VARCHAR(255) NOT NULL,
-    status              ENUM('open','pending','resolved','closed') NOT NULL DEFAULT 'open',
+    status              ENUM('new','open','waiting_for_reply','replied','pending','resolved','closed') NOT NULL DEFAULT 'new',
     priority            ENUM('low','normal','high','urgent') NOT NULL DEFAULT 'normal',
     channel             ENUM('email','web','phone','portal') NOT NULL DEFAULT 'email',
     customer_id         INT UNSIGNED NOT NULL,

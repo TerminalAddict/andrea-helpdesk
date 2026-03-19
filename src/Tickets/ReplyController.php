@@ -79,13 +79,17 @@ class ReplyController
             }
         }
 
-        // Update ticket status if requested alongside the reply
+        // Update ticket status: explicit override takes priority, otherwise auto-set based on reply type
         $statusAfter = $request->input('status_after');
+        $db = \Andrea\Helpdesk\Core\Database::getInstance();
         if ($statusAfter) {
             $ticketService = new TicketService();
             try {
                 $ticketService->updateStatus($ticket['id'], $statusAfter, $request->agent->id);
             } catch (\Throwable) {}
+        } elseif (!$isPrivate && !in_array($ticket['status'], ['resolved', 'closed'], true)) {
+            // Auto-set to 'replied' when agent sends an outbound reply
+            $db->execute("UPDATE tickets SET status = 'replied' WHERE id = ?", [$ticket['id']]);
         }
 
         Response::created($reply, 'Reply added');

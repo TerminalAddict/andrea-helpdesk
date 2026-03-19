@@ -8,12 +8,17 @@ const DashboardView = {
             <h4 class="mb-4"><i class="bi bi-speedometer2 me-2"></i>Dashboard</h4>
 
             <div class="row g-3 mb-4" id="summary-cards">
-                ${['Open','Pending','Resolved','Closed'].map(s => `
+                ${[
+                    {id:'new',     label:'New',              color:'text-info'},
+                    {id:'waiting', label:'Waiting for Reply', color:'text-danger'},
+                    {id:'pending', label:'Pending',           color:'text-warning'},
+                    {id:'resolved',label:'Resolved',          color:'text-success'},
+                ].map(s => `
                 <div class="col-6 col-md-3">
                     <div class="card border-0 shadow-sm h-100">
                         <div class="card-body text-center py-3">
-                            <div class="fs-1 fw-bold text-primary" id="stat-${s.toLowerCase()}">–</div>
-                            <div class="text-muted small">${s} Tickets</div>
+                            <div class="fs-1 fw-bold ${s.color}" id="stat-${s.id}">–</div>
+                            <div class="text-muted small">${s.label} Tickets</div>
                         </div>
                     </div>
                 </div>`).join('')}
@@ -94,18 +99,18 @@ const DashboardView = {
         try {
             const res  = await API.get('/reports/summary', { from: new Date().toISOString().slice(0,10), to: new Date().toISOString().slice(0,10) });
             const data = res.data;
-            $('#stat-open').text(data.open || 0);
+            $('#stat-new').text(data.new || 0);
+            $('#stat-waiting').text(data.waiting_for_reply || 0);
             $('#stat-pending').text(data.pending || 0);
             $('#stat-resolved').text(data.resolved || 0);
-            $('#stat-closed').text(data.closed || 0);
         } catch (e) {}
 
         const pageSize = parseInt(API.currentUser?.page_size) || 20;
 
         // My tickets
         try {
-            const res = await API.get('/tickets', { assigned_to: API.currentUser.id, status: 'open', per_page: pageSize });
-            this.renderTable('#my-tickets-table', res.data || [], res.meta || {}, `#/tickets?status=open&assigned_to=${API.currentUser.id}`);
+            const res = await API.get('/tickets', { assigned_to: API.currentUser.id, status: 'active', per_page: pageSize });
+            this.renderTable('#my-tickets-table', res.data || [], res.meta || {}, `#/tickets?status=active&assigned_to=${API.currentUser.id}`);
         } catch (e) {
             $('#my-tickets-table').html('<p class="text-muted p-3">No tickets assigned to you.</p>');
         }
@@ -176,14 +181,14 @@ const DashboardView = {
         $('#all-open-tickets-table').html('<div class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm"></div></div>');
         try {
             const pageSize = parseInt(API.currentUser?.page_size) || 20;
-            const params   = { status: 'open', per_page: pageSize, sort: 'updated_at', dir: 'desc' };
+            const params   = { status: 'active', per_page: pageSize, sort: 'updated_at', dir: 'desc' };
             const tag_id   = $('#dash-filter-tag').val();
             const priority = $('#dash-filter-priority').val();
             if (tag_id)   params.tag_id   = tag_id;
             if (priority) params.priority = priority;
             const res   = await API.get('/tickets', params);
             const total = res.meta?.total || 0;
-            const viewAllParams = new URLSearchParams({ status: 'open', sort: 'updated_at', dir: 'desc' });
+            const viewAllParams = new URLSearchParams({ status: 'active', sort: 'updated_at', dir: 'desc' });
             if (tag_id)   viewAllParams.set('tag_id',   tag_id);
             if (priority) viewAllParams.set('priority', priority);
             this.renderAllOpenTable(res.data || [], total, `#/tickets?${viewAllParams}`);
@@ -265,7 +270,7 @@ const DashboardView = {
 
     renderAllOpenTable(tickets, total = 0, viewAllHref = '#/tickets') {
         if (!tickets.length) {
-            $('#all-open-tickets-table').html('<p class="text-muted p-3 mb-0">No open tickets match the selected filters.</p>');
+            $('#all-open-tickets-table').html('<p class="text-muted p-3 mb-0">No active tickets match the selected filters.</p>');
             return;
         }
         const rows = tickets.map(t => {

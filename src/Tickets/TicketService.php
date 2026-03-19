@@ -97,6 +97,7 @@ class TicketService
         $ticketId = $this->ticketRepo->create([
             'ticket_number'     => $ticketNumber,
             'subject'           => $data['subject'],
+            'status'            => !empty($data['body_html']) ? 'replied' : 'new',
             'channel'           => $data['channel'] ?? 'phone',
             'customer_id'       => $data['customer_id'],
             'priority'          => $data['priority'] ?? 'normal',
@@ -216,7 +217,7 @@ class TicketService
 
     public function updateStatus(int $ticketId, string $status, int $agentId): bool
     {
-        $validStatuses = ['open', 'pending', 'resolved', 'closed'];
+        $validStatuses = ['new', 'open', 'waiting_for_reply', 'replied', 'pending', 'resolved', 'closed'];
         if (!in_array($status, $validStatuses, true)) {
             throw new \InvalidArgumentException("Invalid status: {$status}");
         }

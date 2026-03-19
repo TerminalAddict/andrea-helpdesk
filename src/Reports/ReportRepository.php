@@ -22,7 +22,7 @@ class ReportRepository
         $statusCounts = $this->db->fetchAll(
             "SELECT status, COUNT(*) as count FROM tickets WHERE deleted_at IS NULL GROUP BY status"
         );
-        $result = ['open' => 0, 'pending' => 0, 'resolved' => 0, 'closed' => 0];
+        $result = ['new' => 0, 'open' => 0, 'waiting_for_reply' => 0, 'replied' => 0, 'pending' => 0, 'resolved' => 0, 'closed' => 0];
         foreach ($statusCounts as $row) {
             $result[$row['status']] = (int)$row['count'];
         }
@@ -60,7 +60,7 @@ class ReportRepository
             "SELECT a.id AS agent_id, a.name AS agent_name,
                     COUNT(t.id) AS ticket_count,
                     SUM(CASE WHEN t.status IN ('resolved','closed') THEN 1 ELSE 0 END) AS closed_count,
-                    SUM(CASE WHEN t.status IN ('open','pending') THEN 1 ELSE 0 END) AS open_count,
+                    SUM(CASE WHEN t.status NOT IN ('resolved','closed') THEN 1 ELSE 0 END) AS open_count,
                     ROUND(AVG(TIMESTAMPDIFF(MINUTE, t.created_at, t.closed_at)), 1) AS avg_close_minutes
              FROM agents a
              LEFT JOIN tickets t ON t.assigned_agent_id = a.id

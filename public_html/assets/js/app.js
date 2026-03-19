@@ -290,13 +290,25 @@ const App = {
     },
 
     statusBadge(status) {
-        const map = {
-            open:     'bg-primary',
-            pending:  'bg-warning text-dark',
-            resolved: 'bg-success',
-            closed:   'bg-secondary',
+        const colors = {
+            new:               'bg-info text-dark',
+            open:              'bg-primary',
+            waiting_for_reply: 'bg-danger',
+            replied:           'bg-success',
+            pending:           'bg-warning text-dark',
+            resolved:          'bg-secondary',
+            closed:            'bg-dark',
         };
-        return `<span class="badge ${map[status] || 'bg-light text-dark'}">${App.escapeHtml(String(status))}</span>`;
+        const labels = {
+            new:               'New',
+            open:              'Open',
+            waiting_for_reply: 'Waiting for reply',
+            replied:           'Replied',
+            pending:           'Pending',
+            resolved:          'Resolved',
+            closed:            'Closed',
+        };
+        return `<span class="badge ${colors[status] || 'bg-light text-dark'}">${App.escapeHtml(labels[status] || String(status))}</span>`;
     },
 
     priorityBadge(priority) {

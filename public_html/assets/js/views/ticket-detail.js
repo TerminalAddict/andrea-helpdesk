@@ -115,6 +115,7 @@ const TicketDetailView = {
                                     <option value="">Keep status</option>
                                     <option value="open">Set Open</option>
                                     <option value="pending">Set Pending</option>
+                                    <option value="waiting_for_reply">Set Waiting for reply</option>
                                     <option value="resolved">Set Resolved</option>
                                     <option value="closed">Set Closed</option>
                                 </select>
@@ -142,8 +143,8 @@ const TicketDetailView = {
                             <div class="mb-2">
                                 <label class="form-label small text-muted mb-1">Status</label>
                                 <select class="form-select form-select-sm" id="edit-status">
-                                    ${['open','pending','resolved','closed'].map(s =>
-                                        `<option value="${s}" ${t.status === s ? 'selected' : ''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`
+                                    ${['new','open','waiting_for_reply','replied','pending','resolved','closed'].map(s =>
+                                        `<option value="${s}" ${t.status === s ? 'selected' : ''}>${{'new':'New','open':'Open','waiting_for_reply':'Waiting for reply','replied':'Replied','pending':'Pending','resolved':'Resolved','closed':'Closed'}[s]}</option>`
                                     ).join('')}
                                 </select>
                             </div>

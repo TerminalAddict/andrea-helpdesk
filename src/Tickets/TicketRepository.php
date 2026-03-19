@@ -54,8 +54,12 @@ class TicketRepository
         $params = [];
 
         if (!empty($filters['status'])) {
-            $where[]  = 't.status = ?';
-            $params[] = $filters['status'];
+            if ($filters['status'] === 'active') {
+                $where[] = "t.status NOT IN ('resolved', 'closed')";
+            } else {
+                $where[]  = 't.status = ?';
+                $params[] = $filters['status'];
+            }
         }
 
         if (!empty($filters['priority'])) {
@@ -144,7 +148,7 @@ class TicketRepository
             [
                 $data['ticket_number'],
                 $data['subject'],
-                $data['status'] ?? 'open',
+                $data['status'] ?? 'new',
                 $data['priority'] ?? 'normal',
                 $data['channel'] ?? 'email',
                 $data['customer_id'],

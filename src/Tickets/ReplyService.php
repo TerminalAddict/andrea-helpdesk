@@ -76,9 +76,9 @@ class ReplyService
                 'in_reply_to'    => $inReplyTo ?: null,
             ]);
 
-            // Reopen ticket if resolved/pending
-            if (in_array($ticket['status'], ['pending', 'resolved'], true)) {
-                $this->db->execute("UPDATE tickets SET status = 'open' WHERE id = ?", [$ticketId]);
+            // Auto-set status to waiting_for_reply on customer reply (skip if closed)
+            if ($ticket['status'] !== 'closed') {
+                $this->db->execute("UPDATE tickets SET status = 'waiting_for_reply' WHERE id = ?", [$ticketId]);
             }
 
             // Update last_message_id

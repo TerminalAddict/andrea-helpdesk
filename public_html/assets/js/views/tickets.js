@@ -22,7 +22,11 @@ const TicketsView = {
                         <div class="col-md-2">
                             <select class="form-select form-select-sm" id="filter-status">
                                 <option value="">All Statuses</option>
-                                <option value="open" selected>Open</option>
+                                <option value="active" selected>Active (all open)</option>
+                                <option value="new">New</option>
+                                <option value="waiting_for_reply">Waiting for reply</option>
+                                <option value="replied">Replied</option>
+                                <option value="open">Open</option>
                                 <option value="pending">Pending</option>
                                 <option value="resolved">Resolved</option>
                                 <option value="closed">Closed</option>
