@@ -47,7 +47,7 @@ const TicketNewView = {
                                 <select class="form-select" id="nt-channel">
                                     <option value="phone">Phone</option>
                                     <option value="email">Email</option>
-                                    <option value="web">Web</option>
+                                    <option value="web" selected>Web</option>
                                     <option value="portal">Portal</option>
                                 </select>
                             </div>
