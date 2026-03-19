@@ -6,6 +6,15 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 
 ---
 
+## Developer Documentation
+
+| Document | Why it matters |
+|---|---|
+| [docs/api-spec.md](docs/api-spec.md) | Full REST API reference — every endpoint, request/response shape, required headers, auth middleware, and error codes. Essential if you're building an integration, a mobile client, or working in the backend without reading the PHP source. |
+| [docs/db-schema.md](docs/db-schema.md) | Complete database schema — all tables, columns, indexes, foreign keys, and the default settings reference. Essential for understanding the data model, writing migrations, or debugging unexpected query behaviour. |
+
+---
+
 ## Features
 
 ### Ticket Management
@@ -150,14 +159,19 @@ composer install --no-dev --optimize-autoloader
 cp .env.example .env
 # Edit .env with your DB, JWT secret, storage path, and app URL
 
-# 3. Run migrations and seed the admin account
+# 3. Configure Makefile deployment targets
+cp Makefile.local.example Makefile.local
+# Edit Makefile.local — set LOCAL_HOST, PROD_HOST, REMOTE_USER, REMOTE_PATH
+# Makefile.local is gitignored and never committed
+
+# 4. Run migrations and seed the admin account
 make db-migrate
 make db-seed
 
-# 4. Download frontend vendor assets
+# 5. Download frontend vendor assets
 make fetch-assets
 
-# 5. Install the IMAP polling cron
+# 6. Install the IMAP polling cron
 make cron-install-production
 ```
 
@@ -168,6 +182,15 @@ SMTP, IMAP accounts, branding, and all other runtime settings are configured thr
 ---
 
 ## Deployment (developer workflow)
+
+Before deploying, copy `Makefile.local.example` to `Makefile.local` and fill in your server details:
+
+```bash
+cp Makefile.local.example Makefile.local
+# Edit Makefile.local — set LOCAL_HOST, PROD_HOST, REMOTE_USER, REMOTE_PATH
+```
+
+`Makefile.local` is gitignored and never committed.
 
 ```bash
 make deploy-production   # rsync to production server
@@ -180,4 +203,4 @@ Sensitive files (`.env`, `storage/`, `vendor/`) are excluded from rsync. The sto
 
 ## License
 
-MIT
+GPL-3.0
