@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS customers (
     portal_password_hash    VARCHAR(255) NULL COMMENT 'NULL means no portal password set',
     portal_token            VARCHAR(64) NULL COMMENT 'Magic link one-time token',
     portal_token_expires    DATETIME NULL,
+    suppress_emails         TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'When 1, all outbound emails to this customer are suppressed',
     created_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at              DATETIME NULL,

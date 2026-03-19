@@ -79,7 +79,7 @@ class CustomerRepository
 
     public function update(int $id, array $data): bool
     {
-        $allowed = ['name', 'email', 'phone', 'company', 'notes'];
+        $allowed = ['name', 'email', 'phone', 'company', 'notes', 'suppress_emails'];
         $set     = [];
         $params  = [];
 

@@ -66,10 +66,16 @@ const CustomerDetailView = {
                                     <div class="text-muted small">Company</div>
                                     <div>${App.escapeHtml(c.company || '–')}</div>
                                 </div>
-                                <div class="mb-0">
+                                <div class="mb-2">
                                     <div class="text-muted small">Customer since</div>
                                     <div class="small">${App.formatDate(c.created_at)}</div>
                                 </div>
+                                ${c.suppress_emails ? `
+                                <div class="mt-2">
+                                    <span class="badge bg-danger w-100 text-wrap" style="font-size:.75rem;">
+                                        <i class="bi bi-envelope-slash me-1"></i>All emails suppressed for this customer
+                                    </span>
+                                </div>` : ''}
                             </div>
                             <div id="cust-edit-mode" style="display:none;">
                                 <div class="mb-2">
@@ -83,6 +89,14 @@ const CustomerDetailView = {
                                 <div class="mb-3">
                                     <label class="form-label small">Company</label>
                                     <input type="text" class="form-control form-control-sm" id="edit-cust-company" value="${App.escapeHtml(c.company || '')}">
+                                </div>
+                                <div class="mb-3 d-flex align-items-center justify-content-between">
+                                    <label class="form-check-label small fw-semibold text-danger mb-0" for="edit-cust-suppress" style="cursor:pointer;">
+                                        <i class="bi bi-envelope-slash me-1"></i>Suppress all emails
+                                    </label>
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input" type="checkbox" id="edit-cust-suppress" ${c.suppress_emails ? 'checked' : ''}>
+                                    </div>
                                 </div>
                                 <div class="d-flex gap-2">
                                     <button class="btn btn-sm btn-primary" id="btn-save-cust">Save</button>
@@ -294,16 +308,18 @@ const CustomerDetailView = {
         $('#btn-save-cust').on('click', async () => {
             try {
                 await API.put('/customers/' + this.customer.id, {
-                    name:    $('#edit-cust-name').val().trim(),
-                    phone:   $('#edit-cust-phone').val().trim(),
-                    company: $('#edit-cust-company').val().trim(),
+                    name:            $('#edit-cust-name').val().trim(),
+                    phone:           $('#edit-cust-phone').val().trim(),
+                    company:         $('#edit-cust-company').val().trim(),
+                    suppress_emails: $('#edit-cust-suppress').is(':checked') ? 1 : 0,
                 });
                 App.toast('Customer updated');
                 const res = await API.get('/customers/' + this.customer.id);
                 this.customer = res.data;
-                $('#cust-view-mode').find('.fw-semibold').first().text(this.customer.name || '–');
-                $('#cust-view-mode').show();
-                $('#cust-edit-mode').hide();
+                // Re-render to pick up all changes including suppress_emails badge
+                const perPage = parseInt(API.currentUser?.page_size) || 20;
+                const ticketsRes = await API.get('/customers/' + this.customer.id + '/tickets', { per_page: perPage });
+                this.renderFull(ticketsRes.data || [], ticketsRes.meta || {});
             } catch (e) { App.toast(e.message, 'error'); }
         });
 

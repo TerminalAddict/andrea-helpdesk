@@ -24,8 +24,8 @@ class NotificationService
     {
         $db = Database::getInstance();
 
-        // 1. Send auto-response to customer (skipped if email suppression is active)
-        if (empty($ticket['suppress_emails'])) {
+        // 1. Send auto-response to customer (skipped if suppression is active on ticket or customer)
+        if (empty($ticket['suppress_emails']) && empty($customer['suppress_emails'])) {
             try {
                 $this->autoResponder->sendForNewTicket($ticket, $customer);
             } catch (\Throwable $e) {
@@ -120,7 +120,7 @@ class NotificationService
 
     public function onAgentReply(array $ticket, array $reply, array $agent, array $customer, array $ccEmails = [], array $attachmentIds = [], bool $includeSignature = true): void
     {
-        if (!empty($ticket['suppress_emails'])) return;
+        if (!empty($ticket['suppress_emails']) || !empty($customer['suppress_emails'])) return;
 
         try {
             $this->emailNotifier->sendTicketReply($ticket, $reply, $agent, $customer, $ccEmails, $attachmentIds, $includeSignature);

@@ -69,12 +69,16 @@ class CustomerController
         $customer = $this->repo->findById((int)$params['id']);
         if (!$customer) throw new NotFoundException('Customer not found');
 
-        $allowed = ['name', 'email', 'phone', 'company', 'notes'];
+        $allowed = ['name', 'email', 'phone', 'company', 'notes', 'suppress_emails'];
         $data    = [];
         foreach ($allowed as $field) {
             if ($request->input($field) !== null) {
                 $data[$field] = $request->input($field);
             }
+        }
+
+        if (isset($data['suppress_emails'])) {
+            $data['suppress_emails'] = (int)(bool)$data['suppress_emails'];
         }
 
         $this->repo->update($customer['id'], $data);
