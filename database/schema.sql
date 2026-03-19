@@ -302,6 +302,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 INSERT INTO settings (key_name, value, type, group_name, label) VALUES
 -- General
 ('ticket_prefix',       'HD',               'string',  'general',  'Ticket Number Prefix'),
+('app_url',             '',                  'string',  'general',  'Application URL'),
 ('timezone',            'Pacific/Auckland',  'string',  'general',  'Timezone'),
 ('date_format',         'd/m/Y H:i',         'string',  'general',  'Date/Time Format'),
 ('imap_poll_mode',      'cron',              'string',  'general',  'IMAP Polling Mode'),
