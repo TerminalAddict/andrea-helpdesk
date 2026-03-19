@@ -77,6 +77,10 @@ class SlackNotifier
         $payload['unfurl_links'] = $config['unfurl_links'];
         $payload['unfurl_media'] = $config['unfurl_links'];
 
+        if (!empty($config['username'])) {
+            $payload['username'] = $config['username'];
+        }
+
         if (!empty($config['icon_url'])) {
             $payload['icon_url'] = $config['icon_url'];
         } elseif (!empty($config['icon_emoji'])) {

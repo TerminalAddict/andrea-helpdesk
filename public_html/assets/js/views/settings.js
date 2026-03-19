@@ -148,6 +148,9 @@ const SettingsView = {
                 { key: 'slack_on_new_reply',  label: 'Notify on new customer reply', type: 'checkbox', value: s.slack_on_new_reply },
                 { key: 'slack_unfurl_links',  label: 'Show link previews',           type: 'checkbox', value: s.slack_unfurl_links !== undefined ? s.slack_unfurl_links : true,
                   hint: 'When enabled, Slack will expand ticket links into a rich preview card.' },
+                { key: 'slack_username',      label: 'Bot display name',             type: 'text',     value: s.slack_username || '',
+                  placeholder: 'e.g. Helpdesk Bot',
+                  hint: 'The name shown on Slack messages from this integration. Leave blank to use the webhook\'s default name.' },
                 { key: 'slack_icon_url',      label: 'Bot icon — image URL',         type: 'text',     value: s.slack_icon_url || '',
                   placeholder: 'https://example.com/icon.png',
                   hint: 'URL of an image to use as the Slack bot icon. If set, this overrides the emoji icon below.' },
@@ -756,7 +759,7 @@ const SettingsView = {
             email:        ['smtp_host','smtp_port','smtp_encryption','smtp_username','smtp_password','smtp_from_address','smtp_from_name','reply_to_address','global_signature','notify_agent_on_new_ticket','notify_agent_on_new_reply'],
             autoresponse: ['auto_response_enabled','auto_response_subject','auto_response_body'],
             imap:         [],
-            slack:        ['slack_enabled','slack_webhook_url','slack_channel','slack_on_new_ticket','slack_on_assign','slack_on_new_reply','slack_unfurl_links','slack_icon_url','slack_icon_emoji'],
+            slack:        ['slack_enabled','slack_webhook_url','slack_channel','slack_on_new_ticket','slack_on_assign','slack_on_new_reply','slack_unfurl_links','slack_username','slack_icon_url','slack_icon_emoji'],
         };
 
         const payload = {};
