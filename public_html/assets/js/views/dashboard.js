@@ -12,7 +12,7 @@ const DashboardView = {
                     {id:'new',     label:'New',              color:'text-info'},
                     {id:'waiting', label:'Waiting for Reply', color:'text-danger'},
                     {id:'pending', label:'Pending',           color:'text-warning'},
-                    {id:'resolved',label:'Resolved',          color:'text-success'},
+                    {id:'replied', label:'Replied',            color:'text-success'},
                 ].map(s => `
                 <div class="col-6 col-md-3">
                     <div class="card border-0 shadow-sm h-100">
@@ -102,7 +102,7 @@ const DashboardView = {
             $('#stat-new').text(data.new || 0);
             $('#stat-waiting').text(data.waiting_for_reply || 0);
             $('#stat-pending').text(data.pending || 0);
-            $('#stat-resolved').text(data.resolved || 0);
+            $('#stat-replied').text(data.replied || 0);
         } catch (e) {}
 
         const pageSize = parseInt(API.currentUser?.page_size) || 20;
