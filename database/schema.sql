@@ -314,6 +314,7 @@ INSERT INTO settings (key_name, value, type, group_name, label) VALUES
 ('primary_color',       '#0d6efd',           'string',  'branding', 'Primary Color'),
 ('accent_color',        '#6610f2',           'string',  'branding', 'Accent Color'),
 ('custom_css',          '',                  'string',  'branding', 'Custom CSS'),
+('support_email_display','',                 'string',  'branding', 'Support Email (displayed)'),
 
 -- Email
 ('smtp_host',           '',                  'string',  'email',    'SMTP Host'),
@@ -325,6 +326,8 @@ INSERT INTO settings (key_name, value, type, group_name, label) VALUES
 ('smtp_encryption',     'tls',               'string',  'email',    'SMTP Encryption (tls/ssl/none)'),
 ('reply_to_address',    '',                  'string',  'email',    'Reply-To Address'),
 ('global_signature',    '<p>--<br>Andrea Helpdesk</p>', 'string', 'email', 'Global Email Signature (HTML)'),
+('notify_agent_on_new_ticket','1',           'boolean', 'email',    'Notify Agents on New Ticket'),
+('notify_agent_on_new_reply', '1',           'boolean', 'email',    'Notify Agents on New Customer Reply'),
 ('auto_response_enabled','1',                'boolean', 'email',    'Enable Auto-Response'),
 ('auto_response_subject','Re: {{subject}} [{{ticket_number}}]', 'string', 'email', 'Auto-Response Subject'),
 ('auto_response_body',  '<p>Dear {{customer_name}},</p><p>Thank you for contacting us. Your ticket has been created with reference number <strong>{{ticket_number}}</strong>.</p><p>We will respond as soon as possible.</p><p>{{global_signature}}</p>', 'string', 'email', 'Auto-Response Body (HTML)'),
