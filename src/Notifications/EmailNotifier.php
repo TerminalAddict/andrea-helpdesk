@@ -224,7 +224,12 @@ class EmailNotifier
             $mailer->Body    = $body;
             $mailer->AltBody = strip_tags($body);
             foreach ($headers as $name => $value) {
-                $mailer->addCustomHeader($name, $value);
+                // Setting Message-ID via addCustomHeader would duplicate PHPMailer's own header
+                if (strcasecmp($name, 'Message-ID') === 0) {
+                    $mailer->MessageID = $value;
+                } else {
+                    $mailer->addCustomHeader($name, $value);
+                }
             }
             $mailer->send();
             return true;
