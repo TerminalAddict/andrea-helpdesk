@@ -50,7 +50,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Role-based access** — `admin` and `agent` roles; admins bypass all permission checks
 - **Granular permissions** — per-agent toggles for: close tickets, delete tickets, edit customers, view reports, manage knowledge base, manage tags
 - **Agent assignment** — assign tickets to specific agents; filter by assigned agent
-- **Signatures** — per-agent HTML email signature; agents can toggle signature inclusion per reply via a checkbox in the reply composer
+- **Signatures** — per-agent email signature (plain text or HTML); agents can toggle signature inclusion per reply via a checkbox in the reply composer; plain-text signatures render with correct line breaks in HTML email
 - **Dark / light theme** — each agent selects their own UI theme; preference is persisted in the database
 - **Pagination preference** — configurable per-agent page size for ticket lists
 
@@ -61,7 +61,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 
 ### Notifications
 - **Email notifications** — agents are notified of new tickets; customers and participants are notified of replies
-- **Slack notifications** — optional webhook integration for new ticket alerts
+- **Slack notifications** — optional webhook integration for new ticket alerts, assignments, and customer replies; configurable bot display name, icon image or emoji, and link preview behaviour
 - **Global email signature** — appended to all outbound agent emails
 
 ### Reporting
@@ -75,6 +75,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Ticket prefix** — customise the ticket number prefix
 - **Auto-responder** — enable/disable and customise the automatic acknowledgement email
 - **Date format** — configurable display format
+- **Slack appearance** — configurable bot display name, icon (image URL or emoji), and link preview toggle per Slack integration
 
 ### Security
 - **JWT authentication** — short-lived access tokens (15 min) + long-lived refresh tokens (30 days, hashed in DB)

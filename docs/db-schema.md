@@ -592,6 +592,11 @@ The following settings are seeded by `schema.sql`. Values shown are the defaults
 | `slack_channel` | `#helpdesk` | string | Channel name (overrides the webhook's default channel) |
 | `slack_on_new_ticket` | `1` | boolean | Notify when a new ticket is created |
 | `slack_on_assign` | `1` | boolean | Notify when a ticket is assigned to an agent |
+| `slack_on_new_reply` | `1` | boolean | Notify when a customer replies to a ticket |
+| `slack_unfurl_links` | `1` | boolean | When enabled, Slack expands ticket links into rich preview cards |
+| `slack_username` | `` | string | Display name shown on Slack messages (blank = webhook default) |
+| `slack_icon_url` | `` | string | URL of an image to use as the bot icon; takes priority over `slack_icon_emoji` |
+| `slack_icon_emoji` | `` | string | Slack emoji code for the bot icon, e.g. `:robot_face:` or `:paul:` |
 
 ---
 
