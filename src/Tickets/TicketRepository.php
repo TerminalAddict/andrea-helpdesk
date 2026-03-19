@@ -201,19 +201,20 @@ class TicketRepository
 
     public function generateTicketNumber(string $prefix, string $date): string
     {
-        // INSERT ... ON DUPLICATE KEY UPDATE is atomic at the row level — no wrapping
-        // transaction needed, and adding one here would conflict with any caller that
-        // already has an open transaction (e.g. createFromEmail in TicketService).
-        // LAST_INSERT_ID(expr) sets the connection-scoped last insert id to the expression
-        // result, making the incremented value retrievable without a second SELECT that
-        // could race against another concurrent connection.
+        // Each day's first ticket starts at a random number between 128 and 512;
+        // subsequent tickets that day increment from there.
+        // LAST_INSERT_ID(expr) on the INSERT branch sets the connection-scoped
+        // LAST_INSERT_ID so the chosen start value is readable without a second
+        // SELECT that could race another connection. On the UPDATE branch the same
+        // trick captures the incremented value atomically.
+        $startSeq = random_int(128, 512);
         $this->db->execute(
-            "INSERT INTO ticket_number_sequences (date_key, last_seq) VALUES (?, 1)
+            "INSERT INTO ticket_number_sequences (date_key, last_seq) VALUES (?, LAST_INSERT_ID(?))
              ON DUPLICATE KEY UPDATE last_seq = LAST_INSERT_ID(last_seq + 1)",
-            [$date]
+            [$date, $startSeq]
         );
         $row = $this->db->fetch("SELECT LAST_INSERT_ID() AS seq");
-        $seq = str_pad((string)($row['seq'] ?? 1), 4, '0', STR_PAD_LEFT);
+        $seq = (string)($row['seq'] ?? $startSeq);
         return "{$prefix}-{$date}-{$seq}";
     }
 
