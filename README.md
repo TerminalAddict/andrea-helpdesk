@@ -12,6 +12,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 |---|---|
 | [docs/api-spec.md](docs/api-spec.md) | Full REST API reference — every endpoint, request/response shape, required headers, auth middleware, and error codes. Essential if you're building an integration, a mobile client, or working in the backend without reading the PHP source. |
 | [docs/db-schema.md](docs/db-schema.md) | Complete database schema — all tables, columns, indexes, foreign keys, and the default settings reference. Essential for understanding the data model, writing migrations, or debugging unexpected query behaviour. |
+| [docs/screenshots.md](docs/screenshots.md) | Annotated screenshots of every screen in the agent UI — useful for evaluating the product or understanding what each feature looks like before diving into the code. |
 
 ---
 
