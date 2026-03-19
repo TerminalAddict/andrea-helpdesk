@@ -25,9 +25,9 @@ class CustomerService
 
         $token   = bin2hex(random_bytes(32));
         $expires = new \DateTime('+1 hour');
-        $this->repo->setPortalToken($customerId, $token, $expires);
+        $this->repo->setPortalToken($customerId, hash('sha256', $token), $expires);
 
-        $appUrl = \Andrea\Helpdesk\Settings\SettingsService::getInstance()->get('app_url') ?: getenv('APP_URL') ?: '';
+        $appUrl = rtrim(\Andrea\Helpdesk\Settings\SettingsService::getInstance()->get('app_url') ?: getenv('APP_URL') ?: '', '/');
         $link   = "{$appUrl}/#/portal/login?token={$token}&email=" . urlencode($customer['email']);
 
         try {

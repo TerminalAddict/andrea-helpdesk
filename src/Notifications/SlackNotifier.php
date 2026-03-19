@@ -16,7 +16,7 @@ class SlackNotifier
 
         $priority  = strtoupper($ticket['priority'] ?? 'normal');
         $channel   = $config['channel'];
-        $appUrl    = $this->settings->get('app_url') ?: getenv('APP_URL') ?: '';
+        $appUrl    = rtrim($this->settings->get('app_url') ?: getenv('APP_URL') ?: '', '/');
         $ticketUrl = "{$appUrl}/#/tickets/{$ticket['id']}";
         $customer_name = $customer['name'] ?? $customer['email'];
 
@@ -38,7 +38,7 @@ class SlackNotifier
         $config = $this->settings->getSlackConfig();
         if (!$config['enabled'] || !$config['on_assign']) return false;
 
-        $appUrl    = $this->settings->get('app_url') ?: getenv('APP_URL') ?: '';
+        $appUrl    = rtrim($this->settings->get('app_url') ?: getenv('APP_URL') ?: '', '/');
         $ticketUrl = "{$appUrl}/#/tickets/{$ticket['id']}";
 
         $text = ":clipboard: Ticket <{$ticketUrl}|{$ticket['ticket_number']}> assigned to *{$agent['name']}*: {$ticket['subject']}";
@@ -50,7 +50,7 @@ class SlackNotifier
         $config = $this->settings->getSlackConfig();
         if (!$config['enabled'] || !$config['on_new_reply']) return false;
 
-        $appUrl        = $this->settings->get('app_url') ?: getenv('APP_URL') ?: '';
+        $appUrl        = rtrim($this->settings->get('app_url') ?: getenv('APP_URL') ?: '', '/');
         $ticketUrl     = "{$appUrl}/#/tickets/{$ticket['id']}";
         $customerName  = $customer['name'] ?? $customer['email'];
         $preview       = substr(strip_tags($reply['body_html'] ?? ''), 0, 200);
