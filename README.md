@@ -65,7 +65,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Global email signature** — appended to all outbound agent emails
 
 ### Reporting
-- **Dashboard** — live stats: New, Waiting for Reply, Pending, and Resolved ticket counts; recent activity by agent
+- **Dashboard** — live stats: New, Waiting for Reply, Pending, and Replied ticket counts; navbar badge shows all active (non-resolved, non-closed) tickets; recent activity by agent
 - **Reports** — ticket volume over time, resolution times, agent workload breakdowns
 
 ### Settings (Admin UI)
