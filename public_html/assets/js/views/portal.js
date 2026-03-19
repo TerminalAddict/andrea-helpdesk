@@ -127,7 +127,7 @@ const PortalView = {
                                 <option value="">All Statuses</option>
                                 <option value="open" selected>Open</option>
                                 <option value="pending">Pending</option>
-                                <option value="resolved">Resolved</option>
+                                <option value="replied">Replied</option>
                                 <option value="closed">Closed</option>
                             </select>
                         </div>
