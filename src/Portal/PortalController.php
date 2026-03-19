@@ -8,9 +8,13 @@ use Andrea\Helpdesk\Core\Request;
 use Andrea\Helpdesk\Core\Response;
 use Andrea\Helpdesk\Core\Exceptions\NotFoundException;
 use Andrea\Helpdesk\Core\Exceptions\HttpException;
+use Andrea\Helpdesk\Tickets\TicketRepository;
+use Andrea\Helpdesk\Tickets\TicketService;
 use Andrea\Helpdesk\Tickets\ReplyRepository;
 use Andrea\Helpdesk\Tickets\ReplyService;
 use Andrea\Helpdesk\Tickets\AttachmentService;
+use Andrea\Helpdesk\Customers\CustomerRepository;
+use Andrea\Helpdesk\Notifications\NotificationService;
 
 class PortalController
 {
@@ -19,6 +23,62 @@ class PortalController
     public function __construct()
     {
         $this->db = Database::getInstance();
+    }
+
+    /**
+     * POST /api/portal/tickets
+     * Create a new ticket from the customer portal.
+     */
+    public function create(Request $request): void
+    {
+        $data = $request->validate([
+            'subject' => 'required|max:255',
+            'body'    => 'required',
+        ]);
+
+        $customer      = (new CustomerRepository())->findById($request->customer->id);
+        $ticketRepo    = new TicketRepository();
+        $ticketService = new TicketService();
+        $replyRepo     = new ReplyRepository();
+
+        $this->db->beginTransaction();
+        try {
+            $ticketNumber = $ticketService->generateNumber();
+            $ticketId     = $ticketRepo->create([
+                'ticket_number' => $ticketNumber,
+                'subject'       => $data['subject'],
+                'channel'       => 'portal',
+                'customer_id'   => $customer['id'],
+                'status'        => 'new',
+                'priority'      => 'normal',
+            ]);
+
+            $bodyText = $data['body'];
+            $bodyHtml = nl2br(htmlspecialchars($bodyText, ENT_QUOTES, 'UTF-8'));
+
+            $replyRepo->create([
+                'ticket_id'   => $ticketId,
+                'author_type' => 'customer',
+                'customer_id' => $customer['id'],
+                'body_html'   => $bodyHtml,
+                'body_text'   => $bodyText,
+                'is_private'  => 0,
+                'direction'   => 'inbound',
+            ]);
+
+            $this->db->commit();
+        } catch (\Throwable $e) {
+            $this->db->rollback();
+            throw $e;
+        }
+
+        $ticket = $ticketRepo->findById($ticketId);
+
+        try {
+            (new NotificationService())->onNewTicket($ticket, $customer);
+        } catch (\Throwable) {}
+
+        Response::created($ticket, 'Ticket created');
     }
 
     /**

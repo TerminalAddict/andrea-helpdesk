@@ -122,6 +122,7 @@ return [
     ['DELETE','/api/kb/articles/:id',           KbController::class, 'destroy',        ['role:admin']],
 
     // ── Customer Portal ───────────────────────────────────────────────────────
+    ['POST', '/api/portal/tickets',                     PortalController::class, 'create',     ['auth:customer']],
     ['GET',  '/api/portal/tickets',                     PortalController::class, 'index',      ['auth:customer']],
     ['GET',  '/api/portal/tickets/:id',                 PortalController::class, 'show',       ['auth:customer']],
     ['POST', '/api/portal/tickets/:id/replies',         PortalController::class, 'reply',      ['auth:customer']],
