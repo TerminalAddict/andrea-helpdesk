@@ -76,10 +76,8 @@ class ReplyService
                 'in_reply_to'    => $inReplyTo ?: null,
             ]);
 
-            // Auto-set status to waiting_for_reply on customer reply (skip if closed)
-            if ($ticket['status'] !== 'closed') {
-                $this->db->execute("UPDATE tickets SET status = 'waiting_for_reply' WHERE id = ?", [$ticketId]);
-            }
+            // Auto-set status to waiting_for_reply on customer reply (always, even if closed/resolved)
+            $this->db->execute("UPDATE tickets SET status = 'waiting_for_reply' WHERE id = ?", [$ticketId]);
 
             // Update last_message_id
             if ($rawMessageId) {
