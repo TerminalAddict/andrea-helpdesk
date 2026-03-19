@@ -109,7 +109,7 @@ class TicketRepository
         }
 
         $whereClause = implode(' AND ', $where);
-        $sort        = in_array($filters['sort'] ?? '', ['created_at', 'updated_at', 'priority', 'status'], true)
+        $sort        = in_array($filters['sort'] ?? '', ['ticket_number', 'created_at', 'updated_at', 'priority', 'status'], true)
             ? $filters['sort'] : 'updated_at';
         $dir         = ($filters['dir'] ?? 'desc') === 'asc' ? 'ASC' : 'DESC';
 

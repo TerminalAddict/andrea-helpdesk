@@ -112,9 +112,11 @@ const TicketsView = {
         });
         $('#filter-status, #filter-priority, #filter-agent, #filter-tag').on('change', () => this.loadTickets());
         $('#filter-reset').on('click', () => {
-            $('#filter-status').val('open');
+            $('#filter-status').val('active');
             $('#filter-priority, #filter-agent, #filter-tag').val('');
             $('#filter-q').val('');
+            this._sort = null;
+            this._dir  = null;
             this.loadTickets();
         });
 
@@ -192,6 +194,16 @@ const TicketsView = {
                 <td class="small text-muted text-nowrap">${App.formatDate(t.updated_at)}</td>
             </tr>`).join('');
 
+        const sortIcon = (field) => {
+            if (this._sort !== field) return '<i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:.75rem;"></i>';
+            return this._dir === 'asc'
+                ? '<i class="bi bi-arrow-up ms-1" style="font-size:.75rem;"></i>'
+                : '<i class="bi bi-arrow-down ms-1" style="font-size:.75rem;"></i>';
+        };
+        const th = (label, field) => field
+            ? `<th data-sort="${field}" style="cursor:pointer;white-space:nowrap;user-select:none;">${label}${sortIcon(field)}</th>`
+            : `<th>${label}</th>`;
+
         const total = meta.total || 0;
         $('#tickets-table-wrap').html(`
             <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom bg-light">
@@ -201,20 +213,32 @@ const TicketsView = {
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th style="width:140px;">Ticket #</th>
-                            <th>Subject / Customer</th>
-                            <th>Status</th>
-                            <th>Priority</th>
-                            <th>Tags</th>
+                            ${th('Ticket #', 'ticket_number')}
+                            ${th('Subject / Customer', null)}
+                            ${th('Status', 'status')}
+                            ${th('Priority', 'priority')}
+                            ${th('Tags', null)}
                             <th class="text-center">Comments</th>
-                            <th>Assigned To</th>
-                            <th>Created</th>
-                            <th>Updated</th>
+                            ${th('Assigned To', null)}
+                            ${th('Created', 'created_at')}
+                            ${th('Updated', 'updated_at')}
                         </tr>
                     </thead>
                     <tbody>${rows}</tbody>
                 </table>
             </div>`);
+
+        // Sortable column headers
+        $('#tickets-table-wrap th[data-sort]').on('click', (e) => {
+            const field = $(e.currentTarget).data('sort');
+            if (this._sort === field) {
+                this._dir = this._dir === 'asc' ? 'desc' : 'asc';
+            } else {
+                this._sort = field;
+                this._dir  = 'desc';
+            }
+            this.loadTickets(1);
+        });
 
         // Row click
         $('.ticket-row').on('click', function() {
