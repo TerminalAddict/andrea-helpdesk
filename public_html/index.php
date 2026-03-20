@@ -32,6 +32,7 @@ try {
     <link id="app-favicon" rel="icon" href="<?= htmlspecialchars($faviconUrl) ?>">
     <link rel="stylesheet" href="/assets/vendor/bootstrap/bootstrap.min.css">
     <link rel="stylesheet" href="/assets/vendor/bootstrap-icons/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/assets/vendor/quill/quill.snow.css">
     <link rel="stylesheet" href="/assets/css/app.css">
 </head>
 <body>
@@ -80,6 +81,8 @@ window.AppConfig = {
 <script src="/assets/vendor/jquery/jquery.min.js"></script>
 <script src="/assets/vendor/bootstrap/bootstrap.bundle.min.js"></script>
 <script src="/assets/vendor/dompurify/purify.min.js"></script>
+<script src="/assets/vendor/quill/quill.min.js"></script>
+<script src="/assets/js/rich-editor.js"></script>
 
 <!-- API wrapper (must load first) -->
 <script src="/assets/js/api.js"></script>

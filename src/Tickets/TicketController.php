@@ -60,14 +60,15 @@ class TicketController
             $request->input('customer_name', '')
         );
 
-        $body = $request->input('body', '');
+        $body     = $request->input('body', '');
+        $bodyHtml = $request->input('body_html') ?: nl2br(htmlspecialchars($body, ENT_QUOTES, 'UTF-8'));
 
         $data = [
             'customer_id'       => $customer['id'],
             'subject'           => $request->input('subject'),
             'priority'          => $request->input('priority', 'normal'),
             'channel'           => $request->input('channel', 'phone'),
-            'body_html'         => nl2br(htmlspecialchars($body)),
+            'body_html'         => $bodyHtml,
             'assigned_agent_id' => $request->input('assigned_agent_id'),
             'parent_ticket_id'  => $request->input('parent_ticket_id'),
         ];
@@ -161,10 +162,11 @@ class TicketController
             throw new HttpException('You can only edit your own replies', 403);
         }
 
-        $body = trim($request->input('body', ''));
+        $body     = trim($request->input('body', ''));
+        $bodyHtml = $request->input('body_html') ?: nl2br(htmlspecialchars($body, ENT_QUOTES, 'UTF-8'));
         $this->db->execute(
             "UPDATE replies SET body_html = ?, updated_at = NOW() WHERE id = ?",
-            [nl2br(htmlspecialchars($body, ENT_QUOTES, 'UTF-8')), $replyId]
+            [$bodyHtml, $replyId]
         );
 
         $replyService = new ReplyService();

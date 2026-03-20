@@ -5,6 +5,7 @@ BOOTSTRAP_VERSION = 5.3.8
 BOOTSTRAP_ICONS_VERSION = 1.13.1
 JQUERY_VERSION          = 4.0.0
 DOMPURIFY_VERSION       = 3.2.4
+QUILL_VERSION           = 2.0.3
 VENDOR_DIR              = public_html/assets/vendor
 
 # Deployment configuration — copy Makefile.local.example to Makefile.local and set your values
@@ -47,7 +48,12 @@ fetch-assets: ## Download Bootstrap, Bootstrap Icons, and jQuery locally (bump v
 	mkdir -p $(VENDOR_DIR)/dompurify
 	curl -sL "https://cdn.jsdelivr.net/npm/dompurify@$(DOMPURIFY_VERSION)/dist/purify.min.js" \
 	     -o $(VENDOR_DIR)/dompurify/purify.min.js
-	@echo "Assets ready — Bootstrap $(BOOTSTRAP_VERSION), Bootstrap Icons $(BOOTSTRAP_ICONS_VERSION), jQuery $(JQUERY_VERSION), DOMPurify $(DOMPURIFY_VERSION)"
+	mkdir -p $(VENDOR_DIR)/quill
+	curl -sL "https://cdn.jsdelivr.net/npm/quill@$(QUILL_VERSION)/dist/quill.snow.css" \
+	     -o $(VENDOR_DIR)/quill/quill.snow.css
+	curl -sL "https://cdn.jsdelivr.net/npm/quill@$(QUILL_VERSION)/dist/quill.min.js" \
+	     -o $(VENDOR_DIR)/quill/quill.min.js
+	@echo "Assets ready — Bootstrap $(BOOTSTRAP_VERSION), Bootstrap Icons $(BOOTSTRAP_ICONS_VERSION), jQuery $(JQUERY_VERSION), DOMPurify $(DOMPURIFY_VERSION), Quill $(QUILL_VERSION)"
 
 install: ## Install Composer dependencies (production)
 	composer install --no-dev --optimize-autoloader

@@ -489,3 +489,81 @@
 .dropdown-item.pt-suggestion-active {
     background-color: var(--bs-primary-bg-subtle, #cfe2ff);
 }
+
+/* ============================================================
+   Rich Text Editor (Quill)
+   ============================================================ */
+.ql-editor {
+    min-height: 120px;
+    font-family: inherit;
+    font-size: .9rem;
+}
+
+/* Space between any Quill editor and the next form element */
+[id$="-quill"] {
+    margin-bottom: 0.75rem;
+}
+
+.ql-editor.ql-blank::before {
+    font-style: normal;
+    color: #6c757d;
+}
+
+/* Dark mode overrides */
+[data-theme="dark"] .ql-toolbar {
+    background: var(--bs-secondary-bg);
+    border-color: var(--bs-border-color);
+}
+
+[data-theme="dark"] .ql-toolbar .ql-stroke {
+    stroke: var(--bs-body-color);
+}
+
+[data-theme="dark"] .ql-toolbar .ql-fill {
+    fill: var(--bs-body-color);
+}
+
+[data-theme="dark"] .ql-toolbar .ql-picker-label,
+[data-theme="dark"] .ql-toolbar button {
+    color: var(--bs-body-color);
+}
+
+[data-theme="dark"] .ql-toolbar button:hover .ql-stroke,
+[data-theme="dark"] .ql-toolbar button.ql-active .ql-stroke {
+    stroke: #6ea8fe;
+}
+
+[data-theme="dark"] .ql-toolbar button:hover .ql-fill,
+[data-theme="dark"] .ql-toolbar button.ql-active .ql-fill {
+    fill: #6ea8fe;
+}
+
+[data-theme="dark"] .ql-container {
+    background: var(--bs-tertiary-bg);
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+}
+
+[data-theme="dark"] .ql-editor {
+    color: var(--bs-body-color);
+}
+
+[data-theme="dark"] .ql-editor.ql-blank::before {
+    color: #6c757d;
+}
+
+[data-theme="dark"] .ql-editor a {
+    color: #6ea8fe;
+}
+
+[data-theme="dark"] .ql-snow .ql-tooltip {
+    background-color: var(--bs-card-bg);
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+}
+
+[data-theme="dark"] .ql-snow .ql-tooltip input[type="text"] {
+    background-color: var(--bs-tertiary-bg);
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+}

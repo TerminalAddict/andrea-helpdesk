@@ -54,7 +54,7 @@ class PortalController
             ]);
 
             $bodyText = $data['body'];
-            $bodyHtml = nl2br(htmlspecialchars($bodyText, ENT_QUOTES, 'UTF-8'));
+            $bodyHtml = $request->input('body_html') ?: nl2br(htmlspecialchars($bodyText, ENT_QUOTES, 'UTF-8'));
 
             $replyRepo->create([
                 'ticket_id'   => $ticketId,
@@ -148,7 +148,7 @@ class PortalController
         $data = $request->validate(['body' => 'required']);
 
         $bodyText = $data['body'];
-        $bodyHtml = nl2br(htmlspecialchars($bodyText, ENT_QUOTES, 'UTF-8'));
+        $bodyHtml = $request->input('body_html') ?: nl2br(htmlspecialchars($bodyText, ENT_QUOTES, 'UTF-8'));
 
         $replyService = new ReplyService();
         $reply        = $replyService->createCustomerReply(

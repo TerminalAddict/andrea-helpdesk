@@ -238,7 +238,12 @@ const KnowledgeBaseView = {
         $('#article-body').val('');
         $('#article-category').val('');
         $('#article-modal-error').addClass('d-none');
-        bootstrap.Modal.getOrCreateInstance(document.getElementById('articleModal')).show();
+        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('articleModal'));
+        document.getElementById('articleModal').addEventListener('shown.bs.modal', () => {
+            RichEditor.init('article-body', { minHeight: '250px' });
+            RichEditor.clear('article-body');
+        }, { once: true });
+        modal.show();
     },
 
     async openEditModal(id) {
@@ -251,7 +256,12 @@ const KnowledgeBaseView = {
             $('#article-body').val(a.body_html || '');
             $('#article-category').val(a.category_id || '');
             $('#article-modal-error').addClass('d-none');
-            bootstrap.Modal.getOrCreateInstance(document.getElementById('articleModal')).show();
+            const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('articleModal'));
+            document.getElementById('articleModal').addEventListener('shown.bs.modal', () => {
+                RichEditor.init('article-body', { minHeight: '250px' });
+                RichEditor.set('article-body', a.body_html || '');
+            }, { once: true });
+            modal.show();
         } catch (e) { App.toast(e.message, 'error'); }
     },
 
@@ -416,16 +426,17 @@ const KnowledgeBaseView = {
     },
 
     async saveArticle() {
-        const id      = $('#article-id').val();
-        const title   = $('#article-title').val().trim();
-        const body    = $('#article-body').val().trim();
-        const catId   = $('#article-category').val();
+        const id       = $('#article-id').val();
+        const title    = $('#article-title').val().trim();
+        const body     = RichEditor.getText('article-body');
+        const bodyHtml = RichEditor.get('article-body');
+        const catId    = $('#article-category').val();
         if (!title || !body) {
             $('#article-modal-error').text('Title and content are required').removeClass('d-none');
             return;
         }
 
-        const payload = { title, body_html: body, is_published: true, category_id: catId || null };
+        const payload = { title, body_html: bodyHtml, is_published: true, category_id: catId || null };
 
         $('#article-spinner').removeClass('d-none');
         $('#btn-save-article').prop('disabled', true);

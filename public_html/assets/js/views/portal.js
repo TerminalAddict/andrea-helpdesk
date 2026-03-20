@@ -226,6 +226,10 @@ const PortalView = {
         });
         $('#btn-portal-submit').on('click', () => this.submitNewTicket());
 
+        document.getElementById('portalNewTicketModal').addEventListener('shown.bs.modal', () => {
+            RichEditor.init('portal-new-body', { simple: true, minHeight: '120px' });
+        });
+
         // Change password toggle
         $('#toggle-change-pw').on('click', () => {
             $('#change-pw-form').toggleClass('d-none');
@@ -339,7 +343,7 @@ const PortalView = {
 
     async submitNewTicket() {
         const subject = $('#portal-new-subject').val().trim();
-        const body    = $('#portal-new-body').val().trim();
+        const body    = RichEditor.getText('portal-new-body');
         const files   = document.getElementById('portal-new-files').files;
 
         if (!subject || !body) {
@@ -352,7 +356,7 @@ const PortalView = {
         $('#portal-new-error').addClass('d-none');
 
         try {
-            const res = await API.post('/portal/tickets', { subject, body });
+            const res = await API.post('/portal/tickets', { subject, body, body_html: RichEditor.get('portal-new-body') });
             const ticketId = res.data.id;
 
             for (const file of files) {
@@ -363,7 +367,7 @@ const PortalView = {
 
             bootstrap.Modal.getInstance(document.getElementById('portalNewTicketModal')).hide();
             $('#portal-new-subject').val('');
-            $('#portal-new-body').val('');
+            RichEditor.clear('portal-new-body');
             App.toast('Ticket submitted successfully');
             App.navigate('/portal/tickets/' + ticketId);
         } catch (e) {
@@ -465,6 +469,7 @@ const PortalTicketView = {
         this.renderThread(t.replies || []);
 
         $('#btn-portal-reply').on('click', () => this.sendReply());
+        RichEditor.init('portal-reply-body', { simple: true, placeholder: 'Write your message…', minHeight: '120px' });
 
         $('#btn-send-setup-email').on('click', async () => {
             $('#setup-email-spinner').removeClass('d-none');
@@ -503,7 +508,9 @@ const PortalTicketView = {
                             <span class="text-muted small">${App.formatDate(r.created_at)}</span>
                         </div>
                         <div class="card-body py-3">
-                            <pre class="mb-0" style="white-space:pre-wrap;font-family:inherit;">${App.escapeHtml(r.body || '')}</pre>
+                            ${r.body_html
+                                ? `<div class="reply-html">${DOMPurify.sanitize(r.body_html)}</div>`
+                                : `<pre class="mb-0" style="white-space:pre-wrap;font-family:inherit;">${App.escapeHtml(r.body || '')}</pre>`}
                             ${attachments ? `<div class="mt-2">${attachments}</div>` : ''}
                         </div>
                     </div>
@@ -514,7 +521,7 @@ const PortalTicketView = {
     },
 
     async sendReply() {
-        const body  = $('#portal-reply-body').val().trim();
+        const body  = RichEditor.getText('portal-reply-body');
         const files = document.getElementById('portal-reply-files').files;
 
         if (!body) { App.toast('Message is required', 'warning'); return; }
@@ -523,7 +530,7 @@ const PortalTicketView = {
         $('#btn-portal-reply').prop('disabled', true);
 
         try {
-            await API.post('/portal/tickets/' + this.ticket.id + '/replies', { body });
+            await API.post('/portal/tickets/' + this.ticket.id + '/replies', { body, body_html: RichEditor.get('portal-reply-body') });
 
             for (const file of files) {
                 const fd = new FormData();
@@ -531,7 +538,7 @@ const PortalTicketView = {
                 await API.upload('/portal/tickets/' + this.ticket.id + '/attachments', fd);
             }
 
-            $('#portal-reply-body').val('');
+            RichEditor.clear('portal-reply-body');
             $('#portal-reply-files').val('');
 
             const res = await API.get('/portal/tickets/' + this.ticket.id);

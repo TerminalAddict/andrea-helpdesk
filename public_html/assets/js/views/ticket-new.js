@@ -71,7 +71,7 @@ const TicketNewView = {
                                 <label class="form-label">Message <span class="text-danger">*</span></label>
                                 <textarea class="form-control" id="nt-body" rows="6" required placeholder="Describe the issue…"></textarea>
                             </div>
-                            <div class="col-12">
+                            <div class="col-12 mt-5 pt-5">
                                 <label class="form-label">Attachments</label>
                                 <input type="file" class="form-control" id="nt-files" multiple>
                             </div>
@@ -210,6 +210,8 @@ const TicketNewView = {
             e.preventDefault();
             this.submit();
         });
+
+        RichEditor.init('nt-body', { placeholder: 'Describe the issue…', minHeight: '150px' });
     },
 
     async searchCustomers(q) {
@@ -282,7 +284,7 @@ const TicketNewView = {
         const email    = $('#nt-customer-email').val().trim();
         const name     = $('#nt-customer-name').val().trim();
         const subject  = $('#nt-subject').val().trim();
-        const body     = $('#nt-body').val().trim();
+        const body     = RichEditor.getText('nt-body');
         const priority = $('#nt-priority').val();
         const channel  = $('#nt-channel').val();
         const assigned = $('#nt-assigned').val();
@@ -297,6 +299,7 @@ const TicketNewView = {
                 customer_name:  name || undefined,
                 subject,
                 body,
+                body_html:         RichEditor.get('nt-body'),
                 priority,
                 channel,
                 assigned_agent_id: assigned || undefined,

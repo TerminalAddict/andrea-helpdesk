@@ -169,6 +169,7 @@ const SettingsView = {
         if (tab === 'profile') {
             $('#settings-content').html(this.renderProfilePanel());
             this.bindProfileSave();
+            RichEditor.init('profile-signature', { value: (this.currentAgent || {}).signature || '' });
             return;
         }
 
@@ -178,6 +179,14 @@ const SettingsView = {
         $('.btn-save-settings').on('click', (e) => {
             this.save($(e.currentTarget).data('tab'));
         });
+
+        // Rich editors for textarea fields
+        if (tab === 'email') {
+            RichEditor.init('s-global_signature', { value: s.global_signature || '' });
+        }
+        if (tab === 'autoresponse') {
+            RichEditor.init('s-auto_response_body', { value: s.auto_response_body || '' });
+        }
 
         // Slack emoji quick-pick buttons
         if (tab === 'slack') {
@@ -703,7 +712,7 @@ const SettingsView = {
     },
 
     async saveProfile() {
-        const signature       = $('#profile-signature').val();
+        const signature       = RichEditor.get('profile-signature');
         const currentPassword = $('#profile-current-password').val();
         const newPassword     = $('#profile-new-password').val();
         const confirmPassword = $('#profile-confirm-password').val();

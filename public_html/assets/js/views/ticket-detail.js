@@ -603,11 +603,14 @@ const TicketDetailView = {
             e.preventDefault();
             this.deleteAttachment($(e.currentTarget).data('id'));
         });
+
+        // Rich text editor for reply body
+        RichEditor.init('reply-body', { placeholder: 'Write your reply…', minHeight: '150px' });
     },
 
     async sendReply() {
         const type             = $('input[name="replyType"]:checked').val();
-        const body             = $('#reply-body').val().trim();
+        const body             = RichEditor.getText('reply-body');
         const status           = $('#reply-status-change').val();
         const files            = document.getElementById('reply-files').files;
         const includeSignature = type !== 'note' && $('#reply-include-signature').is(':checked');
@@ -621,6 +624,7 @@ const TicketDetailView = {
             // Send body + files together so the email includes the attachments
             const fd = new FormData();
             fd.append('body', body);
+            fd.append('body_html', RichEditor.get('reply-body'));
             fd.append('type', type === 'note' ? 'internal' : 'reply');
             if (!includeSignature) fd.append('include_signature', '0');
             if (status) fd.append('status_after', status);
@@ -628,7 +632,7 @@ const TicketDetailView = {
 
             await API.upload('/tickets/' + this.ticket.id + '/replies', fd);
 
-            $('#reply-body').val('');
+            RichEditor.clear('reply-body');
             $('#reply-files').val('');
             $('#reply-attachments-preview').empty();
             App.toast(type === 'note' ? 'Note added' : 'Reply sent');
@@ -749,13 +753,9 @@ const TicketDetailView = {
         $('#edit-ticket-customer').val(t.customer_name + (t.customer_email ? ' <' + t.customer_email + '>' : ''));
         $('#edit-ticket-customer-id').val(t.customer_id || '');
 
-        // Strip HTML to plain text for editing
-        const plainBody = firstReply
-            ? $('<div>').html(firstReply.body_html || '').text().trim()
-            : '';
-        $('#edit-ticket-body').val(plainBody);
+        const editBodyHtml = firstReply ? (firstReply.body_html || '') : '';
         this._editFirstReplyId = firstReply ? firstReply.id : null;
-        this._originalEditBody = plainBody;
+        this._originalEditBody = editBodyHtml;
 
         // Customer typeahead
         let customerTimer;
@@ -793,6 +793,10 @@ const TicketDetailView = {
         $('#btn-save-edit-ticket').off('click').on('click', () => this.saveEditTicket());
 
         const modal = new bootstrap.Modal(document.getElementById('editTicketModal'));
+        document.getElementById('editTicketModal').addEventListener('shown.bs.modal', () => {
+            RichEditor.init('edit-ticket-body', { minHeight: '200px' });
+            RichEditor.set('edit-ticket-body', editBodyHtml);
+        }, { once: true });
         document.getElementById('editTicketModal').addEventListener('hide.bs.modal', () => {
             if (document.activeElement) document.activeElement.blur();
             $(document).off('click.editcust');
@@ -803,7 +807,8 @@ const TicketDetailView = {
     async saveEditTicket() {
         const subject    = $('#edit-ticket-subject').val().trim();
         const customerId = $('#edit-ticket-customer-id').val();
-        const body       = $('#edit-ticket-body').val();
+        const bodyHtml   = RichEditor.get('edit-ticket-body');
+        const body       = RichEditor.getText('edit-ticket-body');
 
         if (!subject) { App.toast('Subject is required', 'error'); return; }
         if (!customerId) { App.toast('Please select a customer from the dropdown', 'error'); return; }
@@ -813,8 +818,8 @@ const TicketDetailView = {
         try {
             await API.put('/tickets/' + this.ticket.id, { subject, customer_id: parseInt(customerId) });
 
-            if (this._editFirstReplyId && body !== this._originalEditBody) {
-                await API.put('/tickets/' + this.ticket.id + '/replies/' + this._editFirstReplyId, { body });
+            if (this._editFirstReplyId && bodyHtml !== this._originalEditBody) {
+                await API.put('/tickets/' + this.ticket.id + '/replies/' + this._editFirstReplyId, { body, body_html: bodyHtml });
             }
 
             bootstrap.Modal.getInstance(document.getElementById('editTicketModal')).hide();
