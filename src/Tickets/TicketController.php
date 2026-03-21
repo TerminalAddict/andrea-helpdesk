@@ -61,7 +61,10 @@ class TicketController
         );
 
         $body     = $request->input('body', '');
-        $bodyHtml = $request->input('body_html') ?: nl2br(htmlspecialchars($body, ENT_QUOTES, 'UTF-8'));
+        $rawHtml  = $request->input('body_html');
+        $bodyHtml = $rawHtml
+            ? \Andrea\Helpdesk\Core\Sanitizer::html($rawHtml)
+            : nl2br(htmlspecialchars($body, ENT_QUOTES, 'UTF-8'));
 
         $data = [
             'customer_id'       => $customer['id'],
@@ -163,7 +166,10 @@ class TicketController
         }
 
         $body     = trim($request->input('body', ''));
-        $bodyHtml = $request->input('body_html') ?: nl2br(htmlspecialchars($body, ENT_QUOTES, 'UTF-8'));
+        $rawHtml  = $request->input('body_html');
+        $bodyHtml = $rawHtml
+            ? \Andrea\Helpdesk\Core\Sanitizer::html($rawHtml)
+            : nl2br(htmlspecialchars($body, ENT_QUOTES, 'UTF-8'));
         $this->db->execute(
             "UPDATE replies SET body_html = ?, updated_at = NOW() WHERE id = ?",
             [$bodyHtml, $replyId]

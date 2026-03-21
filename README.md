@@ -54,7 +54,8 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 ### Customer Portal
 - **Magic link login** — customers receive a one-click login link via email; no password required
 - **Password login** — customers can optionally set a portal password
-- **Ticket view** — customers see only their own tickets and can post replies
+- **New ticket submission** — customers can open new support tickets directly from the portal with a rich text editor
+- **Ticket view** — customers see only their own tickets and can post rich text replies
 - **Participant access** — CC'd participants can also view and reply to tickets they're involved in
 - **Email replies** — customers can reply directly to notification emails; replies are threaded back into the ticket
 
@@ -62,14 +63,15 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Role-based access** — `admin` and `agent` roles; admins bypass all permission checks
 - **Granular permissions** — per-agent toggles for: close tickets, delete tickets, edit customers, view reports, manage knowledge base, manage tags
 - **Agent assignment** — assign tickets to specific agents; filter by assigned agent
-- **Signatures** — per-agent email signature (plain text or HTML); agents can toggle signature inclusion per reply via a checkbox in the reply composer; plain-text signatures render with correct line breaks in HTML email
+- **Rich text composer** — Quill 2.x editor (self-hosted, no CDN) in every body input: new tickets, replies, internal notes, edit ticket body, global signature, personal signature, auto-response body, and knowledge base articles; agents get a full toolbar (bold, italic, underline, lists, link, blockquote, clean), portal customers get a simplified toolbar
+- **Signatures** — per-agent HTML email signature edited with the rich text editor; agents can toggle signature inclusion per reply via a checkbox in the reply composer
 - **Dark / light theme** — each agent selects their own UI theme; preference is persisted in the database
 - **Pagination preference** — configurable per-agent page size for ticket lists
 
 ### Knowledge Base
 - **Articles and categories** — create a searchable internal/public knowledge base
 - **Draft / published states** — articles can be saved as drafts before publishing
-- **Rich HTML body** — full HTML article content rendered safely via DOMPurify
+- **Rich text editor** — articles are authored with the Quill rich text editor; content is rendered safely via DOMPurify on the frontend and sanitised server-side via `Sanitizer::html()` before storage
 
 ### Notifications
 - **Email notifications** — agents are notified of new tickets; customers and participants are notified of replies
@@ -92,7 +94,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 ### Security
 - **JWT authentication** — short-lived access tokens (15 min) + long-lived refresh tokens (30 days, hashed in DB)
 - **Refresh token rotation** — every refresh issues a new token and revokes the old one
-- **XSS protection** — all user-supplied HTML rendered via [DOMPurify](https://github.com/cure53/DOMPurify); plain text fields escaped throughout
+- **XSS protection** — dual-layer sanitisation: client-side via [DOMPurify](https://github.com/cure53/DOMPurify) before submission; server-side via `Sanitizer::html()` (DOMDocument, allowlist of safe tags/attributes, `javascript:` href blocking) before storage. Plain text fields are `htmlspecialchars()`-escaped throughout.
 - **SQL injection prevention** — all queries use PDO prepared statements with parameterised placeholders
 - **bcrypt passwords** — agent passwords hashed with `password_hash()` at cost 12
 - **Encrypted IMAP credentials** — mailbox passwords stored AES-256-CBC encrypted, never in plaintext
@@ -112,10 +114,10 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 |---|---|
 | Language | PHP 8.1 |
 | Database | MySQL 8 |
-| Frontend | Bootstrap 5.3, Bootstrap Icons, jQuery 4, vanilla JS SPA |
+| Frontend | Bootstrap 5.3, Bootstrap Icons, jQuery 4, Quill 2.0 (rich text), vanilla JS SPA |
 | Auth | Firebase JWT (HS256) |
 | Email | PHPMailer, PHP `imap_*` extension |
-| HTML sanitisation | DOMPurify 3.2 |
+| HTML sanitisation | DOMPurify 3.2 (client), `Sanitizer::html()` via PHP DOMDocument (server) |
 | Dependency management | Composer |
 
 ---

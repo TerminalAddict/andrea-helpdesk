@@ -226,8 +226,11 @@ const PortalView = {
         });
         $('#btn-portal-submit').on('click', () => this.submitNewTicket());
 
-        document.getElementById('portalNewTicketModal').addEventListener('shown.bs.modal', () => {
-            RichEditor.init('portal-new-body', { simple: true, minHeight: '120px' });
+        // Use { once: true } per open so listeners don't accumulate across navigations
+        $('#portal-new-ticket').on('click.richEditor', () => {
+            document.getElementById('portalNewTicketModal').addEventListener('shown.bs.modal', () => {
+                RichEditor.init('portal-new-body', { simple: true, minHeight: '120px' });
+            }, { once: true });
         });
 
         // Change password toggle

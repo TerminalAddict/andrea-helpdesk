@@ -259,7 +259,8 @@ Create a new ticket on behalf of a customer. The customer is upserted by email.
 | `customer_email` | string | yes | Customer email (upserted if not found) |
 | `customer_name` | string | no | Customer display name |
 | `subject` | string | yes | Ticket subject (max 255) |
-| `body` | string | no | Initial message (plain text; auto-converted to HTML) |
+| `body` | string | no | Initial message plain text (used for validation and email plain-text part) |
+| `body_html` | string | no | Rich HTML body from the editor. When present, stored after server-side sanitisation. Falls back to `nl2br(htmlspecialchars($body))` if omitted. |
 | `priority` | string | no | Default: `normal` |
 | `channel` | string | no | Default: `phone` |
 | `assigned_agent_id` | int | no | Assign immediately |
@@ -477,8 +478,8 @@ Post a reply to a ticket. Emails the customer and CC participants (unless `is_pr
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `body` | string | yes | Plain text body |
-| `body_html` | string | no | HTML body (overrides auto-conversion of `body`) |
+| `body` | string | yes | Plain text body (used for validation and email plain-text part) |
+| `body_html` | string | no | Rich HTML body from the editor. Stored after server-side sanitisation. Falls back to `nl2br(htmlspecialchars($body))` if omitted. |
 | `type` | string | no | `reply` (default) or `internal` |
 | `is_private` | bool | no | `true` = internal note, not sent to customer |
 | `cc_emails` | string[] | no | Additional email addresses to CC on this reply |
@@ -487,6 +488,21 @@ Post a reply to a ticket. Emails the customer and CC participants (unless `is_pr
 | `file` | file | no | One or more file attachments |
 
 **Response `201`** — reply object.
+
+---
+
+### `PUT /api/tickets/:id/replies/:reply_id`
+
+Edit the body of an existing reply. Agents may only edit their own replies; admins may edit any agent reply. Customer replies cannot be edited. Records a system event in the thread.
+
+**Request body**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `body` | string | yes | Updated plain text body |
+| `body_html` | string | no | Updated rich HTML body. Stored after server-side sanitisation. Falls back to `nl2br(htmlspecialchars($body))` if omitted. |
+
+**Response `200`** — `data: null`, `message: "Reply updated"`.
 
 ---
 
@@ -1260,6 +1276,24 @@ Change an existing portal password. Requires current password.
 
 All portal ticket endpoints require `auth:customer`. Customers can only access tickets where they are the requester or a CC participant.
 
+### `POST /api/portal/tickets`
+
+Create a new ticket from the customer portal.
+
+**Body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `subject` | string | yes | Ticket subject (max 255 chars) |
+| `body` | string | yes | Plain text body (used for validation and email plain-text part) |
+| `body_html` | string | no | Rich HTML body from the portal editor. Stored after server-side sanitisation. Falls back to `nl2br(htmlspecialchars($body))` if omitted. |
+
+**Response `201`** — created ticket object.
+
+**Notes:** Channel is set to `portal`, status to `new`, priority to `normal`. Auto-responder and agent notification emails are sent (subject to email suppression settings). Ticket number is generated atomically.
+
+---
+
 ### `GET /api/portal/tickets`
 
 List tickets accessible to the authenticated customer.
@@ -1280,13 +1314,14 @@ Get a single ticket with its public replies and attachments. Private (internal) 
 
 ### `POST /api/portal/tickets/:id/replies`
 
-Post a reply from the customer. Cannot reply to a closed ticket. The body is plain text only (auto-converted to HTML with `nl2br`).
+Post a reply from the customer. Cannot reply to a closed ticket.
 
 **Request body**
 
-| Field | Type | Required |
-|-------|------|----------|
-| `body` | string | yes |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `body` | string | yes | Plain text body (used for validation) |
+| `body_html` | string | no | Rich HTML body from the portal editor. Stored after server-side sanitisation. Falls back to `nl2br(htmlspecialchars($body))` if omitted. |
 
 **Response `201`** — reply object.
 
