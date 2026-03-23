@@ -283,7 +283,7 @@ const TicketDetailView = {
                             <label class="form-label">Customer</label>
                             <div class="position-relative">
                                 <input type="text" class="form-control" id="edit-ticket-customer" placeholder="Search by name or email…" autocomplete="off">
-                                <div id="edit-ticket-customer-suggestions" class="list-group position-absolute w-100" style="z-index:1060;display:none;max-height:200px;overflow-y:auto;"></div>
+                                <div id="edit-ticket-customer-suggestions" class="list-group position-absolute w-100" style="z-index:1060;display:none;max-height:220px;overflow-y:auto;"></div>
                             </div>
                             <input type="hidden" id="edit-ticket-customer-id">
                         </div>
@@ -297,6 +297,43 @@ const TicketDetailView = {
                         <button type="button" class="btn btn-primary" id="btn-save-edit-ticket">
                             <span class="spinner-border spinner-border-sm d-none me-1" id="edit-ticket-spinner"></span>
                             Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Customer Modal (used from Edit Ticket) -->
+        <div class="modal fade" id="createCustomerFromTicketModal" tabindex="-1" style="z-index:1070;">
+            <div class="modal-dialog" style="z-index:1071;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>New Customer</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="cft-name" placeholder="Full name">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="cft-email" placeholder="email@example.com">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Phone</label>
+                            <input type="text" class="form-control" id="cft-phone" placeholder="Phone number">
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label">Company</label>
+                            <input type="text" class="form-control" id="cft-company" placeholder="Company name">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="cft-save">
+                            <span class="spinner-border spinner-border-sm d-none me-1" id="cft-spinner"></span>
+                            Create Customer
                         </button>
                     </div>
                 </div>
@@ -779,7 +816,15 @@ const TicketDetailView = {
                             $sug.hide().empty();
                         }).appendTo($sug);
                     });
-                    if (res.data && res.data.length) $sug.show(); else $sug.hide();
+                    // Always show "Create new customer" option
+                    $(`<a class="list-group-item list-group-item-action py-1 small text-primary" href="#">
+                        <i class="bi bi-person-plus me-1"></i>Create new customer…
+                    </a>`).on('click', e => {
+                        e.preventDefault();
+                        $sug.hide().empty();
+                        this.openCreateCustomerModal(q);
+                    }).appendTo($sug);
+                    $sug.show();
                 } catch {}
             }, 300);
         });
@@ -791,6 +836,12 @@ const TicketDetailView = {
         });
 
         $('#btn-save-edit-ticket').off('click').on('click', () => this.saveEditTicket());
+
+        // Wire up create customer modal (safe to re-bind; modal is recreated each renderFull)
+        $('#cft-save').off('click').on('click', () => this.saveNewCustomerForTicket());
+        $('#createCustomerFromTicketModal').off('keydown.cft').on('keydown.cft', (e) => {
+            if (e.key === 'Enter') this.saveNewCustomerForTicket();
+        });
 
         const modal = new bootstrap.Modal(document.getElementById('editTicketModal'));
         document.getElementById('editTicketModal').addEventListener('shown.bs.modal', () => {
@@ -830,6 +881,42 @@ const TicketDetailView = {
         } finally {
             btn.prop('disabled', false);
             $('#edit-ticket-spinner').addClass('d-none');
+        }
+    },
+
+    openCreateCustomerModal(prefillQuery) {
+        // Pre-fill email if the query looks like an email address, otherwise pre-fill name
+        const isEmail = prefillQuery && prefillQuery.includes('@');
+        $('#cft-name').val(isEmail ? '' : prefillQuery);
+        $('#cft-email').val(isEmail ? prefillQuery : '');
+        $('#cft-phone, #cft-company').val('');
+        new bootstrap.Modal(document.getElementById('createCustomerFromTicketModal')).show();
+        setTimeout(() => (isEmail ? $('#cft-name') : $('#cft-email')).focus(), 300);
+    },
+
+    async saveNewCustomerForTicket() {
+        const name    = $('#cft-name').val().trim();
+        const email   = $('#cft-email').val().trim();
+        const phone   = $('#cft-phone').val().trim();
+        const company = $('#cft-company').val().trim();
+
+        if (!name)  { App.toast('Name is required', 'error'); return; }
+        if (!email) { App.toast('Email is required', 'error'); return; }
+
+        $('#cft-spinner').removeClass('d-none');
+        $('#cft-save').prop('disabled', true);
+        try {
+            const res = await API.post('/customers', { name, email, phone: phone || undefined, company: company || undefined });
+            const c = res.data;
+            bootstrap.Modal.getInstance(document.getElementById('createCustomerFromTicketModal')).hide();
+            $('#edit-ticket-customer').val(c.name + ' <' + c.email + '>');
+            $('#edit-ticket-customer-id').val(c.id);
+            App.toast('Customer created', 'success');
+        } catch (e) {
+            App.toast(e.message, 'error');
+        } finally {
+            $('#cft-spinner').addClass('d-none');
+            $('#cft-save').prop('disabled', false);
         }
     },
 

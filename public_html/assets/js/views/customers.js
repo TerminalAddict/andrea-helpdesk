@@ -7,6 +7,46 @@ const CustomersView = {
         <div class="container-fluid p-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h4 class="mb-0"><i class="bi bi-people me-2"></i>Customers</h4>
+                <button class="btn btn-primary btn-sm" id="btn-new-customer">
+                    <i class="bi bi-person-plus me-1"></i>New Customer
+                </button>
+            </div>
+
+            <!-- Create Customer Modal -->
+            <div class="modal fade" id="createCustomerModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>New Customer</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="nc-name" placeholder="Full name">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Email <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" id="nc-email" placeholder="email@example.com">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Phone</label>
+                                <input type="text" class="form-control" id="nc-phone" placeholder="Phone number">
+                            </div>
+                            <div class="mb-0">
+                                <label class="form-label">Company</label>
+                                <input type="text" class="form-control" id="nc-company" placeholder="Company name">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-primary" id="nc-save">
+                                <span class="spinner-border spinner-border-sm d-none me-1" id="nc-spinner"></span>
+                                Create Customer
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="card border-0 shadow-sm mb-3">
@@ -43,7 +83,43 @@ const CustomersView = {
             $('#cust-search').val('');
             this.load();
         });
+
+        $('#btn-new-customer').on('click', () => {
+            $('#nc-name, #nc-email, #nc-phone, #nc-company').val('');
+            new bootstrap.Modal(document.getElementById('createCustomerModal')).show();
+        });
+
+        $('#nc-save').on('click', () => this.createCustomer());
+
+        document.getElementById('createCustomerModal').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') this.createCustomer();
+        });
+
         this.load();
+    },
+
+    async createCustomer() {
+        const name    = $('#nc-name').val().trim();
+        const email   = $('#nc-email').val().trim();
+        const phone   = $('#nc-phone').val().trim();
+        const company = $('#nc-company').val().trim();
+
+        if (!name)  { App.toast('Name is required', 'error'); return; }
+        if (!email) { App.toast('Email is required', 'error'); return; }
+
+        $('#nc-spinner').removeClass('d-none');
+        $('#nc-save').prop('disabled', true);
+        try {
+            const res = await API.post('/customers', { name, email, phone: phone || undefined, company: company || undefined });
+            bootstrap.Modal.getInstance(document.getElementById('createCustomerModal')).hide();
+            App.toast('Customer created', 'success');
+            App.navigate('/customers/' + res.data.id);
+        } catch (e) {
+            App.toast(e.message, 'error');
+        } finally {
+            $('#nc-spinner').addClass('d-none');
+            $('#nc-save').prop('disabled', false);
+        }
     },
 
     async load(page = 1) {

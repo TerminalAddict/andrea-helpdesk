@@ -23,6 +23,10 @@ class MessageParser
             || $autoSuppress !== ''
             || (bool)preg_match('/^(out of office|automatic reply|auto reply|auto-reply|vacation|away from|absence|autosvar|automatische antwort)/i', $decodedSubject);
 
+        // Forwarded emails must not have their quoted sections stripped — the
+        // forwarded content IS the primary content, not a reply quote.
+        $isForwarded = (bool)preg_match('/^\s*(fwd?|forward):/i', $decodedSubject);
+
         $result = [
             'message_id'   => $this->extractRawHeader($rawHeaders, 'Message-ID'),
             'in_reply_to'  => $this->extractRawHeader($rawHeaders, 'In-Reply-To'),
@@ -70,8 +74,8 @@ class MessageParser
         }
         [$htmlBody, $textBody, $attachments] = $this->parseStructure($imap, $msgNum, $structure);
 
-        $result['body_html']   = $htmlBody ? $this->stripHtmlQuotes($this->replaceCidImages($htmlBody)) : '';
-        $result['body_text']   = $textBody ? $this->stripPlainTextQuotes($textBody) : '';
+        $result['body_html']   = $htmlBody ? $this->replaceCidImages($isForwarded ? $htmlBody : $this->stripHtmlQuotes($htmlBody)) : '';
+        $result['body_text']   = $textBody ? ($isForwarded ? $textBody : $this->stripPlainTextQuotes($textBody)) : '';
         $result['attachments'] = $attachments;
 
         // Clean up message IDs - remove angle brackets

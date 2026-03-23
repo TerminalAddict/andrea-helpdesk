@@ -34,7 +34,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 ### Email Integration
 - **IMAP polling** — polls one or more mailboxes every minute via cron; handles plain text and HTML emails
 - **Multi-account IMAP** — each account can have its own tag, from-address, and reply-to
-- **Email quote stripping** — only the new content is stored; quoted reply history (Gmail, Outlook, Apple Mail, Yahoo) is automatically trimmed
+- **Email quote stripping** — only the new content is stored; quoted reply history (Gmail, Outlook, Apple Mail, Yahoo) is automatically trimmed. Forwarded emails (`Fwd:`/`FW:`/`Forward:` subject prefix) are exempt — their full content is preserved since the forwarded message IS the primary content
 - **Inline image handling** — CID inline images are replaced with a clear paperclip indicator so attachments are findable
 - **Auto-responder** — configurable automatic acknowledgement sent to customers on new tickets
 - **Outbound threading** — replies set `In-Reply-To`, `References`, and `X-Ticket-ID` headers so email clients thread correctly
@@ -65,6 +65,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Agent assignment** — assign tickets to specific agents; filter by assigned agent
 - **Rich text composer** — Quill 2.x editor (self-hosted, no CDN) in every body input: new tickets, replies, internal notes, edit ticket body, global signature, personal signature, auto-response body, and knowledge base articles; agents get a full toolbar (bold, italic, underline, lists, link, blockquote, clean), portal customers get a simplified toolbar
 - **Signatures** — per-agent HTML email signature edited with the rich text editor; agents can toggle signature inclusion per reply via a checkbox in the reply composer
+- **Create customer inline** — new customers can be created directly from the Customers screen (New Customer button) or from within the Edit Ticket modal when reassigning a ticket to a customer who doesn't yet exist in the system
 - **Dark / light theme** — each agent selects their own UI theme; preference is persisted in the database
 - **Pagination preference** — configurable per-agent page size for ticket lists
 
