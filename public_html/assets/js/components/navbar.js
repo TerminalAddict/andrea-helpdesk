@@ -106,9 +106,11 @@ const Navbar = {
             location.reload();
         });
 
-        // Hash navigation
+        // Collapse mobile navbar on navigation
         $('#navbar-container').on('click', 'a[href^="#/"]', function() {
-            // Bootstrap handles dropdown, we just let hash change fire
+            const nav = document.getElementById('mainNav');
+            const bsCollapse = bootstrap.Collapse.getInstance(nav);
+            if (bsCollapse) bsCollapse.hide();
         });
     },
 
