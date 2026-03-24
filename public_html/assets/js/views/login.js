@@ -35,6 +35,10 @@ const LoginView = {
                                 <label class="form-label">Password</label>
                                 <input type="password" class="form-control" id="agent-password" required autocomplete="current-password">
                             </div>
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="agent-remember" checked>
+                                <label class="form-check-label text-muted" for="agent-remember">Remember me</label>
+                            </div>
                             <button type="submit" class="btn btn-primary w-100" id="agent-login-btn">
                                 <span class="spinner-border spinner-border-sm d-none me-2" id="agent-spinner"></span>
                                 Sign In
@@ -82,11 +86,18 @@ const LoginView = {
             $('#tab-' + tab).show();
         });
 
+        // Pre-fill email if previously remembered
+        const rememberedEmail = localStorage.getItem('andrea_remembered_email');
+        if (rememberedEmail) {
+            $('#agent-email').val(rememberedEmail);
+        }
+
         // Agent login
         $('#agent-login-form').on('submit', async (e) => {
             e.preventDefault();
             const email    = $('#agent-email').val();
             const password = $('#agent-password').val();
+            const remember = $('#agent-remember').is(':checked');
 
             $('#agent-error').addClass('d-none');
             $('#agent-spinner').removeClass('d-none');
@@ -94,7 +105,12 @@ const LoginView = {
 
             try {
                 const res = await API.post('/auth/login', { email, password, type: 'agent' });
-                API.setTokens(res.data.access_token, res.data.refresh_token);
+                API.setTokens(res.data.access_token, res.data.refresh_token, remember);
+                if (remember) {
+                    localStorage.setItem('andrea_remembered_email', email);
+                } else {
+                    localStorage.removeItem('andrea_remembered_email');
+                }
                 API.currentUser = res.data.user;
                 API.currentUser.type = 'agent';
                 App.applyTheme(API.currentUser.theme || 'light');

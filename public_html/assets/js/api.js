@@ -8,30 +8,38 @@ const API = {
     _refreshing: false,
 
     getHeaders(isFormData) {
-        const token = localStorage.getItem('andrea_access_token');
+        const token = this._getItem('andrea_access_token');
         const headers = {};
         if (!isFormData) headers['Content-Type'] = 'application/json';
         if (token) headers['Authorization'] = 'Bearer ' + token;
         return headers;
     },
 
-    setTokens(accessToken, refreshToken) {
-        localStorage.setItem('andrea_access_token', accessToken);
-        if (refreshToken) localStorage.setItem('andrea_refresh_token', refreshToken);
+    // Read a token from whichever storage it was saved in.
+    _getItem(key) {
+        return localStorage.getItem(key) || sessionStorage.getItem(key) || null;
+    },
+
+    setTokens(accessToken, refreshToken, remember = true) {
+        const store = remember ? localStorage : sessionStorage;
+        store.setItem('andrea_access_token', accessToken);
+        if (refreshToken) store.setItem('andrea_refresh_token', refreshToken);
     },
 
     clearTokens() {
-        localStorage.removeItem('andrea_access_token');
-        localStorage.removeItem('andrea_refresh_token');
+        ['andrea_access_token', 'andrea_refresh_token'].forEach(k => {
+            localStorage.removeItem(k);
+            sessionStorage.removeItem(k);
+        });
         this.currentUser = null;
     },
 
     isAuthenticated() {
-        return !!localStorage.getItem('andrea_access_token');
+        return !!this._getItem('andrea_access_token');
     },
 
     async refreshToken() {
-        const refreshToken = localStorage.getItem('andrea_refresh_token');
+        const refreshToken = this._getItem('andrea_refresh_token');
         if (!refreshToken) return false;
 
         try {
