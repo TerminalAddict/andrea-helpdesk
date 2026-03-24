@@ -66,6 +66,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Rich text composer** — Quill 2.x editor (self-hosted, no CDN) in every body input: new tickets, replies, internal notes, edit ticket body, global signature, personal signature, auto-response body, and knowledge base articles; agents get a full toolbar (bold, italic, underline, lists, link, blockquote, clean), portal customers get a simplified toolbar
 - **Signatures** — per-agent HTML email signature edited with the rich text editor; agents can toggle signature inclusion per reply via a checkbox in the reply composer
 - **Create customer inline** — new customers can be created directly from the Customers screen (New Customer button) or from within the Edit Ticket modal when reassigning a ticket to a customer who doesn't yet exist in the system
+- **Remember me** — agent login offers a "Remember me" checkbox; when checked, tokens are stored in `localStorage` and persist across browser sessions; when unchecked, tokens go to `sessionStorage` and are cleared when the tab closes
 - **Dark / light theme** — each agent selects their own UI theme; preference is persisted in the database
 - **Pagination preference** — configurable per-agent page size for ticket lists
 
@@ -85,7 +86,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 
 ### Settings (Admin UI)
 - **SMTP configuration** — host, port, encryption, credentials, from address — all managed in the UI
-- **IMAP accounts** — add, edit, and test multiple inbound mailboxes; credentials encrypted at rest with AES-256-CBC
+- **IMAP accounts** — add, edit, test, and browse folders on multiple inbound mailboxes; username accepts both email (`user@domain.com`) and Windows domain (`DOMAIN\user`) formats; leading/trailing whitespace in host and username is stripped on save; credentials encrypted at rest with AES-256-CBC
 - **Company branding** — company name, logo URL, support email
 - **Ticket prefix** — customise the ticket number prefix
 - **Auto-responder** — enable/disable and customise the automatic acknowledgement email

@@ -183,7 +183,7 @@ Automatic transitions (no agent action required):
 - **Any non-private agent reply** (without an explicit `status_after`) sets status to `replied`; tickets already `resolved` or `closed` are not affected.
 
 **Notes:**
-- Soft-deleted tickets (`deleted_at IS NOT NULL`) are hidden from all normal queries. The API exposes a `GET /api/tickets?include_deleted=1` option for admins.
+- Soft-deleted tickets (`deleted_at IS NOT NULL`) are hidden from all normal queries, including the customer detail screen (tickets list and comments/replies tab). The API exposes a `GET /api/tickets?include_deleted=1` option for admins.
 - Merged tickets retain all their replies and attachments; `merged_into_id` links the losing ticket to the canonical one.
 - `channel = 'email'` is set by the IMAP poller; `'web'` and `'portal'` are set when agents/customers create tickets via the UI.
 
@@ -363,10 +363,10 @@ Configuration for inbound email accounts polled by `bin/imap-poll.php`.
 |--------|------|----------|---------|-------------|
 | `id` | INT UNSIGNED | NO | AUTO_INCREMENT | Primary key |
 | `name` | VARCHAR(100) | NO | | Human-readable label for this account |
-| `host` | VARCHAR(255) | NO | | IMAP server hostname |
+| `host` | VARCHAR(255) | NO | | IMAP server hostname. Leading/trailing whitespace stripped on save. |
 | `port` | SMALLINT UNSIGNED | NO | 993 | IMAP port (993 = SSL, 143 = STARTTLS) |
 | `encryption` | ENUM('ssl','tls','none') | NO | 'ssl' | Connection encryption method |
-| `username` | VARCHAR(255) | NO | | IMAP login username (usually the email address) |
+| `username` | VARCHAR(255) | NO | | IMAP login username — email address (`user@domain.com`) or Windows domain format (`DOMAIN\user`). Leading/trailing whitespace stripped on save. |
 | `from_address` | VARCHAR(255) | YES | NULL | Override From address for outgoing emails; if NULL/empty, `username` is used |
 | `password` | TEXT | YES | NULL | AES-256-CBC encrypted password (encrypted using `JWT_SECRET` from `.env`) |
 | `folder` | VARCHAR(100) | NO | 'INBOX' | IMAP folder to poll |
@@ -383,6 +383,7 @@ Configuration for inbound email accounts polled by `bin/imap-poll.php`.
 - `password` is encrypted at rest using `SettingsService::encrypt()` (AES-256-CBC, key derived from `JWT_SECRET`). It is never returned in plain text via the API.
 - The legacy `settings` table also has `imap_*` keys for a single account. Multi-account support uses this table.
 - `bin/imap-poll.php` uses PHP's native `imap_*` extension. It uses `flock()` on a lock file to prevent overlapping runs.
+- `bin/imap-test.php` is a CLI script used by the Settings UI "Test Connection" and "Browse Folders" buttons. It is invoked as a subprocess via `proc_open` so that DNS resolution and network access run in the CLI context (same as the cron poller), avoiding DNS issues that occur when making outbound connections from within the Apache web process.
 
 ---
 

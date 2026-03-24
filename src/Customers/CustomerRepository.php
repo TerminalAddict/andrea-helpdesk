@@ -167,7 +167,9 @@ class CustomerRepository
     public function getReplies(int $customerId, int $page = 1, int $perPage = 25): array
     {
         $total  = $this->db->count(
-            "SELECT COUNT(*) FROM replies WHERE customer_id = ? AND author_type = 'customer'",
+            "SELECT COUNT(*) FROM replies r
+             JOIN tickets t ON t.id = r.ticket_id
+             WHERE r.customer_id = ? AND r.author_type = 'customer' AND t.deleted_at IS NULL",
             [$customerId]
         );
         $offset = ($page - 1) * $perPage;
@@ -177,7 +179,7 @@ class CustomerRepository
                     t.ticket_number, t.subject
              FROM replies r
              JOIN tickets t ON t.id = r.ticket_id
-             WHERE r.customer_id = ? AND r.author_type = 'customer'
+             WHERE r.customer_id = ? AND r.author_type = 'customer' AND t.deleted_at IS NULL
              ORDER BY r.created_at DESC LIMIT {$perPage} OFFSET {$offset}",
             [$customerId]
         );

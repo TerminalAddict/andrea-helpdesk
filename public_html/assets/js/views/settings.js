@@ -331,7 +331,7 @@ const SettingsView = {
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Username <span class="text-danger">*</span></label>
-                            <input type="email" class="form-control" id="imap-username">
+                            <input type="text" class="form-control" id="imap-username" placeholder="user@domain.com or DOMAIN\\user" autocomplete="off">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">From Address <span class="text-muted small">(for outgoing emails)</span></label>
@@ -344,7 +344,13 @@ const SettingsView = {
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Folder / Mailbox</label>
-                            <input type="text" class="form-control" id="imap-folder" value="INBOX">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="imap-folder" value="INBOX">
+                                <button class="btn btn-outline-secondary" type="button" id="btn-list-imap-folders" title="List available folders on the server">
+                                    <i class="bi bi-folder2-open me-1"></i>Browse
+                                </button>
+                            </div>
+                            <div id="imap-folder-list" class="list-group mt-1" style="display:none;max-height:180px;overflow-y:auto;"></div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Default Tag <span class="text-muted small">(applied to all new tickets from this account)</span></label>
@@ -475,6 +481,8 @@ const SettingsView = {
 
         $('#btn-save-imap-account').off('click').on('click', () => this.saveImapAccount());
         $('#btn-test-imap-account').off('click').on('click', () => this.testImapAccount());
+        $('#btn-list-imap-folders').off('click').on('click', () => this.listImapFolders());
+        $('#imap-folder-list').hide().empty();
         modal.show();
     },
 
@@ -515,8 +523,39 @@ const SettingsView = {
             App.toast(res.message || 'Connection successful', 'success');
         } catch (e) {
             App.toast(e.message || 'Connection failed', 'error');
+
         } finally {
             btn.prop('disabled', false).html('<i class="bi bi-plug me-1"></i>Test Connection');
+        }
+    },
+
+    async listImapFolders() {
+        const id = $('#imap-account-id').val();
+        if (!id) { App.toast('Save the account first, then browse folders', 'error'); return; }
+        const btn = $('#btn-list-imap-folders').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Loading…');
+        $('#imap-folder-list').hide().empty();
+        try {
+            const res = await API.get('/admin/imap-accounts/' + id + '/list-folders');
+            const folders = res.data || [];
+            if (!folders.length) {
+                App.toast('No folders returned by server', 'error');
+                return;
+            }
+            const $list = $('#imap-folder-list').empty();
+            folders.forEach(f => {
+                $(`<a class="list-group-item list-group-item-action py-1 small" href="#">${App.escapeHtml(f)}</a>`)
+                    .on('click', e => {
+                        e.preventDefault();
+                        $('#imap-folder').val(f);
+                        $list.hide();
+                    })
+                    .appendTo($list);
+            });
+            $list.show();
+        } catch (e) {
+            App.toast(e.message || 'Could not list folders', 'error');
+        } finally {
+            btn.prop('disabled', false).html('<i class="bi bi-folder2-open me-1"></i>Browse');
         }
     },
 

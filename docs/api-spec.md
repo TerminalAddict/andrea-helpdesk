@@ -957,10 +957,10 @@ Create a new IMAP account.
 | Field | Type | Required | Default |
 |-------|------|----------|---------|
 | `name` | string | yes | — |
-| `host` | string | yes | — |
+| `host` | string | yes | Hostname or IP. Leading/trailing whitespace stripped. |
 | `port` | int | no | `993` |
 | `encryption` | string | no | `ssl` — `ssl`, `tls`, `none` |
-| `username` | string | yes | — |
+| `username` | string | yes | Email (`user@domain.com`) or Windows domain (`DOMAIN\user`) format. Leading/trailing whitespace stripped. |
 | `password` | string | yes | — |
 | `from_address` | string | no | Defaults to `username` |
 | `folder` | string | no | `INBOX` |
@@ -978,7 +978,11 @@ Delete an IMAP account.
 
 ### `POST /api/admin/imap-accounts/:id/test`
 
-Test the connection to this IMAP account. Returns message count on success.
+Test the connection to this IMAP account. Runs as a CLI subprocess (`bin/imap-test.php`) to ensure DNS resolution works in the same network context as the cron poller. Returns `{ "ok": true, "msg": "Connection successful — credentials accepted." }` on success.
+
+### `GET /api/admin/imap-accounts/:id/list-folders`
+
+List all available folders/mailboxes on this IMAP account. Useful for discovering the correct folder name when the target mailbox is not `INBOX` (e.g. `NETENT\Support` on Exchange or `[Gmail]/All Mail` on Gmail). Returns `{ "data": ["INBOX", "Sent", ...], "message": "N folder(s) found" }`.
 
 ### `POST /api/admin/imap-accounts/:id/poll-now`
 
