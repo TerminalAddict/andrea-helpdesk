@@ -13,9 +13,30 @@
 }
 
 /* Reply thread */
-.reply-html img {
-    max-width: 100%;
+.reply-html {
+    overflow-wrap: break-word;
+    word-break: break-word;
+    overflow-x: hidden;
+}
+
+.reply-html img,
+.reply-html video,
+.reply-html iframe {
+    max-width: 100% !important;
     height: auto;
+}
+
+/* Contain fixed-width HTML email tables */
+.reply-html table {
+    max-width: 100% !important;
+    width: auto !important;
+    table-layout: auto !important;
+}
+
+.reply-html td,
+.reply-html th {
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 
 .reply-html blockquote {
@@ -60,6 +81,35 @@
     position: sticky;
     bottom: 0;
     z-index: 10;
+}
+
+/* Scroll to top button */
+#scroll-to-top {
+    position: fixed;
+    bottom: 5rem;
+    right: 1.5rem;
+    z-index: 1040;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    border: none;
+    background: #0d6efd;
+    color: #fff;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+#scroll-to-top.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+#scroll-to-top:hover {
+    background: #0b5ed7;
 }
 
 /* Toast container */

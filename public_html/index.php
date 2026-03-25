@@ -51,6 +51,11 @@ try {
     <div id="app" class="container-fluid mt-0" style="display:none;"></div>
 </div>
 
+<!-- Scroll to top button -->
+<button id="scroll-to-top" title="Scroll to top" aria-label="Scroll to top">
+    <i class="bi bi-arrow-up"></i>
+</button>
+
 <!-- Toast container -->
 <div id="toast-container" class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:11000;"></div>
 

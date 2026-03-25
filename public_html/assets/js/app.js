@@ -48,6 +48,12 @@ const App = {
 
         $(window).on('hashchange', () => this.route());
         this.route();
+
+        // Scroll to top button
+        $(window).on('scroll.scrolltop', () => {
+            $('#scroll-to-top').toggleClass('visible', $(window).scrollTop() > 300);
+        });
+        $('#scroll-to-top').on('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
     },
 
     startImapWebPoller() {
