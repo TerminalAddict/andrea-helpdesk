@@ -66,6 +66,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Rich text composer** — Quill 2.x editor (self-hosted, no CDN) in every body input: new tickets, replies, internal notes, edit ticket body, global signature, personal signature, auto-response body, and knowledge base articles; agents get a full toolbar (bold, italic, underline, lists, link, blockquote, clean), portal customers get a simplified toolbar
 - **Signatures** — per-agent HTML email signature edited with the rich text editor; agents can toggle signature inclusion per reply via a checkbox in the reply composer
 - **Create customer inline** — new customers can be created directly from the Customers screen (New Customer button) or from within the Edit Ticket modal when reassigning a ticket to a customer who doesn't yet exist in the system
+- **Bulk CSV import** — import customers in bulk from a CSV file (columns: `name`, `email`, `phone` optional, `company` optional); a downloadable template is provided in the UI; rows with duplicate or soft-deleted emails are skipped with a per-row reason report; 2 MB file size limit; requires `can_edit_customers` permission
 - **Remember me** — agent login offers a "Remember me" checkbox; when checked, tokens are stored in `localStorage` and persist across browser sessions; when unchecked, tokens go to `sessionStorage` and are cleared when the tab closes
 - **Dark / light theme** — each agent selects their own UI theme; preference is persisted in the database
 - **Pagination preference** — configurable per-agent page size for ticket lists
@@ -79,6 +80,13 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Email notifications** — agents are notified of new tickets; customers and participants are notified of replies
 - **Slack notifications** — optional webhook integration for new ticket alerts, assignments, and customer replies; configurable bot display name, icon image or emoji, and link preview behaviour
 - **Global email signature** — appended to all outbound agent emails
+
+### UI / UX
+- **Collapsible reply editor** — the reply/note composer on ticket detail is collapsed by default; clicking **Reply** or **Internal Note** auto-expands it; a chevron toggle button collapses it again
+- **Customer name links** — customer names in ticket thread reply headers link directly to the customer profile page
+- **Scroll-to-top button** — fixed button appears bottom-right after scrolling 300 px; works on all screens, desktop and mobile
+- **Mobile navbar auto-collapse** — the hamburger nav menu closes automatically after tapping any navigation link on mobile
+- **HTML email containment** — fixed-width HTML emails (tables, images) are contained within the viewport to prevent horizontal scrolling on mobile
 
 ### Reporting
 - **Dashboard** — live stats: New, Waiting for Reply, Pending, and Replied ticket counts; navbar badge shows all active (non-resolved, non-closed) tickets; recent activity by agent

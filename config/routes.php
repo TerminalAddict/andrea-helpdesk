@@ -67,6 +67,7 @@ return [
 
     // ── Customers ─────────────────────────────────────────────────────────────
     ['GET',    '/api/customers',                    CustomerController::class, 'index',       ['auth:agent']],
+    ['POST',   '/api/customers/import',             CustomerController::class, 'import',      ['auth:agent', 'permission:can_edit_customers']],
     ['POST',   '/api/customers',                    CustomerController::class, 'store',       ['auth:agent']],
     ['GET',    '/api/customers/:id',                CustomerController::class, 'show',        ['auth:agent']],
     ['PUT',    '/api/customers/:id',                CustomerController::class, 'update',      ['auth:agent']],

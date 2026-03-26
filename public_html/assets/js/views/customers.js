@@ -7,9 +7,14 @@ const CustomersView = {
         <div class="container-fluid p-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h4 class="mb-0"><i class="bi bi-people me-2"></i>Customers</h4>
-                <button class="btn btn-primary btn-sm" id="btn-new-customer">
-                    <i class="bi bi-person-plus me-1"></i>New Customer
-                </button>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-secondary btn-sm" id="btn-import-csv">
+                        <i class="bi bi-upload me-1"></i>Import CSV
+                    </button>
+                    <button class="btn btn-primary btn-sm" id="btn-new-customer">
+                        <i class="bi bi-person-plus me-1"></i>New Customer
+                    </button>
+                </div>
             </div>
 
             <!-- Create Customer Modal -->
@@ -43,6 +48,41 @@ const CustomersView = {
                             <button type="button" class="btn btn-primary" id="nc-save">
                                 <span class="spinner-border spinner-border-sm d-none me-1" id="nc-spinner"></span>
                                 Create Customer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Import CSV Modal -->
+            <div class="modal fade" id="importCsvModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title"><i class="bi bi-upload me-2"></i>Import Customers from CSV</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="text-muted small mb-3">
+                                Upload a CSV file with columns: <strong>name</strong>, <strong>email</strong>, <em>phone</em> (optional), <em>company</em> (optional).
+                                Customers with an email that already exists will be skipped.
+                            </p>
+                            <div class="mb-3">
+                                <a href="#" id="btn-download-template" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-download me-1"></i>Download Template CSV
+                                </a>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">CSV File <span class="text-danger">*</span></label>
+                                <input type="file" class="form-control" id="csv-file" accept=".csv,text/csv">
+                            </div>
+                            <div id="import-results" class="d-none"></div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-primary" id="btn-do-import">
+                                <span class="spinner-border spinner-border-sm d-none me-1" id="import-spinner"></span>
+                                Import
                             </button>
                         </div>
                     </div>
@@ -89,6 +129,26 @@ const CustomersView = {
             new bootstrap.Modal(document.getElementById('createCustomerModal')).show();
         });
 
+        $('#btn-import-csv').on('click', () => {
+            $('#csv-file').val('');
+            $('#import-results').addClass('d-none').html('');
+            $('#btn-do-import').removeClass('d-none').prop('disabled', false);
+            new bootstrap.Modal(document.getElementById('importCsvModal')).show();
+        });
+
+        $('#btn-download-template').on('click', (e) => {
+            e.preventDefault();
+            const csv = 'name,email,phone,company\nJane Smith,jane@example.com,+64 9 123 4567,Acme Ltd\nJohn Doe,john@example.com,,';
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href = url; a.download = 'customers-template.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        $('#btn-do-import').on('click', () => this.importCsv());
+
         $('#nc-save').on('click', () => this.createCustomer());
 
         document.getElementById('createCustomerModal').addEventListener('keydown', (e) => {
@@ -119,6 +179,54 @@ const CustomersView = {
         } finally {
             $('#nc-spinner').addClass('d-none');
             $('#nc-save').prop('disabled', false);
+        }
+    },
+
+    async importCsv() {
+        const fileInput = document.getElementById('csv-file');
+        if (!fileInput.files.length) {
+            App.toast('Please select a CSV file', 'error');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('csv', fileInput.files[0]);
+
+        $('#import-spinner').removeClass('d-none');
+        $('#btn-do-import').prop('disabled', true);
+        $('#import-results').addClass('d-none').html('');
+
+        try {
+            const res = await API.upload('/customers/import', formData);
+            const d = res.data;
+
+            let html = `<div class="alert alert-success mb-2">
+                <strong>${d.created_count}</strong> customer${d.created_count !== 1 ? 's' : ''} imported successfully.
+            </div>`;
+
+            if (d.skipped_count > 0) {
+                const rows = d.skipped.map(s =>
+                    `<tr><td class="small">${App.escapeHtml(s.email)}</td><td class="small text-muted">${App.escapeHtml(s.reason)}</td></tr>`
+                ).join('');
+                html += `<div class="alert alert-warning mb-0">
+                    <strong>${d.skipped_count}</strong> row${d.skipped_count !== 1 ? 's' : ''} skipped:
+                    <div class="table-responsive mt-2">
+                        <table class="table table-sm table-bordered mb-0 bg-white">
+                            <thead><tr><th>Email</th><th>Reason</th></tr></thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>
+                </div>`;
+            }
+
+            $('#import-results').removeClass('d-none').html(html);
+            $('#btn-do-import').addClass('d-none');
+            if (d.created_count > 0) this.load();
+        } catch (e) {
+            App.toast(e.message, 'error');
+        } finally {
+            $('#import-spinner').addClass('d-none');
+            $('#btn-do-import').prop('disabled', false);
         }
     },
 

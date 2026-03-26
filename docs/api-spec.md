@@ -635,6 +635,51 @@ Create a customer. Returns `409` if the email already exists.
 
 ---
 
+### `POST /api/customers/import`
+
+Bulk-import customers from a CSV file. Skips rows where the email already exists (including soft-deleted customers). Returns a summary of created and skipped records.
+
+**Auth:** `auth:agent`, `permission:can_edit_customers`
+
+**Request** — `multipart/form-data`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `csv` | file | yes | CSV file (max 2 MB). Must have `name` and `email` columns in the header row. `phone` and `company` columns are optional. Column order does not matter. |
+
+**CSV format**
+
+```
+name,email,phone,company
+Jane Smith,jane@example.com,+64 9 123 4567,Acme Ltd
+John Doe,john@example.com,,
+```
+
+**Response `200`**
+
+```json
+{
+  "success": true,
+  "data": {
+    "created_count": 2,
+    "skipped_count": 1,
+    "created": [
+      { "id": 42, "name": "Jane Smith", "email": "jane@example.com" }
+    ],
+    "skipped": [
+      { "row": 3, "email": "existing@example.com", "reason": "Already exists" }
+    ]
+  },
+  "message": "Import complete"
+}
+```
+
+Possible `reason` values in `skipped`: `Already exists`, `Invalid email address`, `Missing name or email`.
+
+**Response `400`** — No file uploaded, file exceeds 2 MB, unreadable file, empty CSV, or missing required columns.
+
+---
+
 ### `GET /api/customers/:id`
 
 Get a single customer.

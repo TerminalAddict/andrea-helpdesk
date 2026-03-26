@@ -32,7 +32,9 @@ The ticket detail view shows the full conversation thread for a ticket. Each mes
 
 System events — such as the email suppression audit trail visible here — appear inline in the thread as grey italicised entries, recording who made the change and when.
 
-The reply composer at the bottom includes a **Reply** tab and an **Internal Note** tab, an attachment button, a signature toggle checkbox, and a "Keep status" selector. The **To:** address is shown alongside the send button.
+The reply composer is **collapsed by default**. Clicking the **Reply** or **Internal Note** button auto-expands it; a chevron toggle button in the composer header collapses it again. The composer includes an attachment button, a signature toggle checkbox, and a "Keep status" selector. The **To:** address is shown in the header when collapsed so the recipient is always visible.
+
+Customer names in reply/message headers are clickable links that navigate directly to the customer's profile page.
 
 The **Ticket Info** sidebar on the right shows status, priority, assigned agent, channel, created/updated timestamps, and the **Suppress emails** toggle. When suppression is active, all outbound customer emails for this ticket are silenced — the toggle is recorded as a system event each time it changes. The sidebar also shows the linked customer, tags (with an inline add field), attachments, CC participants, and related/parent tickets.
 
@@ -53,6 +55,8 @@ Other fields include **Subject**, **Priority** (Normal by default), **Channel** 
 ![Customers](screenshots/Customers.png)
 
 The customer list shows all customer records with their name, email, phone, total ticket count, and the date they were first seen. A live search box filters by name or email. Clicking any row opens the customer detail view.
+
+Two action buttons sit in the top-right: **New Customer** opens a modal to create a single customer record; **Import CSV** opens the bulk import modal. The import modal includes a **Download Template CSV** button that downloads a pre-filled example file. After import, the modal reports how many customers were created and lists any skipped rows with their reason (duplicate email, invalid email, or missing required fields).
 
 ---
 

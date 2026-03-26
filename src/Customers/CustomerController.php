@@ -5,6 +5,7 @@ namespace Andrea\Helpdesk\Customers;
 
 use Andrea\Helpdesk\Core\Request;
 use Andrea\Helpdesk\Core\Response;
+use Andrea\Helpdesk\Core\Database;
 use Andrea\Helpdesk\Core\Exceptions\NotFoundException;
 use Andrea\Helpdesk\Core\Exceptions\HttpException;
 
@@ -12,11 +13,13 @@ class CustomerController
 {
     private CustomerRepository $repo;
     private CustomerService $service;
+    private Database $db;
 
     public function __construct()
     {
         $this->repo    = new CustomerRepository();
         $this->service = new CustomerService($this->repo);
+        $this->db      = Database::getInstance();
     }
 
     private function sanitise(array $customer): array
@@ -131,6 +134,92 @@ class CustomerController
 
         $this->service->setPortalPassword($customer['id'], $data['password']);
         Response::success(null, 'Customer password updated');
+    }
+
+    public function import(Request $request): void
+    {
+        if (empty($_FILES['csv']) || $_FILES['csv']['error'] !== UPLOAD_ERR_OK) {
+            throw new HttpException('No CSV file uploaded', 400);
+        }
+
+        // 2 MB limit
+        if ($_FILES['csv']['size'] > 2 * 1024 * 1024) {
+            throw new HttpException('CSV file must be under 2 MB', 400);
+        }
+
+        $file = $_FILES['csv']['tmp_name'];
+        $handle = fopen($file, 'r');
+        if (!$handle) {
+            throw new HttpException('Could not read uploaded file', 400);
+        }
+
+        // Read and validate header row
+        $header = fgetcsv($handle);
+        if (!$header) {
+            fclose($handle);
+            throw new HttpException('CSV file is empty', 400);
+        }
+
+        // Normalise header names
+        $header = array_map(fn($h) => strtolower(trim($h)), $header);
+        $nameIdx    = array_search('name', $header);
+        $emailIdx   = array_search('email', $header);
+        $phoneIdx   = array_search('phone', $header);
+        $companyIdx = array_search('company', $header);
+
+        if ($nameIdx === false || $emailIdx === false) {
+            fclose($handle);
+            throw new HttpException('CSV must have "name" and "email" columns', 400);
+        }
+
+        $created = [];
+        $skipped = [];
+        $row = 1;
+
+        while (($cols = fgetcsv($handle)) !== false) {
+            $row++;
+            $name  = trim($cols[$nameIdx]  ?? '');
+            $email = strtolower(trim($cols[$emailIdx] ?? ''));
+            $phone   = $phoneIdx   !== false ? trim($cols[$phoneIdx]   ?? '') : '';
+            $company = $companyIdx !== false ? trim($cols[$companyIdx] ?? '') : '';
+
+            if ($name === '' || $email === '') {
+                $skipped[] = ['row' => $row, 'email' => $email ?: '(blank)', 'reason' => 'Missing name or email'];
+                continue;
+            }
+
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $skipped[] = ['row' => $row, 'email' => $email, 'reason' => 'Invalid email address'];
+                continue;
+            }
+
+            // Check including soft-deleted rows so we don't hit the DB unique constraint
+            $existing = $this->db->fetch(
+                "SELECT id FROM customers WHERE email = ?",
+                [$email]
+            );
+            if ($existing) {
+                $skipped[] = ['row' => $row, 'email' => $email, 'reason' => 'Already exists'];
+                continue;
+            }
+
+            $id = $this->repo->create([
+                'name'    => $name,
+                'email'   => $email,
+                'phone'   => $phone   ?: null,
+                'company' => $company ?: null,
+            ]);
+            $created[] = ['id' => $id, 'name' => $name, 'email' => $email];
+        }
+
+        fclose($handle);
+
+        Response::success([
+            'created_count' => count($created),
+            'skipped_count' => count($skipped),
+            'created'       => $created,
+            'skipped'       => $skipped,
+        ], 'Import complete');
     }
 
     public function portalInvite(Request $request, array $params): void
