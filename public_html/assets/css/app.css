@@ -82,6 +82,10 @@
     bottom: 0;
     z-index: 10;
 }
+#reply-card.reply-collapsed .card-body,
+#reply-card.reply-collapsed .card-footer {
+    display: none !important;
+}
 
 /* Scroll to top button */
 #scroll-to-top {

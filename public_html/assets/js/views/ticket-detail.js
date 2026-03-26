@@ -84,7 +84,7 @@ const TicketDetailView = {
                     <div id="ticket-thread" class="mb-3"></div>
 
                     <!-- Reply Editor -->
-                    <div class="card border-0 shadow-sm" id="reply-card">
+                    <div class="card border-0 shadow-sm reply-collapsed" id="reply-card">
                         <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
                             <div class="btn-group btn-group-sm" role="group" id="reply-type-group">
                                 <input type="radio" class="btn-check" name="replyType" id="rt-reply" value="reply" checked>
@@ -92,7 +92,12 @@ const TicketDetailView = {
                                 <input type="radio" class="btn-check" name="replyType" id="rt-note" value="note">
                                 <label class="btn btn-outline-warning" for="rt-note"><i class="bi bi-sticky me-1"></i>Internal Note</label>
                             </div>
-                            <small class="text-muted" id="reply-to-label">To: ${App.escapeHtml(t.customer_email || '')}</small>
+                            <div class="d-flex align-items-center gap-2">
+                                <small class="text-muted" id="reply-to-label">To: ${App.escapeHtml(t.customer_email || '')}</small>
+                                <button class="btn btn-sm btn-link text-muted p-0" id="btn-toggle-reply" title="Show/hide reply editor" style="line-height:1;">
+                                    <i class="bi bi-chevron-up"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="card-body">
                             <textarea class="form-control" id="reply-body" rows="6" placeholder="Write your reply…"></textarea>
@@ -529,6 +534,15 @@ const TicketDetailView = {
         updateSignaturePreview();
         $('#reply-include-signature').on('change', updateSignaturePreview);
 
+        // Expand editor when either reply-type button is clicked (even if already selected)
+        $('#reply-type-group label').on('click', function() {
+            const $card = $('#reply-card');
+            if ($card.hasClass('reply-collapsed')) {
+                $card.removeClass('reply-collapsed');
+                $('#btn-toggle-reply i').removeClass('bi-chevron-up').addClass('bi-chevron-down');
+            }
+        });
+
         // Reply type toggle
         $('input[name="replyType"]').on('change', function() {
             const isNote = $(this).val() === 'note';
@@ -549,6 +563,15 @@ const TicketDetailView = {
                 `<span class="badge bg-light text-dark border">${App.escapeHtml(f.name)}</span>`
             ).join('');
             $('#reply-attachments-preview').html(preview);
+        });
+
+        // Toggle reply editor visibility
+        $('#btn-toggle-reply').on('click', function() {
+            const $card      = $('#reply-card');
+            const collapsed  = $card.toggleClass('reply-collapsed').hasClass('reply-collapsed');
+            $(this).find('i')
+                .toggleClass('bi-chevron-up', collapsed)
+                .toggleClass('bi-chevron-down', !collapsed);
         });
 
         // Send reply
