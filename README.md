@@ -64,6 +64,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Granular permissions** — per-agent toggles for: close tickets, delete tickets, edit customers, view reports, manage knowledge base, manage tags
 - **Agent assignment** — assign tickets to specific agents; filter by assigned agent
 - **Rich text composer** — Quill 2.x editor (self-hosted, no CDN) in every body input: new tickets, replies, internal notes, edit ticket body, global signature, personal signature, auto-response body, and knowledge base articles; agents get a full toolbar (bold, italic, underline, lists, link, blockquote, clean), portal customers get a simplified toolbar
+- **@mention agents** — type `@` in the reply or internal note composer to get a live filtered dropdown of agents; selecting one inserts a styled mention chip; mentioned agents receive an email notification with a link to the ticket; self-mentions are silently ignored
 - **Signatures** — per-agent HTML email signature edited with the rich text editor; agents can toggle signature inclusion per reply via a checkbox in the reply composer
 - **Create customer inline** — new customers can be created directly from the Customers screen (New Customer button) or from within the Edit Ticket modal when reassigning a ticket to a customer who doesn't yet exist in the system
 - **Bulk CSV import** — import customers in bulk from a CSV file (columns: `name`, `email`, `phone` optional, `company` optional); a downloadable template is provided in the UI; rows with duplicate or soft-deleted emails are skipped with a per-row reason report; 2 MB file size limit; requires `can_edit_customers` permission
@@ -77,7 +78,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Rich text editor** — articles are authored with the Quill rich text editor; content is rendered safely via DOMPurify on the frontend and sanitised server-side via `Sanitizer::html()` before storage
 
 ### Notifications
-- **Email notifications** — agents are notified of new tickets; customers and participants are notified of replies
+- **Email notifications** — agents are notified of new tickets, customer replies, ticket assignments, and @mentions; customers and participants are notified of replies
 - **Slack notifications** — optional webhook integration for new ticket alerts, assignments, and customer replies; configurable bot display name, icon image or emoji, and link preview behaviour
 - **Global email signature** — appended to all outbound agent emails
 

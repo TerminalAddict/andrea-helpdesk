@@ -54,7 +54,39 @@ class ReplyService
             }
         }
 
+        // Notify any @mentioned agents
+        $this->notifyMentions($bodyHtml, $agentId, $ticket);
+
         return $reply ?? [];
+    }
+
+    private function notifyMentions(string $bodyHtml, int $authorAgentId, array $ticket): void
+    {
+        if (!str_contains($bodyHtml, 'mention-')) return;
+
+        $dom = new \DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML('<!DOCTYPE html><html><body>' . $bodyHtml . '</body></html>');
+        libxml_clear_errors();
+
+        $mentionedIds = [];
+        $xpath = new \DOMXPath($dom);
+        foreach ($xpath->query('//*[contains(@class,"mention-")]') as $node) {
+            foreach (explode(' ', $node->getAttribute('class')) as $cls) {
+                if (preg_match('/^mention-(\d+)$/', $cls, $m)) {
+                    $mentionedIds[] = (int)$m[1];
+                }
+            }
+        }
+
+        $mentionedIds = array_unique($mentionedIds);
+        if (!$mentionedIds) return;
+
+        $notificationService = new NotificationService();
+        foreach ($mentionedIds as $mentionedAgentId) {
+            if ($mentionedAgentId === $authorAgentId) continue; // don't notify self
+            $notificationService->onAgentMentioned($ticket, $mentionedAgentId, $authorAgentId);
+        }
     }
 
     public function createCustomerReply(int $ticketId, int $customerId, string $bodyHtml, string $bodyText = '', string $rawMessageId = '', string $inReplyTo = ''): array

@@ -34,6 +34,8 @@ System events — such as the email suppression audit trail visible here — app
 
 The reply composer is **collapsed by default**. Clicking the **Reply** or **Internal Note** button auto-expands it; a chevron toggle button in the composer header collapses it again. The composer includes an attachment button, a signature toggle checkbox, and a "Keep status" selector. The **To:** address is shown in the header when collapsed so the recipient is always visible.
 
+The reply and internal note composer supports **@mention** — typing `@` opens a live-filtered dropdown of agents. Use arrow keys or click to select; the mention is inserted as a styled chip. Mentioned agents receive an email notification linking to the ticket. Works in both regular replies and internal notes.
+
 Customer names in reply/message headers are clickable links that navigate directly to the customer's profile page.
 
 The **Ticket Info** sidebar on the right shows status, priority, assigned agent, channel, created/updated timestamps, and the **Suppress emails** toggle. When suppression is active, all outbound customer emails for this ticket are silenced — the toggle is recorded as a system event each time it changes. The sidebar also shows the linked customer, tags (with an inline add field), attachments, CC participants, and related/parent tickets.

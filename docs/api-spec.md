@@ -489,6 +489,8 @@ Post a reply to a ticket. Emails the customer and CC participants (unless `is_pr
 
 **Response `201`** — reply object.
 
+**@mention notifications:** if `body_html` contains `<span class="mention mention-{id}">` elements (inserted by the frontend @mention autocomplete), an email notification is sent to each mentioned agent after the reply is saved. Self-mentions are silently ignored. Duplicate mentions in the same reply are deduplicated.
+
 ---
 
 ### `PUT /api/tickets/:id/replies/:reply_id`

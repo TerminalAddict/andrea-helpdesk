@@ -129,6 +129,27 @@ class NotificationService
         }
     }
 
+    public function onAgentMentioned(array $ticket, int $mentionedAgentId, int $authorAgentId): void
+    {
+        try {
+            $db     = Database::getInstance();
+            $author = $db->fetch("SELECT name FROM agents WHERE id = ?", [$authorAgentId]);
+            $appUrl = rtrim(SettingsService::getInstance()->get('app_url') ?: getenv('APP_URL') ?: '', '/');
+            $ticketUrl = "{$appUrl}/#/tickets/{$ticket['id']}";
+
+            $this->emailNotifier->sendAgentNotification(
+                $mentionedAgentId,
+                "You were mentioned in {$ticket['ticket_number']}",
+                "<p>" . htmlspecialchars($author['name'] ?? 'An agent') . " mentioned you in ticket "
+                . "<strong>" . htmlspecialchars($ticket['ticket_number']) . "</strong>: "
+                . htmlspecialchars($ticket['subject']) . "</p>"
+                . "<p><a href='" . htmlspecialchars($ticketUrl) . "'>View Ticket</a></p>"
+            );
+        } catch (\Throwable $e) {
+            $this->log('onAgentMentioned: ' . $e->getMessage());
+        }
+    }
+
     private function log(string $message): void
     {
         $logFile = (getenv('STORAGE_PATH') ?: '/tmp') . '/logs/app.log';

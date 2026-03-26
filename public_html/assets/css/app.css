@@ -12,6 +12,40 @@
     min-height: calc(100vh - 56px);
 }
 
+/* Agent @mention chips */
+.mention {
+    display: inline-block;
+    background: #e8f0fe;
+    color: #1967d2;
+    border-radius: 3px;
+    padding: 0 3px;
+    font-weight: 500;
+    cursor: default;
+    white-space: nowrap;
+    user-select: all;
+}
+.mention-dropdown {
+    position: absolute;
+    z-index: 2000;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    min-width: 180px;
+    max-height: 220px;
+    overflow-y: auto;
+}
+.mention-item {
+    padding: 7px 14px;
+    cursor: pointer;
+    font-size: 0.875rem;
+}
+.mention-item:hover,
+.mention-item.active {
+    background: #f0f4ff;
+    color: #1967d2;
+}
+
 /* Reply thread */
 .reply-html {
     overflow-wrap: break-word;

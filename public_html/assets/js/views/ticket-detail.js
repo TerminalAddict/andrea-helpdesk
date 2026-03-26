@@ -667,8 +667,8 @@ const TicketDetailView = {
             this.deleteAttachment($(e.currentTarget).data('id'));
         });
 
-        // Rich text editor for reply body
-        RichEditor.init('reply-body', { placeholder: 'Write your reply…', minHeight: '150px' });
+        // Rich text editor for reply body — with @mention support
+        RichEditor.initWithMentions('reply-body', { placeholder: 'Write your reply… (type @ to mention an agent)', minHeight: '150px' }, this.agents);
     },
 
     async sendReply() {
