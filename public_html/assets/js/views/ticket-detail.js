@@ -404,7 +404,10 @@ const TicketDetailView = {
             <div class="card border-0 shadow-sm mb-3 ${isAgent ? 'bg-light' : 'bg-white'}">
                 <div class="card-header ${isAgent ? 'bg-light' : 'bg-white'} d-flex justify-content-between align-items-center py-2 border-bottom">
                     <div>
-                        <strong class="small">${App.escapeHtml(r.author_name || (isAgent ? 'Agent' : 'Customer'))}</strong>
+                        ${!isAgent && r.customer_id
+                            ? `<a href="#/customers/${r.customer_id}" class="text-decoration-none text-body"><strong class="small">${App.escapeHtml(r.author_name || 'Customer')}</strong></a>`
+                            : `<strong class="small">${App.escapeHtml(r.author_name || 'Agent')}</strong>`
+                        }
                         <span class="text-muted small ms-2">${App.formatDate(r.created_at)}</span>
                     </div>
                     <span class="badge ${isAgent ? 'bg-primary' : 'bg-success'} bg-opacity-75 small">${isAgent ? 'Agent' : 'Customer'}</span>
