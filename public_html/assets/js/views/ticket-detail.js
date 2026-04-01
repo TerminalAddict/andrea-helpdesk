@@ -4,6 +4,7 @@
 const TicketDetailView = {
     ticket: null,
     agents: [],
+    allTags: [],
 
     render(params) {
         this._params = params;
@@ -18,12 +19,14 @@ const TicketDetailView = {
     async init(params) {
         this._params = params;
         try {
-            const [ticketRes, agentsRes] = await Promise.all([
+            const [ticketRes, agentsRes, tagsRes] = await Promise.all([
                 API.get('/tickets/' + params.id),
                 API.get('/agents'),
+                API.get('/tags'),
             ]);
             this.ticket = ticketRes.data;
             this.agents = agentsRes.data || [];
+            this.allTags = tagsRes.data || [];
             this.renderFull();
         } catch (e) {
             $('#ticket-detail-wrap').html('<div class="alert alert-danger m-4">' + App.escapeHtml(e.message) + '</div>');
@@ -219,10 +222,15 @@ const TicketDetailView = {
                                     `<span class="badge bg-secondary">${App.escapeHtml(tag.name)} <a href="#" class="text-white text-decoration-none ms-1 tag-remove" data-id="${tag.id}">×</a></span>`
                                 ).join('')}
                             </div>
-                            <div class="input-group input-group-sm">
-                                <input type="text" class="form-control" id="tag-input" placeholder="Add tag…">
-                                <button class="btn btn-outline-secondary" id="btn-add-tag">Add</button>
-                            </div>
+                            ${(() => {
+                                const appliedIds = new Set((t.tags || []).map(tag => tag.id));
+                                const available = this.allTags.filter(tag => !appliedIds.has(tag.id));
+                                if (!available.length) return '';
+                                return `<select class="form-select form-select-sm" id="tag-select">
+                                    <option value="">— add a tag —</option>
+                                    ${available.map(tag => `<option value="${tag.id}">${App.escapeHtml(tag.name)}</option>`).join('')}
+                                </select>`;
+                            })()}
                         </div>
                     </div>
 
@@ -581,8 +589,10 @@ const TicketDetailView = {
         $('#btn-send-reply').on('click', () => this.sendReply());
 
         // Tags
-        $('#btn-add-tag').on('click', () => this.addTag());
-        $('#tag-input').on('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); this.addTag(); } });
+        $(document).on('change', '#tag-select', (e) => {
+            const tagId = parseInt($(e.currentTarget).val(), 10);
+            if (tagId) this.addTag(tagId);
+        });
         $(document).on('click', '.tag-remove', (e) => {
             e.preventDefault();
             this.removeTag($(e.currentTarget).data('id'));
@@ -716,12 +726,10 @@ const TicketDetailView = {
         } catch (e) { App.toast(e.message, 'error'); }
     },
 
-    async addTag() {
-        const name = $('#tag-input').val().trim();
-        if (!name) return;
+    async addTag(tagId) {
+        if (!tagId) return;
         try {
-            await API.post('/tickets/' + this.ticket.id + '/tags', { name });
-            $('#tag-input').val('');
+            await API.post('/tickets/' + this.ticket.id + '/tags', { tag_ids: [tagId] });
             await this.reload();
         } catch (e) { App.toast(e.message, 'error'); }
     },

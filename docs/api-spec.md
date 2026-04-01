@@ -437,14 +437,14 @@ Remove a CC participant.
 
 ### `POST /api/tickets/:id/tags`
 
-Add one or more tags to a ticket. Provide either a tag name (creates if not found) or an array of existing tag IDs.
+Add one or more tags to a ticket. Provide either a tag name (creates if not found) or an array of existing tag IDs. The agent UI uses `tag_ids` (selecting from the global tag list); the `name` path is available for API integrations that need to create-or-attach by name.
 
 **Request body**
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `name` | string | Tag name — creates the tag if it doesn't exist |
-| `tag_ids` | int[] | Array of existing tag IDs |
+| `name` | string | Tag name — creates the tag if it doesn't exist, then attaches it |
+| `tag_ids` | int[] | Array of existing tag IDs to attach |
 
 **Response `200`** — array of tag objects on the ticket.
 

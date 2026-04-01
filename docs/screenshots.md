@@ -38,7 +38,7 @@ The reply and internal note composer supports **@mention** — typing `@` opens 
 
 Customer names in reply/message headers are clickable links that navigate directly to the customer's profile page.
 
-The **Ticket Info** sidebar on the right shows status, priority, assigned agent, channel, created/updated timestamps, and the **Suppress emails** toggle. When suppression is active, all outbound customer emails for this ticket are silenced — the toggle is recorded as a system event each time it changes. The sidebar also shows the linked customer, tags (with an inline add field), attachments, CC participants, and related/parent tickets.
+The **Ticket Info** sidebar on the right shows status, priority, assigned agent, channel, created/updated timestamps, and the **Suppress emails** toggle. When suppression is active, all outbound customer emails for this ticket are silenced — the toggle is recorded as a system event each time it changes. The sidebar also shows the linked customer, tags (with a dropdown to select from the global tag list — only tags not already applied are shown; the dropdown is hidden when all tags are applied), attachments, CC participants, and related/parent tickets.
 
 ---
 
