@@ -101,7 +101,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Auto-responder** — enable/disable and customise the automatic acknowledgement email
 - **Date format** — configurable display format
 - **Slack appearance** — configurable bot display name, icon (image URL or emoji), and link preview toggle per Slack integration
-- **Version & update check** — the General tab shows the currently installed version and a **Check for Updates** button; the server fetches `version.json` from the GitHub `main` branch and reports whether an update is available
+- **Version & update check** — the General tab shows the currently installed version and a **Check for Updates** button; the server fetches `version.json` from the GitHub `main` branch and reports whether an update is available; when an update is found, an **Update Now** button opens a preflight checklist (write permissions, PHP extensions, disk space) with fix instructions for any failures, then a one-click updater that downloads, extracts, copies files, and runs database migrations automatically
 
 ### Security
 - **JWT authentication** — short-lived access tokens (15 min) + long-lived refresh tokens (30 days, hashed in DB)

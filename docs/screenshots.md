@@ -110,6 +110,8 @@ The General settings tab covers system-wide options: **Application Name**, **App
 
 Below the save button, a **Version &amp; Updates** card shows the currently installed version number (fetched from the server) and a **Check for Updates** button. Clicking the button asks the server to fetch `version.json` from the GitHub `main` branch and compare it to the installed version. The result is shown inline — either "You are running the latest version" or "Version X.Y.Z is available".
 
+When an update is available, an **Update Now** button appears alongside the GitHub link. Clicking it opens a modal that first runs **preflight checks** — PHP ZipArchive extension, HTTP download capability, write permissions on all key directories, temp directory writable, and at least 50 MB free disk space. Each failed check shows specific instructions on how to fix it. If all checks pass, a **Proceed with Update** button is enabled. Clicking that downloads the latest zip from GitHub, extracts it, copies the new files over the installation (preserving `.env`, `storage/`, and `vendor/`), runs the database schema update, applies any new migrations, and clears the opcode cache. A live log is shown in a terminal-style panel, and on success the user is prompted to reload the page.
+
 When IMAP Polling Mode is set to **Cron Job (recommended)**, a help box displays the exact crontab line to add, along with instructions for using `make cron-install-production` as a shortcut. The cron script uses a file lock so overlapping runs are safe.
 
 ---

@@ -4,6 +4,22 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
+## [1.0.2] — 2026-04-03
+
+### Added
+
+- **In-app updater** — Settings → General now includes a one-click updater; when a newer version is detected, an **Update Now** button opens a preflight checklist modal that verifies PHP ZipArchive extension, HTTP download capability, write permissions on all key directories, temp directory, and available disk space; each failed check shows specific fix instructions; if all checks pass, the updater downloads the latest zip from GitHub, extracts it, copies new files over the installation (preserving `.env`, `storage/`, and `vendor/`), runs the database schema update, applies any new migrations, and clears the opcode cache
+- **Migration tracking** — a `schema_migrations` database table (auto-created on first update run) tracks which numbered migration files have been applied, preventing double-application on repeated updates
+- **Concurrent update protection** — `flock()` on a temp lock file ensures only one update process can run at a time
+
+### Docs
+
+- Updated `docs/version.md` with in-app updater workflow and migration tracking details
+- Updated `docs/api-spec.md` with full `GET /api/update/preflight` and `POST /api/update/run` endpoint documentation
+- Updated `README.md` and `docs/screenshots.md` with updater description
+
+---
+
 ## [1.0.1] — 2026-04-03
 
 ### Added

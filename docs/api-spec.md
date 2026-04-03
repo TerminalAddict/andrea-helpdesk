@@ -23,6 +23,7 @@ All API endpoints are served under the `/api` prefix. The API returns JSON for a
 - [Portal auth endpoints](#portal-auth-endpoints)
 - [Portal ticket endpoints](#portal-ticket-endpoints)
 - [Version endpoints](#version-endpoints)
+- [Update endpoints](#update-endpoints)
 
 ---
 
@@ -1412,3 +1413,82 @@ Fetch `version.json` from the GitHub `main` branch server-side (via cURL / `file
 **Response `200`** — same shape as `GET /api/version`.
 
 **Response `502`** — if GitHub is unreachable or returns unexpected data.
+
+---
+
+## Update endpoints
+
+**Auth:** `role:admin` for all endpoints.
+
+### `GET /api/update/preflight`
+
+Run prerequisite checks before attempting an in-app update. Returns a list of checks with pass/fail status and fix instructions for any failures.
+
+**Response `200`**
+
+```json
+{
+  "success": true,
+  "data": {
+    "ready": true,
+    "checks": [
+      { "name": "PHP ZipArchive extension", "pass": true,  "detail": "Available",    "fix": "" },
+      { "name": "HTTP download (cURL or allow_url_fopen)", "pass": true, "detail": "cURL available", "fix": "" },
+      { "name": "Write permission: /public_html/", "pass": false, "detail": "Not writable", "fix": "chmod 755 ..." },
+      ...
+    ]
+  }
+}
+```
+
+Checks performed:
+- PHP `zip` extension loaded
+- HTTP download capability (`curl_exec` or `allow_url_fopen`)
+- Write permission on `/` (app root), `/public_html/`, `/src/`, `/config/`, `/bin/`, `/database/`
+- System temp directory writable
+- ≥ 50 MB free disk space
+
+---
+
+### `POST /api/update/run`
+
+Download the latest release from GitHub and apply it to the installation. Requires all preflight checks to be passing. Uses a file lock to prevent concurrent runs.
+
+**Request body** — empty `{}`.
+
+**Steps performed:**
+1. Download `main` branch zip from GitHub
+2. Extract to temp directory
+3. Copy files over the installation (preserving `.env`, `storage/`, `vendor/`, `.git`, `install.lock`, `Makefile.local`)
+4. Run `database/schema.sql` (idempotent — all `CREATE TABLE IF NOT EXISTS`)
+5. Apply any new numbered migration files from `database/migrations/`, tracked in `schema_migrations` table (created automatically if absent); `001_initial.sql` is skipped as it is covered by `schema.sql`
+6. Reset opcode cache (`opcache_reset()`) if available
+
+**Response `200`**
+
+```json
+{
+  "success": true,
+  "data": {
+    "log": [
+      "Downloading update from GitHub…",
+      "Downloaded 1234 KB.",
+      "Extracting…",
+      "Extracted successfully.",
+      "Copying files…",
+      "Copied 312 file(s).",
+      "Updating database schema…",
+      "Schema: 28 statement(s) executed.",
+      "Checking for new migrations…",
+      "  Applied: 015_new_feature.sql",
+      "1 migration(s) applied.",
+      "Opcode cache cleared.",
+      "done"
+    ]
+  }
+}
+```
+
+**Response `200` with `success: false`** — if the update fails mid-way; `data.log` contains the steps completed and the error message.
+
+**Response `423`** — if another update is already in progress (lock held).
