@@ -106,7 +106,8 @@ return [
     ['POST', '/api/admin/settings/test-slack',  SettingsController::class, 'testSlack', ['role:admin']],
 
     // ── Version ───────────────────────────────────────────────────────────────
-    ['GET', '/api/version', VersionController::class, 'index', ['role:admin']],
+    ['GET', '/api/version',        VersionController::class, 'index',  ['role:admin']],
+    ['GET', '/api/version/latest', VersionController::class, 'latest', ['role:admin']],
 
     // ── Reports ───────────────────────────────────────────────────────────────
     ['GET', '/api/reports/summary',       ReportController::class, 'summary',     ['auth:agent', 'permission:can_view_reports']],

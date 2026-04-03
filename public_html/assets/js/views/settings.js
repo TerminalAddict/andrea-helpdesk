@@ -262,9 +262,8 @@ const SettingsView = {
                 $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Checking…');
                 $result.html('');
                 try {
-                    const res = await fetch('https://raw.githubusercontent.com/TerminalAddict/andrea-helpdesk/main/version.json');
-                    if (!res.ok) throw new Error('Could not reach GitHub (' + res.status + ')');
-                    const latest    = await res.json();
+                    const res       = await API.get('/version/latest');
+                    const latest    = res.data;
                     const installed = $('#installed-version').text().trim();
                     const cmp = (() => {
                         const a = (latest.version || '0').split('.').map(Number);
