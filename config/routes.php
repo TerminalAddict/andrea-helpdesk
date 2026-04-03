@@ -11,6 +11,7 @@ use Andrea\Helpdesk\Tickets\TagController;
 use Andrea\Helpdesk\Customers\CustomerController;
 use Andrea\Helpdesk\Agents\AgentController;
 use Andrea\Helpdesk\Settings\SettingsController;
+use Andrea\Helpdesk\Core\VersionController;
 use Andrea\Helpdesk\IMAP\ImapAccountController;
 use Andrea\Helpdesk\Reports\ReportController;
 use Andrea\Helpdesk\KnowledgeBase\KbController;
@@ -103,6 +104,9 @@ return [
     ['POST', '/api/admin/settings/test-smtp',   SettingsController::class, 'testSmtp',  ['role:admin']],
     ['POST', '/api/admin/settings/test-imap',   SettingsController::class, 'testImap',  ['role:admin']],
     ['POST', '/api/admin/settings/test-slack',  SettingsController::class, 'testSlack', ['role:admin']],
+
+    // ── Version ───────────────────────────────────────────────────────────────
+    ['GET', '/api/version', VersionController::class, 'index', ['role:admin']],
 
     // ── Reports ───────────────────────────────────────────────────────────────
     ['GET', '/api/reports/summary',       ReportController::class, 'summary',     ['auth:agent', 'permission:can_view_reports']],

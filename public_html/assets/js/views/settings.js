@@ -229,6 +229,63 @@ const SettingsView = {
             };
             $('#s-imap_poll_mode').on('change', function() { updatePollInfo(this.value); });
             updatePollInfo($('#s-imap_poll_mode').val());
+
+            // Version & update check card
+            $('#settings-content').append(`
+                <div class="card border-0 shadow-sm mt-3" id="version-card">
+                    <div class="card-header bg-white fw-semibold py-2">
+                        <i class="bi bi-box-seam me-2"></i>Version &amp; Updates
+                    </div>
+                    <div class="card-body py-3">
+                        <div class="d-flex align-items-center gap-3 flex-wrap">
+                            <div>
+                                <div class="small text-muted">Installed version</div>
+                                <div class="fw-semibold" id="installed-version"><span class="spinner-border spinner-border-sm"></span></div>
+                            </div>
+                            <button class="btn btn-outline-secondary btn-sm" id="btn-check-update">
+                                <i class="bi bi-arrow-repeat me-1"></i>Check for Updates
+                            </button>
+                        </div>
+                        <div id="update-result" class="mt-2"></div>
+                    </div>
+                </div>`);
+
+            API.get('/version').then(res => {
+                $('#installed-version').text(res.data.version || 'unknown');
+            }).catch(() => {
+                $('#installed-version').text('unknown');
+            });
+
+            $('#btn-check-update').on('click', async function() {
+                const $btn    = $(this);
+                const $result = $('#update-result');
+                $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Checking…');
+                $result.html('');
+                try {
+                    const res = await fetch('https://raw.githubusercontent.com/TerminalAddict/andrea-helpdesk/main/version.json');
+                    if (!res.ok) throw new Error('Could not reach GitHub (' + res.status + ')');
+                    const latest    = await res.json();
+                    const installed = $('#installed-version').text().trim();
+                    const cmp = (() => {
+                        const a = (latest.version || '0').split('.').map(Number);
+                        const b = (installed      || '0').split('.').map(Number);
+                        for (let i = 0; i < Math.max(a.length, b.length); i++) {
+                            const diff = (a[i] || 0) - (b[i] || 0);
+                            if (diff !== 0) return diff;
+                        }
+                        return 0;
+                    })();
+                    if (cmp > 0) {
+                        $result.html(`<div class="alert alert-warning py-2 mb-0"><i class="bi bi-arrow-up-circle me-1"></i>Version <strong>${App.escapeHtml(latest.version)}</strong> is available (released ${App.escapeHtml(latest.released)})</div>`);
+                    } else {
+                        $result.html(`<div class="alert alert-success py-2 mb-0"><i class="bi bi-check-circle me-1"></i>You are running the latest version.</div>`);
+                    }
+                } catch (e) {
+                    $result.html(`<div class="alert alert-danger py-2 mb-0"><i class="bi bi-exclamation-triangle me-1"></i>${App.escapeHtml(e.message)}</div>`);
+                } finally {
+                    $btn.prop('disabled', false).html('<i class="bi bi-arrow-repeat me-1"></i>Check for Updates');
+                }
+            });
         }
     },
 
