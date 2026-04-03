@@ -275,7 +275,7 @@ const SettingsView = {
                         return 0;
                     })();
                     if (cmp > 0) {
-                        $result.html(`<div class="alert alert-warning py-2 mb-0"><i class="bi bi-arrow-up-circle me-1"></i>Version <strong>${App.escapeHtml(latest.version)}</strong> is available (released ${App.escapeHtml(latest.released)})</div>`);
+                        $result.html(`<div class="alert alert-warning py-2 mb-0"><i class="bi bi-arrow-up-circle me-1"></i>Version <strong>${App.escapeHtml(latest.version)}</strong> is available (released ${App.escapeHtml(latest.released)}) — <a href="https://github.com/TerminalAddict/andrea-helpdesk" target="_blank" rel="noopener noreferrer">View on GitHub</a></div>`);
                     } else {
                         $result.html(`<div class="alert alert-success py-2 mb-0"><i class="bi bi-check-circle me-1"></i>You are running the latest version.</div>`);
                     }
