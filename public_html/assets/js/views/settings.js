@@ -275,7 +275,15 @@ const SettingsView = {
                         return 0;
                     })();
                     if (cmp > 0) {
-                        $result.html(`<div class="alert alert-warning py-2 mb-0"><i class="bi bi-arrow-up-circle me-1"></i>Version <strong>${App.escapeHtml(latest.version)}</strong> is available (released ${App.escapeHtml(latest.released)}) — <a href="https://github.com/TerminalAddict/andrea-helpdesk" target="_blank" rel="noopener noreferrer">View on GitHub</a></div>`);
+                        $result.html(`
+                            <div class="alert alert-warning py-2 mb-0">
+                                <div><i class="bi bi-arrow-up-circle me-1"></i>Version <strong>${App.escapeHtml(latest.version)}</strong> is available (released ${App.escapeHtml(latest.released)})</div>
+                                <div class="mt-2 d-flex gap-2 flex-wrap">
+                                    <a href="https://github.com/TerminalAddict/andrea-helpdesk" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-dark"><i class="bi bi-github me-1"></i>View on GitHub</a>
+                                    <button class="btn btn-sm btn-success" id="btn-update-now"><i class="bi bi-arrow-up-circle me-1"></i>Update Now</button>
+                                </div>
+                            </div>`);
+                        $('#btn-update-now').on('click', () => SettingsView.openUpdateModal(latest.version));
                     } else {
                         $result.html(`<div class="alert alert-success py-2 mb-0"><i class="bi bi-check-circle me-1"></i>You are running the latest version.</div>`);
                     }
@@ -285,6 +293,107 @@ const SettingsView = {
                     $btn.prop('disabled', false).html('<i class="bi bi-arrow-repeat me-1"></i>Check for Updates');
                 }
             });
+
+            // Update modal (injected once into body)
+            if (!$('#update-modal').length) {
+                $('body').append(`
+                <div class="modal fade" id="update-modal" tabindex="-1" data-bs-backdrop="static">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title"><i class="bi bi-arrow-up-circle me-2"></i>Update Andrea Helpdesk</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" id="update-modal-close"></button>
+                            </div>
+                            <div class="modal-body" id="update-modal-body"></div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-success d-none" id="btn-proceed-update">
+                                    <i class="bi bi-arrow-up-circle me-1"></i>Update Now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`);
+            }
+        }
+    },
+
+    async openUpdateModal(latestVersion) {
+        const modal = new bootstrap.Modal(document.getElementById('update-modal'));
+        const $body = $('#update-modal-body');
+        const $proceed = $('#btn-proceed-update');
+        $('#update-modal-close').prop('disabled', false);
+        $proceed.addClass('d-none').off('click');
+        $body.html(`<div class="text-center py-4"><div class="spinner-border"></div><p class="mt-2 text-muted">Checking prerequisites…</p></div>`);
+        modal.show();
+
+        try {
+            const res    = await API.get('/update/preflight');
+            const checks = res.data.checks;
+            const ready  = res.data.ready;
+
+            let rows = checks.map(c => `
+                <tr>
+                    <td class="text-center" style="width:2rem">
+                        ${c.pass
+                            ? '<i class="bi bi-check-circle-fill text-success"></i>'
+                            : '<i class="bi bi-x-circle-fill text-danger"></i>'}
+                    </td>
+                    <td>${App.escapeHtml(c.name)}</td>
+                    <td class="text-muted small">${App.escapeHtml(c.detail)}</td>
+                </tr>
+                ${!c.pass ? `<tr class="table-danger"><td></td><td colspan="2"><small><strong>How to fix:</strong> ${App.escapeHtml(c.fix)}</small></td></tr>` : ''}`
+            ).join('');
+
+            $body.html(`
+                <p class="mb-3">Updating to version <strong>${App.escapeHtml(latestVersion)}</strong>. The update will download the latest code from GitHub and apply any new database migrations.</p>
+                <table class="table table-sm table-bordered mb-0">
+                    <thead class="table-light"><tr><th></th><th>Check</th><th>Status</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+                ${ready ? '<div class="alert alert-success mt-3 mb-0"><i class="bi bi-check-circle me-1"></i>All checks passed. Ready to update.</div>'
+                        : '<div class="alert alert-danger mt-3 mb-0"><i class="bi bi-x-circle me-1"></i>Fix the issues above before updating.</div>'}`);
+
+            if (ready) {
+                $proceed.removeClass('d-none').on('click', () => SettingsView.runUpdate(latestVersion, modal));
+            }
+        } catch (e) {
+            $body.html(`<div class="alert alert-danger">${App.escapeHtml(e.message)}</div>`);
+        }
+    },
+
+    async runUpdate(latestVersion, modal) {
+        const $body    = $('#update-modal-body');
+        const $proceed = $('#btn-proceed-update');
+        const $close   = $('#update-modal-close');
+        $proceed.addClass('d-none');
+        $close.prop('disabled', true);
+        $body.html(`
+            <p>Updating to <strong>${App.escapeHtml(latestVersion)}</strong>…</p>
+            <div class="bg-dark text-light rounded p-3 font-monospace small" id="update-log" style="min-height:120px;max-height:320px;overflow-y:auto;">
+                <div class="spinner-border spinner-border-sm me-2"></div>Running…
+            </div>`);
+
+        try {
+            const res = await API.post('/update/run', {});
+            const log = res.data.log || [];
+            const succeeded = res.success && log[log.length - 1] === 'done';
+
+            $('#update-log').html(log.map(l => `<div>${App.escapeHtml(l)}</div>`).join(''));
+
+            if (succeeded) {
+                $body.append(`
+                    <div class="alert alert-success mt-3 mb-0">
+                        <i class="bi bi-check-circle me-1"></i>
+                        <strong>Update complete!</strong> Please <a href="javascript:window.location.reload()">reload the page</a> to run the new version.
+                    </div>`);
+            } else {
+                $body.append(`<div class="alert alert-danger mt-3 mb-0"><i class="bi bi-x-circle me-1"></i>Update failed — see log above.</div>`);
+            }
+        } catch (e) {
+            $body.append(`<div class="alert alert-danger mt-3 mb-0"><i class="bi bi-x-circle me-1"></i>${App.escapeHtml(e.message)}</div>`);
+        } finally {
+            $close.prop('disabled', false);
         }
     },
 
