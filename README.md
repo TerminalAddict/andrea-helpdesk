@@ -101,6 +101,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Auto-responder** — enable/disable and customise the automatic acknowledgement email
 - **Date format** — configurable display format
 - **Slack appearance** — configurable bot display name, icon (image URL or emoji), and link preview toggle per Slack integration
+- **Version & update check** — the General tab shows the currently installed version and a **Check for Updates** button; the server fetches `version.json` from the GitHub `main` branch and reports whether an update is available
 
 ### Security
 - **JWT authentication** — short-lived access tokens (15 min) + long-lived refresh tokens (30 days, hashed in DB)
@@ -116,6 +117,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Cron overlap prevention** — `flock()` ensures only one IMAP poller runs at a time
 - **Rsync deployment** — single `make deploy-production` command; vendor and storage directories excluded
 - **No build step** — frontend uses Bootstrap 5, Bootstrap Icons, and jQuery loaded from local vendor files; no Node.js or bundler required
+- **Versioning** — `version.json` in the repository root is the authoritative version record; see [docs/version.md](docs/version.md) and [docs/changelog.md](docs/changelog.md)
 
 ---
 

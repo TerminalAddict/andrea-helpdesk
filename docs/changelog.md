@@ -4,6 +4,21 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
+## [1.0.1] — 2026-04-03
+
+### Added
+
+- **Versioning system** — `version.json` in the repository root is the authoritative version record; `GET /api/version` returns the installed version; `GET /api/version/latest` proxies a fetch to the GitHub `main` branch server-side so browsers avoid cross-origin restrictions
+- **Update check in Settings** — Settings → General tab now shows a **Version & Updates** card with the installed version number and a **Check for Updates** button; compares installed vs latest semver and reports inline whether an update is available
+
+### Docs
+
+- Added `docs/version.md` explaining the versioning workflow
+- Added `docs/changelog.md` (this file)
+- Updated README, CLAUDE.md, api-spec.md, and screenshots.md with versioning and tag dropdown details
+
+---
+
 ## [1.0.0] — 2026-04-03
 
 Initial versioned release. Covers all features built to this point.

@@ -108,6 +108,8 @@ Permission tags visible per agent include: `close_tickets`, `delete_tickets`, `e
 
 The General settings tab covers system-wide options: **Application Name**, **Application URL** (used in outbound email links), **Timezone**, **Date Format** (PHP `date()` format string), **Ticket Number Prefix**, and **IMAP Polling Mode**.
 
+Below the save button, a **Version &amp; Updates** card shows the currently installed version number (fetched from the server) and a **Check for Updates** button. Clicking the button asks the server to fetch `version.json` from the GitHub `main` branch and compare it to the installed version. The result is shown inline — either "You are running the latest version" or "Version X.Y.Z is available".
+
 When IMAP Polling Mode is set to **Cron Job (recommended)**, a help box displays the exact crontab line to add, along with instructions for using `make cron-install-production` as a shortcut. The cron script uses a file lock so overlapping runs are safe.
 
 ---

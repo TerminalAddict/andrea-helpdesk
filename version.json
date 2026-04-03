@@ -1,5 +1,5 @@
 {
-    "version": "1.0.0",
+    "version": "1.0.1",
     "released": "2026-04-03",
-    "description": "Initial versioned release"
+    "description": "Versioning system and update check"
 }

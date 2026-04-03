@@ -22,6 +22,7 @@ All API endpoints are served under the `/api` prefix. The API returns JSON for a
 - [Knowledge base endpoints](#knowledge-base-endpoints)
 - [Portal auth endpoints](#portal-auth-endpoints)
 - [Portal ticket endpoints](#portal-ticket-endpoints)
+- [Version endpoints](#version-endpoints)
 
 ---
 
@@ -1385,3 +1386,29 @@ Upload a file attachment from a customer. Supports multiple files.
 **Request:** `multipart/form-data` with `file` field(s).
 
 **Response `201`** — array of attachment objects.
+
+---
+
+## Version endpoints
+
+**Auth:** `role:admin` for all endpoints.
+
+### `GET /api/version`
+
+Return the installed version from `version.json` in the repository root.
+
+**Response `200`**
+
+```json
+{ "version": "1.0.0", "released": "2026-04-03", "description": "..." }
+```
+
+---
+
+### `GET /api/version/latest`
+
+Fetch `version.json` from the GitHub `main` branch server-side (via cURL / `file_get_contents`) and return it. Used by the Settings → General **Check for Updates** button to compare installed vs latest without the browser making a cross-origin request.
+
+**Response `200`** — same shape as `GET /api/version`.
+
+**Response `502`** — if GitHub is unreachable or returns unexpected data.
