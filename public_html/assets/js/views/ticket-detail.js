@@ -428,6 +428,7 @@ const TicketDetailView = {
         }).join('');
 
         $('#ticket-thread').html(html);
+        $('#ticket-thread').find('.reply-html a, .reply-body a').attr({ target: '_blank', rel: 'noopener noreferrer' });
     },
 
     renderBody(text, html) {

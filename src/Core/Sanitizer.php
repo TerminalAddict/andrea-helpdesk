@@ -91,8 +91,9 @@ class Sanitizer
             $node->removeAttribute($name);
         }
 
-        // Ensure external links cannot trigger opener attacks
-        if ($tag === 'a' && $node->getAttribute('target') === '_blank') {
+        // Force all links to open in a new tab safely
+        if ($tag === 'a') {
+            $node->setAttribute('target', '_blank');
             $node->setAttribute('rel', 'noopener noreferrer');
         }
 
