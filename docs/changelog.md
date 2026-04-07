@@ -4,6 +4,22 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
+## [1.1.0] — 2026-04-08
+
+### Added
+- **Due dates** on tickets — set a start date/time, optional end date (for multi-day), or all-day flag; stored in `due_at`, `due_end`, `due_all_day` columns
+- **Calendar view** (`#/calendar`) — browsable monthly grid showing all tickets with due dates, colour-coded by priority; overdue tickets highlighted in red; click any event to open the ticket
+- **iCal subscription** — each agent gets a personal HMAC-secured subscription URL; calendar apps (Outlook, Google Calendar, Apple Calendar) receive automatic reminders 1 day and 1 hour before each due date; ticket URL embedded in each calendar entry
+- Due date sidebar card on ticket detail — inline form with all-day toggle, start/end date pickers, edit and clear actions; overdue indicator shown in red
+- `GET /api/calendar/events` — tickets with due dates for the in-app calendar
+- `GET /api/calendar/token` — generate personal iCal subscription token
+- `GET /api/calendar/ical` — iCal feed authenticated by HMAC token (no JWT, for calendar app compatibility)
+- DB migration `015_due_dates.sql`
+- Open all ticket body links in a new tab (`target="_blank"`) — applied via JS at display time and enforced in `Sanitizer::html()`
+- `bin/fix-link-targets.php` — one-time script to retroactively add `target="_blank"` to all existing reply HTML in the database
+
+---
+
 ## [1.0.2] — 2026-04-03
 
 ### Added
