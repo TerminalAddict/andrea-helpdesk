@@ -223,13 +223,17 @@ class UpdateController
         $pdo  = Database::getInstance()->getPdo();
         $sql  = (string) file_get_contents($root . '/database/schema.sql');
 
-        $statements = array_filter(array_map(
-            fn($chunk) => trim(implode("\n", array_filter(
-                explode("\n", $chunk),
+        $statements = [];
+        foreach (explode(';', $sql) as $chunk) {
+            $stmt = trim($chunk);
+            if ($stmt === '') continue;
+            // Strip comment lines to check for real content; pass original to exec() (MySQL handles --)
+            $stripped = trim(implode("\n", array_filter(
+                explode("\n", $stmt),
                 fn($l) => !str_starts_with(ltrim($l), '--')
-            ))),
-            explode(';', $sql)
-        ));
+            )));
+            if ($stripped !== '') $statements[] = $stmt;
+        }
 
         $count = 0;
         foreach ($statements as $stmt) {
@@ -274,18 +278,32 @@ class UpdateController
             }
 
             $sql        = (string) file_get_contents($file);
-            $statements = array_filter(array_map(
-                fn($s) => trim($s),
-                explode(';', $sql)
-            ), fn($s) => $s !== '' && !str_starts_with(ltrim($s), '--'));
+            $statements = [];
+            foreach (explode(';', $sql) as $chunk) {
+                $stmt = trim($chunk);
+                if ($stmt === '') continue;
+                $stripped = trim(implode("\n", array_filter(
+                    explode("\n", $stmt),
+                    fn($l) => !str_starts_with(ltrim($l), '--')
+                )));
+                if ($stripped !== '') $statements[] = $stmt;
+            }
 
             $ok = true;
             foreach ($statements as $stmt) {
                 try {
                     $pdo->exec($stmt);
                 } catch (\PDOException $e) {
-                    $log[] = "  Migration {$name} error: " . $e->getMessage();
-                    $ok    = false;
+                    $msg  = $e->getMessage();
+                    $code = (int)$e->getCode();
+                    // MySQL 1060 = Duplicate column name, 1061 = Duplicate key name, 1068 = Multiple primary key
+                    // These mean the schema change was already applied manually — treat as success
+                    if (in_array($code, [1060, 1061, 1068], true)) {
+                        $log[] = "  Migration {$name}: already applied ({$msg})";
+                    } else {
+                        $log[] = "  Migration {$name} error: {$msg}";
+                        $ok    = false;
+                    }
                 }
             }
 
