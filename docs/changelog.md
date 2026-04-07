@@ -4,6 +4,13 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
+## [1.1.2] — 2026-04-08
+
+### Fixed
+- DB migration `015_due_dates.sql` not applied automatically on existing installs — columns must be added via `php bin/migrate.php` or by running the migration manually
+
+---
+
 ## [1.1.0] — 2026-04-08
 
 ### Added
