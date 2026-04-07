@@ -1,5 +1,5 @@
 {
-    "version": "1.1.4",
+    "version": "1.1.5",
     "released": "2026-04-08",
-    "description": "Fix in-app updater skipping migrations that start with a comment"
+    "description": "Fix due date columns missing on installs updated via in-app updater"
 }
