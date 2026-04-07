@@ -4,6 +4,21 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
+## [1.1.4] — 2026-04-08
+
+### Fixed
+- In-app updater now correctly applies SQL migrations that start with a `--` comment line (the comment-filter was incorrectly skipping the entire statement, so `015_due_dates.sql` was silently not applied on installs updated via the in-app updater)
+- Updater now treats MySQL "duplicate column/key" errors as a soft success, so manually-applied migrations don't block future update runs
+
+---
+
+## [1.1.3] — 2026-04-08
+
+### Fixed
+- In-app updater fix (same as 1.1.4 — intermediate release)
+
+---
+
 ## [1.1.2] — 2026-04-08
 
 ### Fixed
