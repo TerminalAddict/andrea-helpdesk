@@ -295,7 +295,8 @@ class UpdateController
                     $pdo->exec($stmt);
                 } catch (\PDOException $e) {
                     $msg  = $e->getMessage();
-                    $code = (int)$e->getCode();
+                    // Use driver-specific error code (e.g. MySQL 1060); getCode() returns SQLSTATE string
+                    $code = isset($e->errorInfo[1]) ? (int)$e->errorInfo[1] : 0;
                     // MySQL 1060 = Duplicate column name, 1061 = Duplicate key name, 1068 = Multiple primary key
                     // These mean the schema change was already applied manually — treat as success
                     if (in_array($code, [1060, 1061, 1068], true)) {

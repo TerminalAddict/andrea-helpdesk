@@ -268,6 +268,9 @@ Create a new ticket on behalf of a customer. The customer is upserted by email.
 | `channel` | string | no | Default: `phone` |
 | `assigned_agent_id` | int | no | Assign immediately |
 | `parent_ticket_id` | int | no | Create as child of this ticket |
+| `due_at` | string | no | Due date/time. Accepts `YYYY-MM-DDTHH:MM`, `YYYY-MM-DD HH:MM:SS`, or `YYYY-MM-DD`. |
+| `due_end` | string | no | End of a multi-day range. Same formats as `due_at`. |
+| `due_all_day` | bool | no | `1` = all-day event; `0` = timed event. |
 
 **Response `201`** — ticket object.
 

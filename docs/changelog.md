@@ -4,6 +4,15 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
+## [1.1.5] — 2026-04-08
+
+### Fixed
+- Added migration `016_due_dates_repair.sql` to ensure `due_at`, `due_end`, `due_all_day` columns are present on installs where `015_due_dates.sql` was falsely recorded as applied by the pre-1.1.3 updater
+- Corrected PDO error-code check in migration runner (`errorInfo[1]` instead of `getCode()` which returns a SQLSTATE string, not the MySQL numeric code)
+- Due date fields (`due_at`, `due_end`, `due_all_day`) now accepted on `POST /api/tickets` (new ticket form)
+
+---
+
 ## [1.1.4] — 2026-04-08
 
 ### Fixed
