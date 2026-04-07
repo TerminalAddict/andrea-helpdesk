@@ -11,6 +11,7 @@ const App = {
         '/tickets':        'TicketsView',
         '/tickets/new':    'TicketNewView',
         '/tickets/:id':    'TicketDetailView',
+        '/calendar':       'CalendarView',
         '/customers':      'CustomersView',
         '/customers/:id':  'CustomerDetailView',
         '/admin/agents':   'AgentsView',
@@ -147,7 +148,7 @@ const App = {
         // Get view from registry (const declarations don't attach to window)
         const viewRegistry = {
             DashboardView, LoginView, TicketsView, TicketNewView,
-            TicketDetailView, CustomersView, CustomerDetailView,
+            TicketDetailView, CalendarView, CustomersView, CustomerDetailView,
             AgentsView, SettingsView, ReportsView,
             KnowledgeBaseView, KbArticleView,
             PortalLoginView, PortalSetPasswordView, PortalView, PortalTicketView,

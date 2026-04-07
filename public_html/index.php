@@ -106,6 +106,7 @@ window.AppConfig = {
 <script src="/assets/js/views/agents.js"></script>
 <script src="/assets/js/views/settings.js"></script>
 <script src="/assets/js/views/reports.js"></script>
+<script src="/assets/js/views/calendar.js"></script>
 <script src="/assets/js/views/knowledge-base.js"></script>
 <script src="/assets/js/views/portal.js"></script>
 

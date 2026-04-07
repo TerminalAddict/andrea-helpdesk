@@ -22,6 +22,7 @@ All API endpoints are served under the `/api` prefix. The API returns JSON for a
 - [Knowledge base endpoints](#knowledge-base-endpoints)
 - [Portal auth endpoints](#portal-auth-endpoints)
 - [Portal ticket endpoints](#portal-ticket-endpoints)
+- [Calendar endpoints](#calendar-endpoints)
 - [Version endpoints](#version-endpoints)
 - [Update endpoints](#update-endpoints)
 
@@ -300,6 +301,9 @@ Update a ticket's subject, priority, assigned agent, or customer. Changes are re
 | `assigned_agent_id` | int\|null | Assign or unassign |
 | `customer_id` | int | Change the primary customer on the ticket |
 | `suppress_emails` | bool | `1` to suppress all outbound customer emails for this ticket; `0` to resume. Does not affect Slack or agent notifications. |
+| `due_at` | string\|empty | Due date/time. Accepts `YYYY-MM-DDTHH:MM` (datetime-local), `YYYY-MM-DD HH:MM:SS`, or `YYYY-MM-DD` (date only). Send empty string to clear. |
+| `due_end` | string\|empty | End of a multi-day or time-range due date. Same formats as `due_at`. Optional. |
+| `due_all_day` | bool | `1` = all-day event (date only, no specific time); `0` = timed event. |
 
 If `assigned_agent_id` changes, an assignment notification is sent to the new agent. If `subject`, `customer_id`, or `suppress_emails` changes, a system event is added to the ticket thread recording the change and the agent who made it.
 
@@ -1387,6 +1391,80 @@ Upload a file attachment from a customer. Supports multiple files.
 **Request:** `multipart/form-data` with `file` field(s).
 
 **Response `201`** — array of attachment objects.
+
+---
+
+## Calendar endpoints
+
+### `GET /api/calendar/events`
+
+**Auth:** `auth:agent`
+
+Returns all tickets with a due date, optionally filtered to a date range. Used by the in-app Calendar view.
+
+**Query parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `from` | `YYYY-MM-DD` | Start of range (inclusive). |
+| `to` | `YYYY-MM-DD` | End of range (inclusive). |
+
+**Response `200`**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1, "ticket_number": "HD-2026-04-08-0001", "subject": "Printer broken",
+      "status": "open", "priority": "high",
+      "due_at": "2026-04-10 09:00:00", "due_end": null, "due_all_day": 0,
+      "customer_name": "Jane Smith"
+    }
+  ]
+}
+```
+
+---
+
+### `GET /api/calendar/token`
+
+**Auth:** `auth:agent`
+
+Generate (or regenerate) the authenticated agent's personal iCal subscription token and returns ready-to-use URLs. The token is a deterministic HMAC — no DB storage required.
+
+**Response `200`**
+
+```json
+{
+  "success": true,
+  "data": {
+    "token": "abc123...",
+    "agent_id": 7,
+    "ical_url":   "https://support.example.com/api/calendar/ical?agent_id=7&token=abc123...",
+    "webcal_url": "webcal://support.example.com/api/calendar/ical?agent_id=7&token=abc123..."
+  }
+}
+```
+
+---
+
+### `GET /api/calendar/ical`
+
+**Auth:** HMAC token (no JWT — designed for calendar app subscriptions)
+
+Returns an iCal (`.ics`) feed of all open tickets with due dates for the agent identified by `agent_id`. Includes `VALARM` reminders 1 day and 1 hour before each due date. Each event has a `URL:` property linking directly to the ticket in the app.
+
+**Query parameters**
+
+| Parameter | Description |
+|-----------|-------------|
+| `agent_id` | Agent ID (integer) |
+| `token` | HMAC-SHA256 token from `GET /api/calendar/token` |
+
+**Response `200`** — `Content-Type: text/calendar; charset=utf-8`
+
+**Response `401`** — plain text `Unauthorized` if token is invalid or agent is inactive.
 
 ---
 

@@ -13,6 +13,7 @@ use Andrea\Helpdesk\Agents\AgentController;
 use Andrea\Helpdesk\Settings\SettingsController;
 use Andrea\Helpdesk\Core\VersionController;
 use Andrea\Helpdesk\Core\UpdateController;
+use Andrea\Helpdesk\Tickets\CalendarController;
 use Andrea\Helpdesk\IMAP\ImapAccountController;
 use Andrea\Helpdesk\Reports\ReportController;
 use Andrea\Helpdesk\KnowledgeBase\KbController;
@@ -52,6 +53,11 @@ return [
     ['DELETE', '/api/tickets/:id/participants/:participant_id', TicketController::class, 'removeParticipant', ['auth:agent']],
     ['POST',   '/api/tickets/:id/tags',                     TicketController::class, 'addTags',         ['auth:agent']],
     ['DELETE', '/api/tickets/:id/tags/:tag_id',             TicketController::class, 'removeTag',       ['auth:agent']],
+
+    // ── Calendar ─────────────────────────────────────────────────────────────────
+    ['GET', '/api/calendar/token',  CalendarController::class, 'token',  ['auth:agent']],
+    ['GET', '/api/calendar/events', CalendarController::class, 'events', ['auth:agent']],
+    ['GET', '/api/calendar/ical',   CalendarController::class, 'ical',   []],   // HMAC token auth
 
     // ── Replies ───────────────────────────────────────────────────────────────
     ['GET',  '/api/tickets/:id/replies',     ReplyController::class, 'index', ['auth:agent']],

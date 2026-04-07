@@ -198,6 +198,53 @@ const TicketDetailView = {
                         </div>
                     </div>
 
+                    <!-- Due Date -->
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-header bg-white fw-semibold py-2 d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-calendar-event me-2"></i>Due Date</span>
+                            ${t.due_at
+                                ? `<a href="#" class="btn btn-xs btn-outline-danger btn-sm py-0 px-2" id="btn-clear-due" style="font-size:.75rem;">Clear</a>`
+                                : ''}
+                        </div>
+                        <div class="card-body py-2">
+                            <div id="due-date-display">
+                                ${t.due_at
+                                    ? (() => {
+                                        const overdue = !t.due_all_day && new Date(t.due_at.replace(' ', 'T')) < new Date()
+                                            && !['resolved','closed'].includes(t.status);
+                                        return `<div class="small ${overdue ? 'text-danger fw-semibold' : ''}">
+                                            ${overdue ? '<i class="bi bi-exclamation-circle me-1"></i>' : '<i class="bi bi-calendar-check me-1 text-muted"></i>'}
+                                            ${this.formatDueDate(t)}
+                                        </div>`;
+                                    })()
+                                    : '<div class="small text-muted">No due date</div>'}
+                                <a href="#" class="small text-primary mt-1 d-inline-block" id="btn-edit-due">
+                                    ${t.due_at ? 'Edit' : 'Set due date'}
+                                </a>
+                            </div>
+                            <div id="due-date-form" style="display:none;">
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="due-all-day" ${t.due_all_day ? 'checked' : ''}>
+                                    <label class="form-check-label small" for="due-all-day">All day</label>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label small mb-1">Start</label>
+                                    <input type="${t.due_all_day ? 'date' : 'datetime-local'}" class="form-control form-control-sm" id="due-start"
+                                        value="${t.due_at ? this.toInputVal(t.due_at, !!t.due_all_day) : ''}">
+                                </div>
+                                <div class="mb-2" id="due-end-wrap">
+                                    <label class="form-label small mb-1">End <span class="text-muted">(optional, for multi-day)</span></label>
+                                    <input type="${t.due_all_day ? 'date' : 'datetime-local'}" class="form-control form-control-sm" id="due-end"
+                                        value="${t.due_end ? this.toInputVal(t.due_end, !!t.due_all_day) : ''}">
+                                </div>
+                                <div class="d-flex gap-1">
+                                    <button class="btn btn-sm btn-primary flex-fill" id="btn-save-due">Save</button>
+                                    <button class="btn btn-sm btn-outline-secondary" id="btn-cancel-due">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Customer Info -->
                     <div class="card border-0 shadow-sm mb-3">
                         <div class="card-header bg-white fw-semibold py-2 d-flex justify-content-between align-items-center">
@@ -484,6 +531,40 @@ const TicketDetailView = {
         return (bytes/1048576).toFixed(1) + ' MB';
     },
 
+    /** Format a ticket's due date for sidebar display. */
+    formatDueDate(t) {
+        if (!t.due_at) return '–';
+        const fmt = (str, allDay) => {
+            const d = new Date(str.replace(' ', 'T'));
+            if (allDay) return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+            return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+                + ' ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+        };
+        const allDay = !!t.due_all_day;
+        let s = fmt(t.due_at, allDay);
+        if (t.due_end) s += ' → ' + fmt(t.due_end, allDay);
+        return s;
+    },
+
+    /** Convert a MySQL datetime string to an <input type="date|datetime-local"> value. */
+    toInputVal(mysqlDt, allDay) {
+        if (!mysqlDt) return '';
+        // MySQL: "2026-04-08 09:00:00" → ISO: "2026-04-08T09:00"
+        const iso = mysqlDt.replace(' ', 'T').substring(0, 16);
+        return allDay ? iso.substring(0, 10) : iso;
+    },
+
+    async saveDueDate(start, end, allDay) {
+        try {
+            const payload = { due_at: start || '', due_end: end || '', due_all_day: allDay ? 1 : 0 };
+            await API.put('/tickets/' + this.ticket.id, payload);
+            App.toast(start ? 'Due date saved' : 'Due date cleared', 'success');
+            await this.reload();
+        } catch (e) {
+            App.toast(e.message || 'Failed to save due date', 'error');
+        }
+    },
+
     bindEvents() {
         const ticketId = this.ticket.id;
 
@@ -588,6 +669,35 @@ const TicketDetailView = {
 
         // Send reply
         $('#btn-send-reply').on('click', () => this.sendReply());
+
+        // Due date
+        $(document).on('click', '#btn-edit-due, #btn-clear-due', (e) => {
+            e.preventDefault();
+            if ($(e.currentTarget).is('#btn-clear-due')) {
+                this.saveDueDate(null, null, false);
+            } else {
+                $('#due-date-display').hide();
+                $('#due-date-form').show();
+            }
+        });
+        $(document).on('click', '#btn-cancel-due', (e) => {
+            e.preventDefault();
+            $('#due-date-form').hide();
+            $('#due-date-display').show();
+        });
+        $(document).on('change', '#due-all-day', () => {
+            const allDay = $('#due-all-day').is(':checked');
+            const type   = allDay ? 'date' : 'datetime-local';
+            $('#due-start, #due-end').attr('type', type).val('');
+        });
+        $(document).on('click', '#btn-save-due', async (e) => {
+            e.preventDefault();
+            const allDay = $('#due-all-day').is(':checked');
+            const start  = $('#due-start').val().trim();
+            const end    = $('#due-end').val().trim();
+            if (!start) { App.toast('Please enter a start date', 'error'); return; }
+            await this.saveDueDate(start, end || null, allDay);
+        });
 
         // Tags
         $(document).on('change', '#tag-select', (e) => {

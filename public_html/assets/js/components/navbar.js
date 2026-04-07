@@ -24,6 +24,11 @@ const Navbar = {
                 </a>
             </li>
             <li class="nav-item">
+                <a class="nav-link" href="#/calendar" data-route="/calendar">
+                    <i class="bi bi-calendar3"></i> Calendar
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link" href="#/customers" data-route="/customers">
                     <i class="bi bi-people"></i> Customers
                 </a>

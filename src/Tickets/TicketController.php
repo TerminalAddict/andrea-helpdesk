@@ -104,6 +104,29 @@ class TicketController
             $data['suppress_emails'] = (int)(bool)$data['suppress_emails'];
         }
 
+        // Due date fields — may be explicitly set to null/empty to clear
+        foreach (['due_at', 'due_end'] as $field) {
+            if ($request->input($field) !== null) {
+                $val = trim((string)$request->input($field));
+                if ($val === '') {
+                    $data[$field] = null;
+                } else {
+                    // Accept datetime-local ("2026-04-08T09:00"), MySQL datetime, or date-only
+                    $dt = \DateTime::createFromFormat('Y-m-d\TH:i', $val)
+                        ?: \DateTime::createFromFormat('Y-m-d H:i:s', $val)
+                        ?: \DateTime::createFromFormat('Y-m-d H:i', $val)
+                        ?: \DateTime::createFromFormat('Y-m-d', $val);
+                    if (!$dt) {
+                        throw new HttpException("Invalid date format for {$field}", 422);
+                    }
+                    $data[$field] = $dt->format('Y-m-d H:i:s');
+                }
+            }
+        }
+        if ($request->input('due_all_day') !== null) {
+            $data['due_all_day'] = (int)(bool)$request->input('due_all_day');
+        }
+
         if (isset($data['subject']) && strlen($data['subject']) > 255) {
             throw new HttpException('Subject must not exceed 255 characters', 422);
         }
