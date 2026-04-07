@@ -37,7 +37,7 @@ class UpdateController
             'PHP ZipArchive extension',
             $ok,
             $ok ? 'Available' : 'Not loaded',
-            'Enable the php-zip extension. Ubuntu/Debian: sudo apt install php-zip && sudo service apache2 restart. cPanel: enable "Zip" under MultiPHP INI Editor → PHP Extensions.'
+            'Enable the php-zip extension. Ubuntu/Debian: install the version-specific package matching your Apache PHP — run "php -v" to find the version, then e.g. sudo apt install php8.2-zip && sudo phpenmod zip && sudo service apache2 restart. If "php -v" shows a different version to what Apache uses, check: apache2 -v and ls /etc/php/. cPanel: enable "Zip" under MultiPHP INI Editor → PHP Extensions.'
         );
 
         // HTTP download
