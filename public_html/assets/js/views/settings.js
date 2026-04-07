@@ -907,11 +907,28 @@ const SettingsView = {
 
     bindProfileSave() {
         $('#btn-save-profile').on('click', () => this.saveProfile());
-        $('#btn-clear-cache').on('click', () => {
-            const token = localStorage.getItem('andrea_refresh_token');
+        $('#btn-clear-cache').on('click', async () => {
+            // Preserve auth tokens across the wipe
+            const accessToken  = localStorage.getItem('andrea_access_token');
+            const refreshToken = localStorage.getItem('andrea_refresh_token');
+
+            // Clear all browser storage
             localStorage.clear();
-            if (token) localStorage.setItem('andrea_refresh_token', token);
-            location.reload(true);
+            sessionStorage.clear();
+
+            // Clear Cache Storage API (service workers etc.)
+            if ('caches' in window) {
+                const keys = await caches.keys();
+                await Promise.all(keys.map(k => caches.delete(k)));
+            }
+
+            // Restore auth so the user stays logged in
+            if (accessToken)  localStorage.setItem('andrea_access_token', accessToken);
+            if (refreshToken) localStorage.setItem('andrea_refresh_token', refreshToken);
+
+            // Hard navigation with cache-busting query string forces a fresh HTTP fetch
+            // (location.reload(true) is deprecated and browsers often ignore it)
+            window.location.href = '/?_=' + Date.now() + '#/admin/settings';
         });
     },
 
