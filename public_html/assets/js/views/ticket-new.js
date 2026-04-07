@@ -58,6 +58,25 @@ const TicketNewView = {
                                 </select>
                             </div>
                             <div class="col-12">
+                                <label class="form-label">Due Date <span class="text-muted fw-normal small">(optional)</span></label>
+                                <div class="border rounded p-3 bg-light">
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox" id="nt-due-allday">
+                                        <label class="form-check-label small" for="nt-due-allday">All day</label>
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-md-6">
+                                            <label class="form-label small mb-1">Start</label>
+                                            <input type="datetime-local" class="form-control form-control-sm" id="nt-due-at">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small mb-1">End <span class="text-muted">(optional, multi-day)</span></label>
+                                            <input type="datetime-local" class="form-control form-control-sm" id="nt-due-end">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12">
                                 <label class="form-label">CC / Participants</label>
                                 <div class="border rounded p-2 d-flex flex-wrap gap-1 align-items-center" id="nt-cc-container" style="min-height:2.5rem;cursor:text;">
                                     <div class="position-relative d-flex" style="min-width:220px;flex:1;">
@@ -212,6 +231,12 @@ const TicketNewView = {
         });
 
         RichEditor.init('nt-body', { placeholder: 'Describe the issue…', minHeight: '150px' });
+
+        // All-day toggle switches input types
+        $('#nt-due-allday').on('change', function() {
+            const type = $(this).is(':checked') ? 'date' : 'datetime-local';
+            $('#nt-due-at, #nt-due-end').attr('type', type).val('');
+        });
     },
 
     async searchCustomers(q) {
@@ -305,6 +330,14 @@ const TicketNewView = {
                 assigned_agent_id: assigned || undefined,
             };
             if (this._parentId) payload.parent_ticket_id = this._parentId;
+
+            const dueAt  = $('#nt-due-at').val().trim();
+            const dueEnd = $('#nt-due-end').val().trim();
+            if (dueAt) {
+                payload.due_at     = dueAt;
+                payload.due_all_day = $('#nt-due-allday').is(':checked') ? 1 : 0;
+                if (dueEnd) payload.due_end = dueEnd;
+            }
 
             const res = await API.post('/tickets', payload);
             const ticketId = res.data.id;

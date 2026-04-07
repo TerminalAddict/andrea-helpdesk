@@ -76,6 +76,22 @@ class TicketController
             'parent_ticket_id'  => $request->input('parent_ticket_id'),
         ];
 
+        // Optional due date
+        foreach (['due_at', 'due_end'] as $field) {
+            $val = trim((string)$request->input($field, ''));
+            if ($val !== '') {
+                $dt = \DateTime::createFromFormat('Y-m-d\TH:i', $val)
+                    ?: \DateTime::createFromFormat('Y-m-d H:i:s', $val)
+                    ?: \DateTime::createFromFormat('Y-m-d H:i', $val)
+                    ?: \DateTime::createFromFormat('Y-m-d', $val);
+                if (!$dt) throw new HttpException("Invalid date format for {$field}", 422);
+                $data[$field] = $dt->format('Y-m-d H:i:s');
+            }
+        }
+        if ($request->input('due_all_day') !== null) {
+            $data['due_all_day'] = (int)(bool)$request->input('due_all_day');
+        }
+
         $result = $this->service->createFromAgent($data, $request->agent->id);
         Response::created($result['ticket'], 'Ticket created');
     }
