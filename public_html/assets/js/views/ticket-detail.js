@@ -5,6 +5,7 @@ const TicketDetailView = {
     ticket: null,
     agents: [],
     allTags: [],
+    pendingReplyFiles: [],
 
     render(params) {
         this._params = params;
@@ -18,6 +19,7 @@ const TicketDetailView = {
 
     async init(params) {
         this._params = params;
+        this.pendingReplyFiles = [];
         try {
             const [ticketRes, agentsRes, tagsRes] = await Promise.all([
                 API.get('/tickets/' + params.id),
@@ -499,6 +501,41 @@ const TicketDetailView = {
         ).join('');
     },
 
+    fileKey(file) {
+        return [file.name, file.size, file.lastModified].join('::');
+    },
+
+    addPendingReplyFiles(files) {
+        for (const file of files) {
+            const key = this.fileKey(file);
+            if (!this.pendingReplyFiles.some(f => this.fileKey(f) === key)) {
+                this.pendingReplyFiles.push(file);
+            }
+        }
+        this.renderPendingReplyFiles();
+    },
+
+    removePendingReplyFile(index) {
+        this.pendingReplyFiles.splice(index, 1);
+        this.renderPendingReplyFiles();
+    },
+
+    renderPendingReplyFiles() {
+        if (!this.pendingReplyFiles.length) {
+            $('#reply-attachments-preview').empty();
+            return;
+        }
+
+        const html = this.pendingReplyFiles.map((file, index) => `
+            <span class="badge bg-light text-dark border d-inline-flex align-items-center gap-2">
+                <span title="${App.escapeHtml(file.name)}">${App.escapeHtml(file.name)}</span>
+                <button type="button" class="btn-close" aria-label="Remove file" data-index="${index}" style="font-size:.65rem;"></button>
+            </span>
+        `).join('');
+
+        $('#reply-attachments-preview').html(html);
+    },
+
     renderRelatedTickets(relations, children, parent) {
         let html = '';
         if (parent) {
@@ -650,12 +687,12 @@ const TicketDetailView = {
         });
 
         // Attachment preview
-        $('#reply-files').on('change', function() {
-            const files = Array.from(this.files);
-            const preview = files.map(f =>
-                `<span class="badge bg-light text-dark border">${App.escapeHtml(f.name)}</span>`
-            ).join('');
-            $('#reply-attachments-preview').html(preview);
+        $('#reply-files').on('change', (e) => {
+            this.addPendingReplyFiles(Array.from(e.currentTarget.files || []));
+            e.currentTarget.value = '';
+        });
+        $(document).off('click.replyfiles', '#reply-attachments-preview .btn-close').on('click.replyfiles', '#reply-attachments-preview .btn-close', (e) => {
+            this.removePendingReplyFile(parseInt($(e.currentTarget).data('index'), 10));
         });
 
         // Toggle reply editor visibility
@@ -796,7 +833,7 @@ const TicketDetailView = {
         const type             = $('input[name="replyType"]:checked').val();
         const body             = RichEditor.getText('reply-body');
         const status           = $('#reply-status-change').val();
-        const files            = document.getElementById('reply-files').files;
+        const files            = this.pendingReplyFiles;
         const includeSignature = type !== 'note' && $('#reply-include-signature').is(':checked');
 
         if (!body) { App.toast('Reply body is required', 'warning'); return; }
@@ -818,7 +855,8 @@ const TicketDetailView = {
 
             RichEditor.clear('reply-body');
             $('#reply-files').val('');
-            $('#reply-attachments-preview').empty();
+            this.pendingReplyFiles = [];
+            this.renderPendingReplyFiles();
             App.toast(type === 'note' ? 'Note added' : 'Reply sent');
             await this.reload();
         } catch (e) {

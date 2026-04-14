@@ -2,6 +2,8 @@
  * New Ticket View (create on behalf of customer / phone channel)
  */
 const TicketNewView = {
+    _files: [],
+
     render(params) {
         this._params = params || {};
         return `
@@ -93,6 +95,7 @@ const TicketNewView = {
                             <div class="col-12 mt-5 pt-5">
                                 <label class="form-label">Attachments</label>
                                 <input type="file" class="form-control" id="nt-files" multiple>
+                                <div id="nt-files-preview" class="d-flex flex-wrap gap-1 mt-2"></div>
                             </div>
                             ${this._params.parent_id ? `
                             <div class="col-12">
@@ -117,6 +120,7 @@ const TicketNewView = {
     async init(params) {
         this._params       = params || {};
         this._participants = [];
+        this._files        = [];
 
         // Load agents
         try {
@@ -232,11 +236,54 @@ const TicketNewView = {
 
         RichEditor.init('nt-body', { placeholder: 'Describe the issue…', minHeight: '150px' });
 
+        $('#nt-files').on('change', (e) => {
+            this.addFiles(Array.from(e.currentTarget.files || []));
+            e.currentTarget.value = '';
+        });
+        $(document).off('click.newticketfiles', '#nt-files-preview .btn-close').on('click.newticketfiles', '#nt-files-preview .btn-close', (e) => {
+            this.removeFile(parseInt($(e.currentTarget).data('index'), 10));
+        });
+
         // All-day toggle switches input types
         $('#nt-due-allday').on('change', function() {
             const type = $(this).is(':checked') ? 'date' : 'datetime-local';
             $('#nt-due-at, #nt-due-end').attr('type', type).val('');
         });
+    },
+
+    fileKey(file) {
+        return [file.name, file.size, file.lastModified].join('::');
+    },
+
+    addFiles(files) {
+        for (const file of files) {
+            const key = this.fileKey(file);
+            if (!this._files.some(f => this.fileKey(f) === key)) {
+                this._files.push(file);
+            }
+        }
+        this.renderFiles();
+    },
+
+    removeFile(index) {
+        this._files.splice(index, 1);
+        this.renderFiles();
+    },
+
+    renderFiles() {
+        if (!this._files.length) {
+            $('#nt-files-preview').empty();
+            return;
+        }
+
+        const html = this._files.map((file, index) => `
+            <span class="badge bg-light text-dark border d-inline-flex align-items-center gap-2">
+                <span title="${App.escapeHtml(file.name)}">${App.escapeHtml(file.name)}</span>
+                <button type="button" class="btn-close" aria-label="Remove file" data-index="${index}" style="font-size:.65rem;"></button>
+            </span>
+        `).join('');
+
+        $('#nt-files-preview').html(html);
     },
 
     async searchCustomers(q) {
@@ -313,7 +360,7 @@ const TicketNewView = {
         const priority = $('#nt-priority').val();
         const channel  = $('#nt-channel').val();
         const assigned = $('#nt-assigned').val();
-        const files    = document.getElementById('nt-files').files;
+        const files    = this._files;
 
         $('#nt-spinner').removeClass('d-none');
         $('#nt-submit').prop('disabled', true);
@@ -355,6 +402,8 @@ const TicketNewView = {
             }
 
             App.toast('Ticket created successfully', 'success');
+            this._files = [];
+            this.renderFiles();
             App.navigate('/tickets/' + ticketId);
         } catch (e) {
             App.toast(e.message, 'error');
