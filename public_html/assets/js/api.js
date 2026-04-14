@@ -6,6 +6,14 @@ const API = {
     baseUrl: (window.AppConfig && window.AppConfig.apiBase) || '/api',
     currentUser: null,
     _refreshing: false,
+    _skipRefreshPaths: new Set([
+        '/auth/login',
+        '/auth/refresh',
+        '/auth/logout',
+        '/auth/magic-link',
+        '/portal/auth/magic-link',
+        '/portal/auth/verify-magic-link',
+    ]),
 
     getHeaders(isFormData) {
         const token = this._getItem('andrea_access_token');
@@ -64,6 +72,8 @@ const API = {
 
     async request(method, path, data = null, isFormData = false) {
         const url = this.baseUrl + path;
+        const hasAccessToken = !!this._getItem('andrea_access_token');
+        const shouldTryRefresh = hasAccessToken && !this._skipRefreshPaths.has(path);
         const options = {
             method,
             headers: this.getHeaders(isFormData),
@@ -80,7 +90,7 @@ const API = {
         let res = await fetch(url, options);
 
         // Auto-refresh on 401
-        if (res.status === 401 && !this._refreshing) {
+        if (res.status === 401 && shouldTryRefresh && !this._refreshing) {
             this._refreshing = true;
             const refreshed = await this.refreshToken();
             this._refreshing = false;

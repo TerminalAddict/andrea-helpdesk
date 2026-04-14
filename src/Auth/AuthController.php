@@ -42,7 +42,7 @@ class AuthController
             );
 
             if (!$agent || !$this->passwords->verify($data['password'], $agent['password_hash'])) {
-                throw new AuthException('Invalid email or password');
+                throw new AuthException('Wrong Username and/or Password');
             }
 
             $this->db->execute("UPDATE agents SET last_login_at = NOW() WHERE id = ?", [$agent['id']]);
@@ -62,11 +62,11 @@ class AuthController
             );
 
             if (!$customer || !$customer['portal_password_hash']) {
-                throw new AuthException('Invalid email or password');
+                throw new AuthException('Wrong Username and/or Password');
             }
 
             if (!$this->passwords->verify($data['password'], $customer['portal_password_hash'])) {
-                throw new AuthException('Invalid email or password');
+                throw new AuthException('Wrong Username and/or Password');
             }
 
             $accessToken  = $this->jwt->issueAccessToken($this->jwt->buildCustomerPayload($customer));
