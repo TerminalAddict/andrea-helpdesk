@@ -47,6 +47,17 @@ class CustomerRepository
         }
 
         $whereClause = implode(' AND ', $where);
+        $sortMap = [
+            'name'        => 'c.name',
+            'email'       => 'c.email',
+            'phone'       => 'c.phone',
+            'ticket_count'=> 'ticket_count',
+            'created_at'  => 'c.created_at',
+        ];
+        $sortKey = (string)($filters['sort'] ?? 'name');
+        $sort    = $sortMap[$sortKey] ?? 'c.name';
+        $dir     = strtolower((string)($filters['dir'] ?? 'asc')) === 'desc' ? 'DESC' : 'ASC';
+
         $total       = $this->db->count("SELECT COUNT(*) FROM customers WHERE {$whereClause}", $params);
         $offset      = ($page - 1) * $perPage;
 
@@ -55,7 +66,7 @@ class CustomerRepository
                     (SELECT COUNT(*) FROM tickets WHERE customer_id = c.id AND deleted_at IS NULL) AS ticket_count
              FROM customers c
              WHERE {$whereClause}
-             ORDER BY c.name ASC
+             ORDER BY {$sort} {$dir}, c.id ASC
              LIMIT {$perPage} OFFSET {$offset}",
             $params
         );

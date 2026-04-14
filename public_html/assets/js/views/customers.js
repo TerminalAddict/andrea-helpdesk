@@ -2,6 +2,9 @@
  * Customers List View
  */
 const CustomersView = {
+    _sort: 'name',
+    _dir: 'asc',
+
     render() {
         return `
         <div class="container-fluid p-4">
@@ -114,6 +117,9 @@ const CustomersView = {
     },
 
     async init() {
+        this._sort = 'name';
+        this._dir = 'asc';
+
         let searchTimer;
         $('#cust-search').on('input', () => {
             clearTimeout(searchTimer);
@@ -121,6 +127,8 @@ const CustomersView = {
         });
         $('#cust-reset').on('click', () => {
             $('#cust-search').val('');
+            this._sort = 'name';
+            this._dir = 'asc';
             this.load();
         });
 
@@ -231,7 +239,12 @@ const CustomersView = {
     },
 
     async load(page = 1) {
-        const params = { page, per_page: 25 };
+        const params = {
+            page,
+            per_page: 25,
+            sort: this._sort,
+            dir: this._dir,
+        };
         const q = $('#cust-search').val().trim();
         if (q) params.q = q;
 
@@ -260,6 +273,15 @@ const CustomersView = {
                 <td class="small text-muted text-nowrap">${App.formatDate(c.created_at)}</td>
             </tr>`).join('');
 
+        const sortIcon = (field) => {
+            if (this._sort !== field) return '<i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:.75rem;"></i>';
+            return this._dir === 'asc'
+                ? '<i class="bi bi-arrow-up ms-1" style="font-size:.75rem;"></i>'
+                : '<i class="bi bi-arrow-down ms-1" style="font-size:.75rem;"></i>';
+        };
+        const th = (label, field) =>
+            `<th data-sort="${field}" style="cursor:pointer;white-space:nowrap;user-select:none;">${label}${sortIcon(field)}</th>`;
+
         $('#customers-table-wrap').html(`
             <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom bg-light">
                 <span class="small text-muted">${total} customer${total !== 1 ? 's' : ''}</span>
@@ -268,12 +290,27 @@ const CustomersView = {
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Name</th><th>Email</th><th>Phone</th><th>Tickets</th><th>Since</th>
+                            ${th('Name', 'name')}
+                            ${th('Email', 'email')}
+                            ${th('Phone', 'phone')}
+                            ${th('Tickets', 'ticket_count')}
+                            ${th('Since', 'created_at')}
                         </tr>
                     </thead>
                     <tbody>${rows}</tbody>
                 </table>
             </div>`);
+
+        $('#customers-table-wrap th[data-sort]').on('click', (e) => {
+            const field = $(e.currentTarget).data('sort');
+            if (this._sort === field) {
+                this._dir = this._dir === 'asc' ? 'desc' : 'asc';
+            } else {
+                this._sort = field;
+                this._dir = 'asc';
+            }
+            this.load(1);
+        });
 
         $('.cust-row').on('click', function() {
             App.navigate('/customers/' + $(this).data('id'));

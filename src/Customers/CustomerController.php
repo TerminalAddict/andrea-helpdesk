@@ -32,7 +32,12 @@ class CustomerController
     {
         $page    = max(1, (int)$request->input('page', 1));
         $perPage = min(100, max(1, (int)$request->input('per_page', 25)));
-        $filters = ['q' => $request->input('q'), 'company' => $request->input('company')];
+        $filters = [
+            'q'       => $request->input('q'),
+            'company' => $request->input('company'),
+            'sort'    => $request->input('sort', 'name'),
+            'dir'     => $request->input('dir', 'asc'),
+        ];
         $result  = $this->repo->findAll(array_filter($filters), $page, $perPage);
 
         $result['items'] = array_map([$this, 'sanitise'], $result['items']);
