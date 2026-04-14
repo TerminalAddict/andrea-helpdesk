@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Andrea\Helpdesk\Tickets;
 
 use Andrea\Helpdesk\Core\Database;
+use Andrea\Helpdesk\Core\Sanitizer;
 use Andrea\Helpdesk\Customers\CustomerRepository;
 use Andrea\Helpdesk\Notifications\NotificationService;
 use Andrea\Helpdesk\Settings\SettingsService;
@@ -51,11 +52,12 @@ class TicketService
             $ticket = $this->ticketRepo->findById($ticketId);
 
             // Create initial reply
+            $safeHtml = Sanitizer::html($emailData['body_html'] ?? '');
             $this->replyRepo->create([
                 'ticket_id'      => $ticketId,
                 'author_type'    => 'customer',
                 'customer_id'    => $customer['id'],
-                'body_html'      => $emailData['body_html'] ?? nl2br(htmlspecialchars($emailData['body_text'] ?? '')),
+                'body_html'      => $safeHtml ?: nl2br(htmlspecialchars($emailData['body_text'] ?? '')),
                 'body_text'      => $emailData['body_text'] ?? '',
                 'is_private'     => 0,
                 'direction'      => 'inbound',

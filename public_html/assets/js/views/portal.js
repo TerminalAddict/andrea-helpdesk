@@ -512,7 +512,7 @@ const PortalTicketView = {
                         </div>
                         <div class="card-body py-3">
                             ${r.body_html
-                                ? `<div class="reply-html">${DOMPurify.sanitize(r.body_html)}</div>`
+                                ? `<div class="reply-html">${DOMPurify.sanitize(r.body_html, { FORBID_TAGS: ['style', 'link', 'meta', 'base'] })}</div>`
                                 : `<pre class="mb-0" style="white-space:pre-wrap;font-family:inherit;">${App.escapeHtml(r.body || '')}</pre>`}
                             ${attachments ? `<div class="mt-2">${attachments}</div>` : ''}
                         </div>

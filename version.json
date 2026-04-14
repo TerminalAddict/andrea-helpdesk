@@ -1,5 +1,5 @@
 {
-    "version": "1.1.7",
+    "version": "1.1.8",
     "released": "2026-04-14",
-    "description": "Add sortable columns to customer list with server-side sorting that works across pagination"
+    "description": "Harden email HTML sanitization to prevent embedded style rules from leaking into app UI"
 }

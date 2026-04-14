@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Andrea\Helpdesk\Tickets;
 
 use Andrea\Helpdesk\Core\Database;
+use Andrea\Helpdesk\Core\Sanitizer;
 use Andrea\Helpdesk\Notifications\NotificationService;
 
 class ReplyService
@@ -93,6 +94,7 @@ class ReplyService
     {
         $ticket = $this->db->fetch("SELECT * FROM tickets WHERE id = ? AND deleted_at IS NULL", [$ticketId]);
         if (!$ticket) throw new \InvalidArgumentException('Ticket not found');
+        $safeHtml = Sanitizer::html($bodyHtml);
 
         $this->db->beginTransaction();
         try {
@@ -100,8 +102,8 @@ class ReplyService
                 'ticket_id'      => $ticketId,
                 'author_type'    => 'customer',
                 'customer_id'    => $customerId,
-                'body_html'      => $bodyHtml,
-                'body_text'      => $bodyText ?: strip_tags($bodyHtml),
+                'body_html'      => $safeHtml,
+                'body_text'      => $bodyText ?: strip_tags($safeHtml),
                 'is_private'     => 0,
                 'direction'      => 'inbound',
                 'raw_message_id' => $rawMessageId ?: null,
