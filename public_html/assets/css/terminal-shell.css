@@ -435,6 +435,14 @@ body::before {
     letter-spacing: 0.01em;
 }
 
+#app a.btn,
+#app a.btn:visited,
+#app a.btn:hover,
+#app a.btn:active {
+    color: var(--bs-btn-color, inherit);
+    text-decoration: none;
+}
+
 #app .btn:hover {
     transform: translateY(-1px);
 }
@@ -836,11 +844,51 @@ body::before {
     --bs-btn-color: #103f2b;
 }
 
+#app .btn-outline-success {
+    --bs-btn-color: color-mix(in srgb, var(--terminal-good) 86%, var(--terminal-text));
+    --bs-btn-border-color: color-mix(in srgb, var(--terminal-good) 78%, transparent);
+    --bs-btn-hover-bg: color-mix(in srgb, var(--terminal-good) 18%, transparent);
+    --bs-btn-hover-border-color: var(--terminal-good);
+    --bs-btn-hover-color: #0f2018;
+    --bs-btn-active-bg: color-mix(in srgb, var(--terminal-good) 30%, transparent);
+    --bs-btn-active-border-color: var(--terminal-good);
+    --bs-btn-active-color: #0f2018;
+}
+
 .terminal-shell-wrap .btn-outline-danger {
     --bs-btn-color: var(--terminal-ruby);
     --bs-btn-border-color: color-mix(in srgb, var(--terminal-ruby) 80%, transparent);
     --bs-btn-hover-bg: color-mix(in srgb, var(--terminal-ruby) 17%, transparent);
     --bs-btn-hover-color: #1e090e;
+}
+
+html[data-theme='dark'] #app .btn-primary {
+    --bs-btn-bg: color-mix(in srgb, var(--terminal-cyan) 78%, #dff3ff);
+    --bs-btn-border-color: color-mix(in srgb, var(--terminal-cyan) 92%, #ffffff);
+    --bs-btn-color: #041423;
+    --bs-btn-hover-bg: color-mix(in srgb, var(--terminal-cyan) 68%, #ffffff);
+    --bs-btn-hover-border-color: color-mix(in srgb, var(--terminal-cyan) 96%, #ffffff);
+    --bs-btn-hover-color: #041423;
+    --bs-btn-active-bg: color-mix(in srgb, var(--terminal-cyan) 60%, #ffffff);
+    --bs-btn-active-border-color: color-mix(in srgb, var(--terminal-cyan) 96%, #ffffff);
+    --bs-btn-active-color: #041423;
+}
+
+html[data-theme='dark'] #app .btn-success {
+    --bs-btn-bg: color-mix(in srgb, var(--terminal-good) 76%, #e6fff5);
+    --bs-btn-border-color: color-mix(in srgb, var(--terminal-good) 94%, #ffffff);
+    --bs-btn-color: #071811;
+}
+
+html[data-theme='dark'] #app .btn-outline-success {
+    --bs-btn-color: #bff8e1;
+    --bs-btn-border-color: color-mix(in srgb, var(--terminal-good) 94%, transparent);
+    --bs-btn-hover-bg: color-mix(in srgb, var(--terminal-good) 74%, #f3fff9);
+    --bs-btn-hover-border-color: color-mix(in srgb, var(--terminal-good) 98%, #ffffff);
+    --bs-btn-hover-color: #071811;
+    --bs-btn-active-bg: color-mix(in srgb, var(--terminal-good) 68%, #ffffff);
+    --bs-btn-active-border-color: color-mix(in srgb, var(--terminal-good) 98%, #ffffff);
+    --bs-btn-active-color: #071811;
 }
 
 #app .container-fluid.py-3 .card,

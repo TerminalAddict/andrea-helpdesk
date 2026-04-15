@@ -1,5 +1,5 @@
 {
-    "version": "1.2.3",
+    "version": "1.2.4",
     "released": "2026-04-16",
-    "description": "Refine dashboard layout and continue polishing terminal theme interactions"
+    "description": "Improve dark-mode button contrast and continue terminal theme polish"
 }

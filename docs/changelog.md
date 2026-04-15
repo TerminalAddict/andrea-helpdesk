@@ -4,6 +4,14 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
+## [1.2.4] — 2026-04-16
+
+### Fixed
+- Improved dark-mode button contrast for primary and success actions so `Create New Ticket`, `New Article`, and IMAP `Poll Now` remain readable
+- Prevented visited-link styling from leaking into anchor buttons in the terminal theme
+
+---
+
 ## [1.2.3] — 2026-04-16
 
 ### Fixed
