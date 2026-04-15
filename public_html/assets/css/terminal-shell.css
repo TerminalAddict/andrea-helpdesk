@@ -3,6 +3,7 @@
 :root {
     --terminal-font-sans: 'Syne', 'IBM Plex Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
     --terminal-font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+    --terminal-font-ticket: 'IBM Plex Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 
     --terminal-bg: #f3f6fb;
     --terminal-bg-soft: #e7ecf6;
@@ -536,10 +537,24 @@ html[data-theme='dark'] .terminal-theme-btn.active {
 
 #app .table .font-monospace,
 #app .font-monospace,
-#app .reply-html,
 #app code,
-#app pre {
+#app .reply-html pre {
     font-family: var(--terminal-font-mono);
+}
+
+#tickets-table-wrap .font-monospace,
+#ticket-detail-wrap .font-monospace,
+#my-tickets-table .font-monospace,
+#recent-tickets-table .font-monospace,
+#all-open-tickets-table .font-monospace,
+#overdue-tickets-table .font-monospace,
+#cust-tickets-body .font-monospace,
+#cust-replies-body .font-monospace,
+#portal-tickets-wrap .font-monospace,
+#portal-ticket-wrap .font-monospace {
+    font-family: var(--terminal-font-ticket);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.01em;
 }
 
 #app .table-row-overdue,
@@ -750,6 +765,31 @@ html[data-theme='dark'] .terminal-theme-btn.active {
     border-color: var(--terminal-border);
 }
 
+#nt-customer-suggestions,
+#nt-cc-suggestions {
+    background: color-mix(in srgb, var(--terminal-surface-raised) 98%, transparent);
+    border: 1px solid var(--terminal-border);
+    border-radius: 12px;
+    overflow: hidden;
+    backdrop-filter: blur(18px);
+    box-shadow: 0 18px 40px rgba(3, 10, 28, 0.18);
+}
+
+#app #nt-customer-suggestions.list-group > .list-group-item,
+#app #nt-cc-suggestions.list-group > .list-group-item {
+    background: color-mix(in srgb, var(--terminal-surface-raised) 100%, #fff) !important;
+    color: var(--terminal-text) !important;
+    border-color: color-mix(in srgb, var(--terminal-border) 85%, transparent) !important;
+}
+
+#app #nt-customer-suggestions.list-group > .list-group-item:hover,
+#app #nt-customer-suggestions.list-group > .list-group-item.nt-suggestion-active,
+#app #nt-cc-suggestions.list-group > .list-group-item:hover,
+#app #nt-cc-suggestions.list-group > .list-group-item.nt-suggestion-active {
+    background: color-mix(in srgb, var(--terminal-cyan) 16%, var(--terminal-surface-raised)) !important;
+    color: var(--terminal-text) !important;
+}
+
 #app .dropdown-menu {
     backdrop-filter: blur(14px);
 }
@@ -840,6 +880,7 @@ html[data-theme='dark'] .terminal-theme-btn.active {
 }
 
 #app .reply-html {
+    font-family: var(--terminal-font-sans);
     overflow-wrap: anywhere;
 }
 
@@ -847,6 +888,14 @@ html[data-theme='dark'] .terminal-theme-btn.active {
 #app .reply-html video,
 #app .reply-html iframe {
     border: 1px solid var(--terminal-border);
+}
+
+#ticket-thread .reply-body > pre,
+#portal-thread .card-body > pre {
+    font-family: var(--terminal-font-ticket);
+    font-size: 0.95rem;
+    line-height: 1.65;
+    letter-spacing: 0.01em;
 }
 
 #app .table .table-info,
@@ -1053,20 +1102,18 @@ html[data-theme='dark'] #app .btn-outline-success {
 @keyframes terminal-screen-enter {
     from {
         opacity: 0;
-        transform: translateY(10px);
-        filter: blur(3px);
+        transform: translateY(4px);
     }
     to {
         opacity: 1;
         transform: translateY(0);
-        filter: blur(0);
     }
 }
 
 @keyframes terminal-panel-fade {
     from {
         opacity: 0;
-        transform: translateY(12px);
+        transform: translateY(6px);
     }
     to {
         opacity: 1;
@@ -1088,7 +1135,7 @@ html[data-theme='dark'] #app .btn-outline-success {
 #app .helpdesk-shell .terminal-screen,
 #app .terminal-portal-shell,
 #app .terminal-login-shell {
-    animation: terminal-screen-enter 340ms cubic-bezier(0.2, 0.6, 0.2, 1);
+    animation: terminal-screen-enter 140ms ease-out;
 }
 
 #app .helpdesk-shell .terminal-screen::before,
@@ -1113,13 +1160,13 @@ html[data-theme='dark'] #app .btn-outline-success {
 }
 
 #app .helpdesk-shell .terminal-screen > * {
-    animation: terminal-panel-fade 240ms ease-out;
+    animation: terminal-panel-fade 110ms ease-out;
 }
 
 #app .helpdesk-shell .terminal-screen > .card,
 #app .helpdesk-shell .terminal-screen > .container,
 #app .helpdesk-shell .terminal-screen > .container-fluid {
-    animation: terminal-panel-slide 250ms ease-out;
+    animation: terminal-panel-slide 120ms ease-out;
 }
 
 #app .terminal-compact {

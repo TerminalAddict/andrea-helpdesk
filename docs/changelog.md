@@ -4,6 +4,15 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
+## [1.2.8] — 2026-04-16
+
+### Fixed
+- Reduced the route/page fade timing and removed the blur effect so navigation feels faster and less sluggish while keeping a light transition
+- Replaced terminal-style monospace rendering for plain-text ticket and reply bodies with a cleaner proportional reading font
+- Narrowed monospace styling back to true code and technical surfaces instead of applying it to all `<pre>` blocks globally
+
+---
+
 ## [1.2.7] — 2026-04-16
 
 ### Fixed

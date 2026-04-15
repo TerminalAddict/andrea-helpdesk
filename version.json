@@ -1,5 +1,5 @@
 {
-    "version": "1.2.7",
+    "version": "1.2.8",
     "released": "2026-04-16",
-    "description": "Ship the rebuilt activity-based reports page and dashboard snapshot split"
+    "description": "Tighten route transitions and improve ticket reading typography"
 }
