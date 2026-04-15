@@ -1,5 +1,5 @@
 {
-    "version": "1.2.5",
+    "version": "1.2.6",
     "released": "2026-04-16",
-    "description": "Ship the redesigned top navigation and profile shortcut polish"
+    "description": "Ship the security hardening review fixes and documentation updates"
 }

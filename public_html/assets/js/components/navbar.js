@@ -14,9 +14,6 @@ const Navbar = {
                 { label: 'Customers', icon: 'bi-people', route: '/customers' },
                 { label: 'Knowledge Base', icon: 'bi-book', route: '/kb' }
             );
-            if (API.can('can_view_reports')) {
-                routes.push({ label: 'Reports', icon: 'bi-bar-chart', route: '/admin/reports' });
-            }
             return routes;
         }
 
@@ -42,7 +39,7 @@ const Navbar = {
         const currentTheme = isAgent ? ((API.currentUser && API.currentUser.theme) || 'light') : 'light';
         const themeBtnClass = (theme) => `terminal-theme-btn${currentTheme === theme ? ' active' : ''}`;
         const primaryRoutes = this.getPrimaryRoutes();
-        const showAdmin = isAgent && (isAdmin || API.can('can_manage_tags') || API.can('can_manage_kb'));
+        const showAdmin = isAgent && (isAdmin || API.can('can_manage_tags') || API.can('can_view_reports'));
         const displayName = String((user && user.name) || user.email || 'User').trim();
         const firstName = displayName.split(/\s+/)[0] || 'User';
 
@@ -74,7 +71,9 @@ const Navbar = {
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end terminal-nav-menu">
                                         ${isAdmin ? `<li><a class="dropdown-item terminal-menu-link" href="#/admin/agents" data-route="/admin/agents"><i class="bi bi-people-fill me-2"></i>Agents</a></li>` : ''}
-                                        <li><a class="dropdown-item terminal-menu-link" href="#/admin/settings" data-route="/admin/settings"><i class="bi bi-sliders me-2"></i>Settings</a></li>
+                                        ${isAdmin ? `<li><a class="dropdown-item terminal-menu-link" href="#/admin/settings/general" data-route="/admin/settings"><i class="bi bi-sliders me-2"></i>Settings</a></li>` : ''}
+                                        ${API.can('can_view_reports') ? `<li><a class="dropdown-item terminal-menu-link" href="#/admin/reports" data-route="/admin/reports"><i class="bi bi-bar-chart me-2"></i>Reports</a></li>` : ''}
+                                        ${(isAdmin || API.can('can_manage_tags')) ? `<li><a class="dropdown-item terminal-menu-link" href="#/admin/tags" data-route="/admin/tags"><i class="bi bi-tags me-2"></i>Tags</a></li>` : ''}
                                     </ul>
                                 </div>
                             ` : ''}
@@ -101,7 +100,7 @@ const Navbar = {
                                         </div>
                                     </li>
                                     <li><hr class="dropdown-divider"></li>
-                                    ${isAgent ? `<li><a class="dropdown-item terminal-menu-link" href="#/admin/settings?tab=profile" data-route="/admin/settings"><i class="bi bi-person-lines-fill me-2"></i>My Profile</a></li>` : ''}
+                                    ${isAgent ? `<li><a class="dropdown-item terminal-menu-link" href="#/my-profile" data-route="/my-profile"><i class="bi bi-person-lines-fill me-2"></i>My Profile</a></li>` : ''}
                                     <li><a class="dropdown-item terminal-menu-link" href="#" id="nav-logout"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
                                 </ul>
                             </div>

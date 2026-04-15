@@ -28,12 +28,14 @@ class ReplyService
         $agent = $this->db->fetch("SELECT * FROM agents WHERE id = ?", [$agentId]);
         if (!$agent) throw new \InvalidArgumentException('Agent not found');
 
+        $safeHtml = Sanitizer::html($bodyHtml);
+
         $replyId = $this->replyRepo->create([
             'ticket_id'   => $ticketId,
             'author_type' => 'agent',
             'agent_id'    => $agentId,
-            'body_html'   => $bodyHtml,
-            'body_text'   => strip_tags($bodyHtml),
+            'body_html'   => $safeHtml,
+            'body_text'   => strip_tags($safeHtml),
             'is_private'  => $isPrivate ? 1 : 0,
             'direction'   => 'outbound',
         ]);
@@ -60,7 +62,7 @@ class ReplyService
         }
 
         // Notify any @mentioned agents
-        $this->notifyMentions($bodyHtml, $agentId, $ticket);
+        $this->notifyMentions($safeHtml, $agentId, $ticket);
 
         return $reply ?? [];
     }

@@ -52,6 +52,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Path traversal protection** — `realpath()` validation ensures served files stay within the storage directory
 - **MIME type detection** — server-side detection via `mime_content_type()`; client-supplied MIME type is never trusted
 - **Safe inline rendering** — only images, PDFs, video, and audio are served inline; HTML and SVG attachments are forced to download to prevent XSS
+- **Attachment type allowlist** — uploaded and inbound attachment MIME types are validated server-side before being stored
 
 ### Customer Portal
 - **Magic link login** — customers receive a one-click login link via email; no password required
@@ -95,7 +96,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Dashboard** — live stats: New, Waiting for Reply, Pending, Replied, and Overdue ticket counts; dedicated overdue ticket list; navbar badge shows all active (non-resolved, non-closed) tickets; recent activity by agent
 - **Reports** — ticket volume over time, resolution times, agent workload breakdowns
 
-### Settings (Admin UI)
+### Settings And Profile Routes
 - **SMTP configuration** — host, port, encryption, credentials, from address — all managed in the UI
 - **IMAP accounts** — add, edit, test, and browse folders on multiple inbound mailboxes; username accepts both email (`user@domain.com`) and Windows domain (`DOMAIN\user`) formats; leading/trailing whitespace in host and username is stripped on save; credentials encrypted at rest with AES-256-CBC
 - **Company branding** — company name, logo URL, support email
@@ -106,11 +107,22 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Slack appearance** — configurable bot display name, icon (image URL or emoji), and link preview toggle per Slack integration
 - **Version & update check** — the General tab shows the currently installed version and a **Check for Updates** button; the server fetches `version.json` from the GitHub `main` branch and reports whether an update is available; when an update is found, an **Update Now** button opens a preflight checklist (write permissions, PHP extensions, disk space) with fix instructions for any failures, then a one-click updater that downloads, extracts, copies files, and runs database migrations automatically
 
+Route structure:
+- `/admin/settings/general`
+- `/admin/settings/branding`
+- `/admin/settings/email`
+- `/admin/settings/autoresponse`
+- `/admin/settings/imap`
+- `/admin/settings/slack`
+- `/admin/tags`
+- `/my-profile`
+
 ### Security
 - **JWT authentication** — short-lived access tokens (15 min) + long-lived refresh tokens (30 days, hashed in DB)
 - **Refresh token rotation** — every refresh issues a new token and revokes the old one
-- **XSS protection** — dual-layer sanitisation: client-side via [DOMPurify](https://github.com/cure53/DOMPurify) before submission; server-side via `Sanitizer::html()` (DOMDocument, allowlist of safe tags/attributes, `javascript:` href blocking) before storage. Plain text fields are `htmlspecialchars()`-escaped throughout.
+- **XSS protection** — dual-layer sanitisation: client-side via [DOMPurify](https://github.com/cure53/DOMPurify) before submission; server-side via `Sanitizer::html()` (DOMDocument, allowlist of safe tags/attributes, and strict `http/https/mailto/tel` or relative-link enforcement) before storage. Replies, knowledge base articles, agent signatures, and HTML email settings are sanitised on write. Plain text fields are `htmlspecialchars()`-escaped throughout.
 - **SQL injection prevention** — all queries use PDO prepared statements with parameterised placeholders
+- **Config hardening** — DB charset/collation values are validated before interpolation, and proxy IP headers are ignored unless `TRUST_PROXY_HEADERS=true`
 - **bcrypt passwords** — agent passwords hashed with `password_hash()` at cost 12
 - **Encrypted IMAP credentials** — mailbox passwords stored AES-256-CBC encrypted, never in plaintext
 - **Signed attachment tokens** — HMAC-SHA256 download tokens with 24-hour expiry
@@ -119,6 +131,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Log rotation** — `imap.log` and `app.log` automatically trimmed to 3 days retention on every poll run
 - **Cron overlap prevention** — `flock()` ensures only one IMAP poller runs at a time
 - **Rsync deployment** — single `make deploy` command; vendor and storage directories excluded; remote `composer install` and `php bin/migrate.php` run automatically
+- **Safe in-app updates** — the updater lock remains held through file copy, schema update, and migrations so concurrent update runs cannot overlap mid-upgrade
 - **No build step** — frontend uses Bootstrap 5, Bootstrap Icons, and jQuery loaded from local vendor files; no Node.js or bundler required
 - **Versioning** — `version.json` in the repository root is the authoritative version record; see [docs/version.md](docs/version.md) and [docs/changelog.md](docs/changelog.md)
 
@@ -177,6 +190,8 @@ composer install --no-dev --optimize-autoloader
 # 2. Configure environment
 cp .env.example .env
 # Edit .env with your DB, JWT secret, storage path, and app URL
+# Optional hardening: set TRUST_PROXY_HEADERS=true only if the app is behind a trusted reverse proxy
+# Optional updater overrides: UPDATE_REPO_ZIP_URL and UPDATE_REPO_PREFIX if you self-host update packages
 
 # 3. Configure Makefile deployment targets
 cp Makefile.local.example Makefile.local
@@ -196,7 +211,7 @@ make cron-install-production
 
 Then log in at your configured `APP_URL` with the `ADMIN_EMAIL` / `ADMIN_PASSWORD` from `.env`.
 
-SMTP, IMAP accounts, SLA policy, branding, and all other runtime settings are configured through the admin Settings UI — no config file editing required after initial setup.
+SMTP, IMAP accounts, SLA policy, branding, and all other runtime settings are configured through the admin settings routes — no config file editing required after initial setup. Agent-specific preferences live under `/my-profile`.
 
 ---
 

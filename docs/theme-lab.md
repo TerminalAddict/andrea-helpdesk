@@ -44,4 +44,4 @@ or endpoint with:
 
 Accepted values are any URL/path that returns the same JSON structure.
 
-If `live-snapshot.json` is missing, the viewer uses `live-sample.json` as a fallback.
+If `live-snapshot.json` is missing, the viewer uses `live-sample.json` as a fallback. That fallback file is intentionally anonymised and should stay synthetic; do not commit production customer or agent data into `/public_html/test/`.

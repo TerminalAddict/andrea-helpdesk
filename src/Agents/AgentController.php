@@ -8,6 +8,7 @@ use Andrea\Helpdesk\Core\Exceptions\HttpException;
 use Andrea\Helpdesk\Core\Request;
 use Andrea\Helpdesk\Core\Response;
 use Andrea\Helpdesk\Core\Exceptions\NotFoundException;
+use Andrea\Helpdesk\Core\Sanitizer;
 
 class AgentController
 {
@@ -105,7 +106,7 @@ class AgentController
 
         // Signature update
         if ($request->input('signature') !== null) {
-            $data['signature'] = $request->input('signature');
+            $data['signature'] = Sanitizer::html((string)$request->input('signature'));
         }
 
         // Page size preference

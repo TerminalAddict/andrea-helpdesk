@@ -102,11 +102,13 @@ Permission tags visible per agent include: `close_tickets`, `delete_tickets`, `e
 
 ---
 
-## Settings — General
+## Admin Settings — General
 
 ![Settings General](screenshots/Settings_General.png)
 
-The General settings tab covers system-wide options: **Application Name**, **Application URL** (used in outbound email links), **Timezone**, **Date Format** (PHP `date()` format string), **Ticket Number Prefix**, **IMAP Polling Mode**, and the SLA controls used for inactivity-based escalation.
+Route: `#/admin/settings/general`
+
+The General settings section covers system-wide options: **Application Name**, **Application URL** (used in outbound email links), **Timezone**, **Date Format** (PHP `date()` format string), **Ticket Number Prefix**, **IMAP Polling Mode**, and the SLA controls used for inactivity-based escalation.
 
 The SLA section lets admins enable or disable escalation, choose how many days without attention should raise a ticket to **High**, choose the additional number of days before it becomes **Overdue**, and decide whether reminder emails go to **all active agents** or only **specific agents**.
 
@@ -118,46 +120,56 @@ When IMAP Polling Mode is set to **Cron Job (recommended)**, a help box displays
 
 ---
 
-## Settings — Branding
+## Admin Settings — Branding
 
 ![Settings Branding](screenshots/Settings_Branding.png)
 
-The Branding settings tab controls the visual identity of the helpdesk. **Logo URL** sets a custom logo displayed in the navbar. **Favicon URL** accepts `.ico`, `.png`, or `.svg` and is applied immediately to all browser tabs. **Primary Colour** is a hex value used for button and accent colours throughout the UI. **Support Email (displayed)** sets the contact address shown to customers in the portal and outbound emails.
+Route: `#/admin/settings/branding`
+
+The Branding settings section controls the visual identity of the helpdesk. **Logo URL** sets a custom logo displayed in the navbar. **Favicon URL** accepts `.ico`, `.png`, or `.svg` and is applied immediately to all browser tabs. **Primary Colour** is a hex value used for button and accent colours throughout the UI. **Support Email (displayed)** sets the contact address shown to customers in the portal and outbound emails.
 
 ---
 
-## Settings — Email / SMTP
+## Admin Settings — Email / SMTP
 
 ![Settings Email SMTP](screenshots/Settings_Email_SMTP.png)
 
-The Email / SMTP settings tab configures outbound mail. Fields include **SMTP Host**, **SMTP Port** (defaults to 587), **Encryption** (TLS/STARTTLS), **SMTP Username**, **SMTP Password** (leave blank to keep the current value — stored encrypted at rest), **From Email**, **From Name**, **Reply-To Email** (replies to this address create or update tickets), and **Email Signature** (supports the `{{agent_name}}` placeholder).
+Route: `#/admin/settings/email`
+
+The Email / SMTP settings section configures outbound mail. Fields include **SMTP Host**, **SMTP Port** (defaults to 587), **Encryption** (TLS/STARTTLS), **SMTP Username**, **SMTP Password** (leave blank to keep the current value — stored encrypted at rest), **From Email**, **From Name**, **Reply-To Email** (replies to this address create or update tickets), and **Email Signature** (supports the `{{agent_name}}` placeholder).
 
 Two checkboxes control agent notification emails: **Notify agents on new ticket** and **Notify agents on new customer reply**. A **Test SMTP** button sends a test email using the saved configuration to verify delivery.
 
 ---
 
-## Settings — Slack
+## Admin Settings — Slack
 
 ![Settings Slack](screenshots/Settings_Slack.png)
 
-The Slack settings tab configures the incoming webhook integration. The **Webhook URL** field accepts a Slack incoming webhook URL. **Channel** sets the target channel (e.g. `#helpdesk`). Individual notification events can be toggled: **Notify on new tickets**, **Notify on ticket assignment**, **Notify on new customer reply**, and **Show link previews** (controls whether Slack unfurls ticket URLs into rich preview cards).
+Route: `#/admin/settings/slack`
+
+The Slack settings section configures the incoming webhook integration. The **Webhook URL** field accepts a Slack incoming webhook URL. **Channel** sets the target channel (e.g. `#helpdesk`). Individual notification events can be toggled: **Notify on new tickets**, **Notify on ticket assignment**, **Notify on new customer reply**, and **Show link previews** (controls whether Slack unfurls ticket URLs into rich preview cards).
 
 The **Bot display name** and **Bot icon** fields customise how messages appear in Slack — the icon can be set as an image URL or an emoji code, with a quick-pick emoji palette provided.
 
 ---
 
-## Settings — Tags
+## Admin — Tags
 
 ![Settings Tags](screenshots/Settings_Tags.png)
 
-The Tags settings tab is where agents with the `manage_tags` permission manage the global tag list. Existing tags can be renamed inline or deleted. New tags are created by typing a name and clicking **+ Add Tag**. Tags created here appear in the ticket list filter and the tag selector on individual tickets.
+Route: `#/admin/tags`
+
+The Tags screen is where agents with the `manage_tags` permission manage the global tag list. Existing tags can be renamed inline or deleted. New tags are created by typing a name and clicking **+ Add Tag**. Tags created here appear in the ticket list filter and the tag selector on individual tickets.
 
 ---
 
-## Settings — My Profile
+## My Profile
 
 ![Settings My Profile](screenshots/Settings_My_Profile.png)
 
-The My Profile tab is per-agent and controls personal preferences. **Email Signature** accepts HTML with `{{agent_name}}` as a placeholder — this is the agent's personal signature prepended to the global signature set by an admin. The read-only **Global Signature** preview shows what will be appended after the personal signature.
+Route: `#/my-profile`
+
+The My Profile screen is per-agent and controls personal preferences. **Email Signature** accepts HTML with `{{agent_name}}` as a placeholder — this is the agent's personal signature prepended to the global signature set by an admin. The read-only **Global Signature** preview shows what will be appended after the personal signature.
 
 **Display Preferences** includes **Theme** (Light or Dark) and **Tickets per page** (controls row count in the ticket list and dashboard blocks). A **Change Password** section lets agents update their own login password.

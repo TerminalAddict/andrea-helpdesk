@@ -68,9 +68,19 @@ class Request
 
     public function ip(): string
     {
-        return $_SERVER['HTTP_X_FORWARDED_FOR']
-            ?? $_SERVER['REMOTE_ADDR']
-            ?? '0.0.0.0';
+        $trustProxyHeaders = filter_var(getenv('TRUST_PROXY_HEADERS') ?: false, FILTER_VALIDATE_BOOL);
+        if ($trustProxyHeaders) {
+            $forwarded = trim((string)($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ''));
+            if ($forwarded !== '') {
+                $candidate = trim(explode(',', $forwarded)[0]);
+                if (filter_var($candidate, FILTER_VALIDATE_IP)) {
+                    return $candidate;
+                }
+            }
+        }
+
+        $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+        return filter_var($remoteAddr, FILTER_VALIDATE_IP) ? $remoteAddr : '0.0.0.0';
     }
 
     public function isJson(): bool

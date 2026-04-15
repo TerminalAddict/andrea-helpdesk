@@ -47,11 +47,12 @@ class AttachmentService
         }
 
         $mimeType = mime_content_type($file['tmp_name']) ?: 'application/octet-stream';
+        $this->assertAllowedMimeType($mimeType);
         $originalName = $this->sanitiseFilename($file['name']);
 
         // Build storage path: {ticketId}/{uniqid}_{filename}
         $subDir      = $ticketId . ($replyId ? "/{$replyId}" : '');
-        $uniqueFile  = uniqid('', true) . '_' . $originalName;
+        $uniqueFile  = bin2hex(random_bytes(16)) . '_' . $originalName;
         $relativePath = $subDir . '/' . $uniqueFile;
         $absolutePath = $this->storagePath . '/attachments/' . $relativePath;
 
@@ -93,7 +94,7 @@ class AttachmentService
 
         $originalName = $this->sanitiseFilename($filename);
         $subDir       = $ticketId . ($replyId ? "/{$replyId}" : '');
-        $uniqueFile   = uniqid('', true) . '_' . $originalName;
+        $uniqueFile   = bin2hex(random_bytes(16)) . '_' . $originalName;
         $relativePath = $subDir . '/' . $uniqueFile;
         $absolutePath = $this->storagePath . '/attachments/' . $relativePath;
 
@@ -102,11 +103,19 @@ class AttachmentService
             throw new \RuntimeException('Storage directory could not be created');
         }
 
-        file_put_contents($absolutePath, $data);
+        if (file_put_contents($absolutePath, $data) === false) {
+            throw new \RuntimeException('Failed to save attachment to storage');
+        }
 
         // Detect MIME from the saved file rather than trusting the sender-supplied Content-Type header.
         $detectedMime = mime_content_type($absolutePath);
         $mimeType     = $detectedMime ?: $mimeType ?: 'application/octet-stream';
+        try {
+            $this->assertAllowedMimeType($mimeType);
+        } catch (\Throwable $e) {
+            @unlink($absolutePath);
+            throw $e;
+        }
 
         $db = Database::getInstance();
         $id = $db->insert(
@@ -189,6 +198,13 @@ class AttachmentService
         $filename = preg_replace('/[^\w\s\-\.]/u', '', $filename);
         $filename = preg_replace('/\s+/', '_', $filename);
         return substr($filename, 0, 255) ?: 'file';
+    }
+
+    private function assertAllowedMimeType(string $mimeType): void
+    {
+        if (!in_array(strtolower($mimeType), $this->allowedMimeTypes, true)) {
+            throw new HttpException("File type not allowed: {$mimeType}", 400);
+        }
     }
 
     private function uploadErrorMessage(int $code): string

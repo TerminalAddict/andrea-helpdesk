@@ -5,6 +5,7 @@ namespace Andrea\Helpdesk\Agents;
 
 use Andrea\Helpdesk\Auth\PasswordService;
 use Andrea\Helpdesk\Core\Exceptions\HttpException;
+use Andrea\Helpdesk\Core\Sanitizer;
 
 class AgentService
 {
@@ -35,7 +36,7 @@ class AgentService
             'can_view_reports'   => (int)($data['can_view_reports'] ?? 0),
             'can_manage_kb'      => (int)($data['can_manage_kb'] ?? 0),
             'can_manage_tags'    => (int)($data['can_manage_tags'] ?? 0),
-            'signature'          => $data['signature'] ?? null,
+            'signature'          => isset($data['signature']) ? Sanitizer::html((string)$data['signature']) : null,
         ];
 
         $id    = $this->repo->create($createData);
@@ -54,6 +55,10 @@ class AgentService
             if (array_key_exists($field, $data)) {
                 $updateData[$field] = $data[$field];
             }
+        }
+
+        if (array_key_exists('signature', $updateData)) {
+            $updateData['signature'] = Sanitizer::html((string)$updateData['signature']);
         }
 
         if (!empty($data['password'])) {

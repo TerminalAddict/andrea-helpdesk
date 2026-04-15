@@ -82,8 +82,7 @@ class Sanitizer
             $name = strtolower($attr->name);
             if (!in_array($name, self::ALLOWED_ATTRS, true)) {
                 $attrsToRemove[] = $attr->name;
-            } elseif ($name === 'href' && preg_match('/^\s*javascript:/i', $attr->value)) {
-                // Block javascript: pseudo-protocol
+            } elseif ($name === 'href' && !self::isSafeHref($attr->value)) {
                 $attrsToRemove[] = $attr->name;
             }
         }
@@ -101,5 +100,24 @@ class Sanitizer
         foreach (iterator_to_array($node->childNodes) as $child) {
             self::sanitizeNode($child, $doc);
         }
+    }
+
+    private static function isSafeHref(string $href): bool
+    {
+        $href = trim(html_entity_decode($href, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        if ($href === '') {
+            return false;
+        }
+
+        if (preg_match('/^[#/?]/', $href) === 1) {
+            return true;
+        }
+
+        $scheme = parse_url($href, PHP_URL_SCHEME);
+        if ($scheme === null || $scheme === false) {
+            return true;
+        }
+
+        return in_array(strtolower($scheme), ['http', 'https', 'mailto', 'tel'], true);
     }
 }

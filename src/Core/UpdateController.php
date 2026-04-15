@@ -5,8 +5,8 @@ namespace Andrea\Helpdesk\Core;
 
 class UpdateController
 {
-    private const REPO_ZIP_URL = 'https://github.com/TerminalAddict/andrea-helpdesk/archive/refs/heads/main.zip';
-    private const REPO_PREFIX  = 'andrea-helpdesk-main'; // top-level dir inside the zip
+    private const DEFAULT_REPO_ZIP_URL = 'https://github.com/TerminalAddict/andrea-helpdesk/archive/refs/heads/main.zip';
+    private const DEFAULT_REPO_PREFIX  = 'andrea-helpdesk-main'; // top-level dir inside the zip
 
     /** Dirs relative to root that must be writable for an update */
     private const WRITE_PATHS = [
@@ -98,18 +98,19 @@ class UpdateController
         $log     = [];
         $zipPath = null;
         $tmpDir  = null;
+        $lockFile = sys_get_temp_dir() . '/andrea-helpdesk-update.lock';
+        $lock = null;
 
         try {
             // Lock to prevent concurrent updates
-            $lockFile = sys_get_temp_dir() . '/andrea-helpdesk-update.lock';
-            $lock     = fopen($lockFile, 'c');
+            $lock = fopen($lockFile, 'c');
             if (!$lock || !flock($lock, LOCK_EX | LOCK_NB)) {
                 throw new \RuntimeException('Another update is already in progress. Please wait and try again.');
             }
 
             // 1. Download zip
             $log[] = 'Downloading update from GitHub…';
-            $raw = $this->httpGet(self::REPO_ZIP_URL);
+            $raw = $this->httpGet($this->repoZipUrl());
             if ($raw === false || strlen($raw) < 1024) {
                 throw new \RuntimeException('Failed to download update package from GitHub.');
             }
@@ -129,9 +130,9 @@ class UpdateController
             unlink($zipPath);
             $zipPath = null;
 
-            $srcDir = $tmpDir . '/' . self::REPO_PREFIX;
+            $srcDir = $tmpDir . '/' . $this->repoPrefix();
             if (!is_dir($srcDir)) {
-                throw new \RuntimeException('Unexpected zip structure — directory "' . self::REPO_PREFIX . '" not found inside archive.');
+                throw new \RuntimeException('Unexpected zip structure — directory "' . $this->repoPrefix() . '" not found inside archive.');
             }
             $log[] = 'Extracted successfully.';
 
@@ -143,9 +144,6 @@ class UpdateController
             // 4. Clean up temp
             $this->removeDir($tmpDir);
             $tmpDir = null;
-            flock($lock, LOCK_UN);
-            fclose($lock);
-            @unlink($lockFile);
 
             // 5. Schema (idempotent)
             $log[] = 'Updating database schema…';
@@ -169,7 +167,25 @@ class UpdateController
             if ($tmpDir  && is_dir($tmpDir))      $this->removeDir($tmpDir);
             $log[] = 'ERROR: ' . $e->getMessage();
             Response::json(['success' => false, 'message' => $e->getMessage(), 'data' => ['log' => $log]]);
+        } finally {
+            if (is_resource($lock)) {
+                flock($lock, LOCK_UN);
+                fclose($lock);
+                @unlink($lockFile);
+            }
         }
+    }
+
+    private function repoZipUrl(): string
+    {
+        $url = trim((string)(getenv('UPDATE_REPO_ZIP_URL') ?: self::DEFAULT_REPO_ZIP_URL));
+        return filter_var($url, FILTER_VALIDATE_URL) ? $url : self::DEFAULT_REPO_ZIP_URL;
+    }
+
+    private function repoPrefix(): string
+    {
+        $prefix = trim((string)(getenv('UPDATE_REPO_PREFIX') ?: self::DEFAULT_REPO_PREFIX));
+        return preg_match('/^[A-Za-z0-9._-]+$/', $prefix) === 1 ? $prefix : self::DEFAULT_REPO_PREFIX;
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────

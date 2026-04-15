@@ -540,7 +540,7 @@ Immutable log of significant actions performed in the system.
 
 ## 17. Default Settings Reference
 
-The following settings are seeded by `schema.sql`. Values shown are the defaults; all can be changed at runtime via the Settings UI (`#/settings`).
+The following settings are seeded by `schema.sql`. Values shown are the defaults; all can be changed at runtime via the admin settings routes (for example `#/admin/settings/general`).
 
 ### General
 

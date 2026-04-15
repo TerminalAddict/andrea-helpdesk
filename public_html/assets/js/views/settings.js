@@ -4,44 +4,44 @@
 const SettingsView = {
     settings: {},
     agents: [],
+    adminSections: [
+        { key: 'general', label: 'General' },
+        { key: 'branding', label: 'Branding' },
+        { key: 'email', label: 'Email / SMTP' },
+        { key: 'autoresponse', label: 'Auto-Response' },
+        { key: 'imap', label: 'IMAP Polling' },
+        { key: 'slack', label: 'Slack' },
+    ],
 
-    render() {
-        const isAdmin   = API.isAdmin();
-        const adminTabs = isAdmin ? `
-                <li class="nav-item"><button class="nav-link" data-tab="general">General</button></li>
-                <li class="nav-item"><button class="nav-link" data-tab="branding">Branding</button></li>
-                <li class="nav-item"><button class="nav-link" data-tab="email">Email / SMTP</button></li>
-                <li class="nav-item"><button class="nav-link" data-tab="autoresponse">Auto-Response</button></li>
-                <li class="nav-item"><button class="nav-link" data-tab="imap">IMAP Polling</button></li>
-                <li class="nav-item"><button class="nav-link" data-tab="slack">Slack</button></li>` : '';
-        const tagTab    = (isAdmin || API.can('can_manage_tags')) ? `
-                <li class="nav-item"><button class="nav-link" data-tab="tags">Tags</button></li>` : '';
-        const profileTab = `<li class="nav-item"><button class="nav-link" data-tab="profile">My Profile</button></li>`;
+    getAdminSectionKeys() {
+        return this.adminSections.map(section => section.key);
+    },
 
-        const adminOpts = isAdmin ? `
-                <option value="general">General</option>
-                <option value="branding">Branding</option>
-                <option value="email">Email / SMTP</option>
-                <option value="autoresponse">Auto-Response</option>
-                <option value="imap">IMAP Polling</option>
-                <option value="slack">Slack</option>` : '';
-        const tagOpt    = (isAdmin || API.can('can_manage_tags')) ? `<option value="tags">Tags</option>` : '';
-        const profileOpt = `<option value="profile">My Profile</option>`;
+    getAdminSectionLabel(key) {
+        return (this.adminSections.find(section => section.key === key) || {}).label || 'Settings';
+    },
 
+    render(params) {
+        const activeSection = this.getAdminSectionKeys().includes(params?.section) ? params.section : 'general';
+        const adminTabs = this.adminSections.map((section) => `
+                <li class="nav-item">
+                    <a class="nav-link${section.key === activeSection ? ' active' : ''}" href="#/admin/settings/${section.key}" data-section="${section.key}">
+                        ${section.label}
+                    </a>
+                </li>`).join('');
+        const adminOpts = this.adminSections.map((section) =>
+            `<option value="${section.key}" ${section.key === activeSection ? 'selected' : ''}>${section.label}</option>`
+        ).join('');
         return `
         <div class="container-fluid terminal-screen terminal-screen-settings p-4 terminal-compact">
             <h4 class="terminal-heading mb-3"><i class="bi bi-sliders me-2"></i>Settings</h4>
 
             <ul class="nav nav-tabs d-none d-md-flex" id="settings-tabs">
                 ${adminTabs}
-                ${tagTab}
-                ${profileTab}
             </ul>
 
             <select class="form-select mb-2 d-md-none" id="settings-tab-select">
                 ${adminOpts}
-                ${tagOpt}
-                ${profileOpt}
             </select>
 
             <div id="settings-content">
@@ -53,33 +53,20 @@ const SettingsView = {
     },
 
     async init(params) {
-        const isAdmin  = API.isAdmin();
-        const canTags  = isAdmin || API.can('can_manage_tags');
-        const firstTab = isAdmin ? 'general' : (canTags ? 'tags' : 'profile');
-        const requestedTab = params && params.tab ? String(params.tab) : '';
-        const allowedTabs = [
-            ...(isAdmin ? ['general', 'branding', 'email', 'autoresponse', 'imap', 'slack'] : []),
-            ...(canTags ? ['tags'] : []),
-            'profile'
-        ];
-        const initialTab = allowedTabs.includes(requestedTab) ? requestedTab : firstTab;
+        const requestedSection = params && params.section ? String(params.section) : 'general';
+        const initialSection = this.getAdminSectionKeys().includes(requestedSection) ? requestedSection : 'general';
         try {
-            const fetches = [API.get('/auth/me'), API.get('/settings/public')];
-            if (isAdmin) {
-                fetches.push(API.get('/admin/settings'));
-                fetches.push(API.get('/agents'));
-            }
-            const results = await Promise.all(fetches);
+            const results = await Promise.all([
+                API.get('/auth/me'),
+                API.get('/settings/public'),
+                API.get('/admin/settings'),
+                API.get('/agents')
+            ]);
             this.currentAgent = (results[0].data && results[0].data.user) || {};
-            // Non-admins get global_signature from public settings; admins get full settings
-            if (isAdmin) {
-                this.settings = results[2].data || {};
-                this.agents   = results[3].data || [];
-            } else {
-                this.settings = results[1].data || {};
-                this.agents   = [];
-            }
-            this.renderTab(initialTab);
+            this.settings = results[2].data || {};
+            this.publicSettings = results[1].data || {};
+            this.agents   = results[3].data || [];
+            this.renderTab(initialSection);
             this.bindTabSwitching();
         } catch (e) {
             $('#settings-content').html('<div class="alert alert-danger">' + App.escapeHtml(e.message) + '</div>');
@@ -87,16 +74,13 @@ const SettingsView = {
     },
 
     bindTabSwitching() {
-        $('#settings-tabs button').on('click', (e) => {
-            this.renderTab($(e.currentTarget).data('tab'));
-        });
         $('#settings-tab-select').on('change', (e) => {
-            this.renderTab($(e.currentTarget).val());
+            App.navigate('/admin/settings/' + $(e.currentTarget).val());
         });
     },
 
     renderTab(tab) {
-        $('#settings-tabs button').removeClass('active').filter(`[data-tab="${tab}"]`).addClass('active');
+        $('#settings-tabs .nav-link').removeClass('active').filter(`[data-section="${tab}"]`).addClass('active');
         $('#settings-tab-select').val(tab);
         const s = this.settings;
         let html = '';
@@ -176,19 +160,6 @@ const SettingsView = {
                   placeholder: ':robot_face:',
                   hint_html: `<div class="mt-2 mb-1">Quick pick:</div>${emojiPicks}<div class="form-text mt-1">Or type any emoji code set up in your Slack workspace, e.g. <code>:paul:</code></div>` },
             ]);
-        }
-
-        if (tab === 'tags') {
-            $('#settings-content').html(this.renderTagsPanel());
-            this.loadTags();
-            return;
-        }
-
-        if (tab === 'profile') {
-            $('#settings-content').html(this.renderProfilePanel());
-            this.bindProfileSave();
-            RichEditor.init('profile-signature', { value: (this.currentAgent || {}).signature || '' });
-            return;
         }
 
         $('#settings-content').html(html);
@@ -862,7 +833,7 @@ const SettingsView = {
 
     renderProfilePanel() {
         const agent         = this.currentAgent || {};
-        const globalSig     = this.settings.global_signature || '';
+        const globalSig     = (this.publicSettings && this.publicSettings.global_signature) || this.settings.global_signature || '';
         const globalSigHint = globalSig
             ? `<div class="mb-4">
                 <label class="form-label fw-semibold">Global Signature <span class="text-muted fw-normal small">(set by admin — appended after your personal signature)</span></label>
@@ -961,7 +932,7 @@ const SettingsView = {
 
             // Hard navigation with cache-busting query string forces a fresh HTTP fetch
             // (location.reload(true) is deprecated and browsers often ignore it)
-            window.location.href = '/?_=' + Date.now() + '#/admin/settings';
+            window.location.href = '/?_=' + Date.now() + '#/my-profile';
         });
     },
 
@@ -1100,5 +1071,55 @@ const SettingsView = {
     syncSlaRecipientVisibility() {
         const isSpecific = $('#s-sla_notify_scope').val() === 'specific';
         $('#sla-recipient-card').toggleClass('d-none', !isSpecific);
+    }
+};
+
+const MyProfileView = {
+    render() {
+        return `
+        <div class="container-fluid terminal-screen terminal-screen-settings p-4 terminal-compact">
+            <h4 class="terminal-heading mb-3"><i class="bi bi-person-lines-fill me-2"></i>My Profile</h4>
+            <div id="settings-content">
+                <div class="text-center py-5 text-muted">
+                    <div class="spinner-border"></div><p class="mt-2">Loading…</p>
+                </div>
+            </div>
+        </div>`;
+    },
+
+    async init() {
+        try {
+            const results = await Promise.all([
+                API.get('/auth/me'),
+                API.get('/settings/public')
+            ]);
+            SettingsView.currentAgent = (results[0].data && results[0].data.user) || {};
+            SettingsView.publicSettings = results[1].data || {};
+            SettingsView.settings = results[1].data || {};
+            $('#settings-content').html(SettingsView.renderProfilePanel());
+            SettingsView.bindProfileSave();
+            RichEditor.init('profile-signature', { value: (SettingsView.currentAgent || {}).signature || '' });
+        } catch (e) {
+            $('#settings-content').html('<div class="alert alert-danger">' + App.escapeHtml(e.message) + '</div>');
+        }
+    }
+};
+
+const TagsView = {
+    render() {
+        return `
+        <div class="container-fluid terminal-screen terminal-screen-settings p-4 terminal-compact">
+            <h4 class="terminal-heading mb-3"><i class="bi bi-tags me-2"></i>Tags</h4>
+            <div id="settings-content">
+                <div class="text-center py-5 text-muted">
+                    <div class="spinner-border"></div><p class="mt-2">Loading…</p>
+                </div>
+            </div>
+        </div>`;
+    },
+
+    async init() {
+        $('#settings-content').html(SettingsView.renderTagsPanel());
+        await SettingsView.loadTags();
     }
 };

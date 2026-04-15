@@ -14,8 +14,11 @@ const App = {
         '/calendar':       'CalendarView',
         '/customers':      'CustomersView',
         '/customers/:id':  'CustomerDetailView',
+        '/my-profile':     'MyProfileView',
         '/admin/agents':   'AgentsView',
         '/admin/settings': 'SettingsView',
+        '/admin/settings/:section': 'SettingsView',
+        '/admin/tags':     'TagsView',
         '/admin/reports':  'ReportsView',
         '/kb':             'KnowledgeBaseView',
         '/kb/:slug':       'KbArticleView',
@@ -106,6 +109,11 @@ const App = {
         const viewName = matched ? matched.viewName : null;
         const params   = matched ? matched.params : {};
 
+        if (hash === '/admin/settings' || hash.startsWith('/admin/settings?')) {
+            window.location.hash = '#/admin/settings/general';
+            return;
+        }
+
         // Auth check
         const isPublic  = this.publicRoutes.some(p => hash.startsWith(p));
         const isPortal  = hash.startsWith('/portal');
@@ -133,14 +141,25 @@ const App = {
                 window.location.hash = '#/';
                 return;
             }
-        } else if (hash.startsWith('/admin/settings')) {
+        } else if (hash.startsWith('/my-profile')) {
             if (API.currentUser?.type !== 'agent') {
+                this.toast('You do not have permission to access this page', 'error');
+                window.location.hash = '#/';
+                return;
+            }
+        } else if (hash.startsWith('/admin/settings/')) {
+            if (!API.isAdmin()) {
                 this.toast('You do not have permission to access settings', 'error');
                 window.location.hash = '#/';
                 return;
             }
-            if (!API.isAdmin() && !API.can('can_manage_tags') && !API.can('can_manage_kb') && params.tab !== 'profile') {
-                this.toast('You do not have permission to access settings', 'error');
+            if (!['general', 'branding', 'email', 'autoresponse', 'imap', 'slack'].includes(params.section)) {
+                window.location.hash = '#/admin/settings/general';
+                return;
+            }
+        } else if (hash.startsWith('/admin/tags')) {
+            if (!API.isAdmin() && !API.can('can_manage_tags')) {
+                this.toast('You do not have permission to access tags', 'error');
                 window.location.hash = '#/';
                 return;
             }
@@ -154,7 +173,7 @@ const App = {
         const viewRegistry = {
             DashboardView, LoginView, TicketsView, TicketNewView,
             TicketDetailView, CalendarView, CustomersView, CustomerDetailView,
-            AgentsView, SettingsView, ReportsView,
+            AgentsView, SettingsView, MyProfileView, TagsView, ReportsView,
             KnowledgeBaseView, KbArticleView,
             PortalLoginView, PortalSetPasswordView, PortalView, PortalTicketView,
         };
@@ -199,9 +218,9 @@ const App = {
         document.title = name;
         const hasLogo = !!this.settings.logo_url;
         const logo = hasLogo
-            ? `<img src="${this.escapeHtml(this.settings.logo_url)}" alt="${this.escapeHtml(name)}" style="max-height:32px;max-width:120px;object-fit:contain;" class="me-2">`
+            ? `<img src="${this.escapeHtml(this.settings.logo_url)}" alt="${this.escapeHtml(name)}" class="me-2">`
             : `<i class="bi bi-headset me-2"></i>`;
-        $('.navbar-brand').html(`${logo}${this.escapeHtml(name)}`).toggleClass('pe-3', hasLogo);
+        $('.navbar-brand').html(`${logo}<span class="terminal-brand-copy"><strong>${this.escapeHtml(name)}</strong></span>`);
     },
 
     applyFavicon(url) {

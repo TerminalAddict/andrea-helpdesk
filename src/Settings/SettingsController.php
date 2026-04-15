@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Andrea\Helpdesk\Settings;
 
+use Andrea\Helpdesk\Core\Sanitizer;
 use Andrea\Helpdesk\Core\Request;
 use Andrea\Helpdesk\Core\Response;
 use Andrea\Helpdesk\Notifications\EmailNotifier;
@@ -88,6 +89,12 @@ class SettingsController
         if (($data['sla_notify_scope'] ?? null) === 'specific' && empty($data['sla_notify_agent_ids'])) {
             Response::error('Select at least one SLA reminder recipient when using specific agents', 422);
             return;
+        }
+
+        foreach (['global_signature', 'auto_response_body'] as $htmlKey) {
+            if (array_key_exists($htmlKey, $data)) {
+                $data[$htmlKey] = Sanitizer::html((string)$data[$htmlKey]);
+            }
         }
 
         // Encrypt passwords before saving

@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Andrea\Helpdesk\KnowledgeBase;
 
 use Andrea\Helpdesk\Core\Database;
+use Andrea\Helpdesk\Core\Sanitizer;
 
 class KbService
 {
@@ -22,7 +23,7 @@ class KbService
 
         $id      = $this->repo->create([
             'title'           => $ticket['subject'],
-            'body_html'       => $firstReply ? $firstReply['body_html'] : '<p>No content</p>',
+            'body_html'       => Sanitizer::html($firstReply['body_html'] ?? '<p>No content</p>'),
             'author_agent_id' => $authorAgentId,
             'source_ticket_id'=> $ticketId,
             'is_published'    => 0,
@@ -34,12 +35,18 @@ class KbService
     public function create(array $data, int $authorAgentId): array
     {
         $data['author_agent_id'] = $authorAgentId;
+        if (array_key_exists('body_html', $data)) {
+            $data['body_html'] = Sanitizer::html((string)$data['body_html']);
+        }
         $id = $this->repo->create($data);
         return $this->repo->findById($id) ?? [];
     }
 
     public function update(int $id, array $data): array
     {
+        if (array_key_exists('body_html', $data)) {
+            $data['body_html'] = Sanitizer::html((string)$data['body_html']);
+        }
         $this->repo->update($id, $data);
         return $this->repo->findById($id) ?? [];
     }
