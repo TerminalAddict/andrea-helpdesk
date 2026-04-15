@@ -134,7 +134,12 @@ const App = {
                 return;
             }
         } else if (hash.startsWith('/admin/settings')) {
-            if (!API.isAdmin() && !API.can('can_manage_tags') && !API.can('can_manage_kb')) {
+            if (API.currentUser?.type !== 'agent') {
+                this.toast('You do not have permission to access settings', 'error');
+                window.location.hash = '#/';
+                return;
+            }
+            if (!API.isAdmin() && !API.can('can_manage_tags') && !API.can('can_manage_kb') && params.tab !== 'profile') {
                 this.toast('You do not have permission to access settings', 'error');
                 window.location.hash = '#/';
                 return;

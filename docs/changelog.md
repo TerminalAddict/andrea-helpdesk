@@ -4,6 +4,15 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
+## [1.2.5] — 2026-04-16
+
+### Fixed
+- Replaced the old Bootstrap-style top nav with the new slimmer custom navigation, keeping `Reports` in the main strip and grouping `Agents` and `Settings` under `Admin`
+- Added the combined `User` menu with theme switching, email display, first-name label, and a direct `My Profile` shortcut to Settings
+- Polished navbar spacing, contrast, and route strip alignment, including improved readability for the selected theme button in light mode
+
+---
+
 ## [1.2.4] — 2026-04-16
 
 ### Fixed

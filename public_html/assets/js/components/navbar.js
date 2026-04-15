@@ -4,100 +4,109 @@
 const Navbar = {
     openCount: 0,
 
+    getPrimaryRoutes() {
+        const routes = [];
+        if (API.isAgent()) {
+            routes.push(
+                { label: 'Dashboard', icon: 'bi-speedometer2', route: '/' },
+                { label: 'Tickets', icon: 'bi-ticket-perforated', route: '/tickets', badgeId: 'nav-ticket-badge' },
+                { label: 'Calendar', icon: 'bi-calendar3', route: '/calendar' },
+                { label: 'Customers', icon: 'bi-people', route: '/customers' },
+                { label: 'Knowledge Base', icon: 'bi-book', route: '/kb' }
+            );
+            if (API.can('can_view_reports')) {
+                routes.push({ label: 'Reports', icon: 'bi-bar-chart', route: '/admin/reports' });
+            }
+            return routes;
+        }
+
+        return [
+            { label: 'My Tickets', icon: 'bi-ticket', route: '/portal' }
+        ];
+    },
+
+    renderRoute(route) {
+        return `
+            <a class="nav-link terminal-route-link" href="#${route.route}" data-route="${route.route}">
+                <i class="bi ${route.icon}"></i>
+                <span>${App.escapeHtml(route.label)}</span>
+                ${route.badgeId ? `<span id="${route.badgeId}" class="badge terminal-route-badge" style="display:none">${this.openCount || ''}</span>` : ''}
+            </a>
+        `;
+    },
+
     render() {
         const user    = API.currentUser;
         const isAdmin = API.isAdmin();
         const isAgent = API.isAgent();
         const currentTheme = isAgent ? ((API.currentUser && API.currentUser.theme) || 'light') : 'light';
         const themeBtnClass = (theme) => `terminal-theme-btn${currentTheme === theme ? ' active' : ''}`;
+        const primaryRoutes = this.getPrimaryRoutes();
+        const showAdmin = isAgent && (isAdmin || API.can('can_manage_tags') || API.can('can_manage_kb'));
+        const displayName = String((user && user.name) || user.email || 'User').trim();
+        const firstName = displayName.split(/\s+/)[0] || 'User';
 
         if (!user) return '';
-
-        const agentNav = isAgent ? `
-            <li class="nav-item">
-                <a class="nav-link" href="#/" data-route="/">
-                    <i class="bi bi-speedometer2"></i> Dashboard
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#/tickets" data-route="/tickets">
-                    <i class="bi bi-ticket-perforated"></i> Tickets
-                    <span id="nav-ticket-badge" class="badge bg-danger ms-1" style="display:none">${this.openCount || ''}</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#/calendar" data-route="/calendar">
-                    <i class="bi bi-calendar3"></i> Calendar
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#/customers" data-route="/customers">
-                    <i class="bi bi-people"></i> Customers
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#/kb" data-route="/kb">
-                    <i class="bi bi-book"></i> Knowledge Base
-                </a>
-            </li>
-            ${API.can('can_view_reports') ? `
-            <li class="nav-item">
-                <a class="nav-link" href="#/admin/reports" data-route="/admin/reports">
-                    <i class="bi bi-bar-chart"></i> Reports
-                </a>
-            </li>` : ''}
-            ${(isAdmin || API.can('can_manage_tags') || API.can('can_manage_kb')) ? `
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                    <i class="bi bi-gear"></i> Admin
-                </a>
-                <ul class="dropdown-menu dropdown-menu-dark">
-                    ${isAdmin ? `<li><a class="dropdown-item" href="#/admin/agents"><i class="bi bi-people-fill me-2"></i>Agents</a></li>` : ''}
-                    <li><a class="dropdown-item" href="#/admin/settings"><i class="bi bi-sliders me-2"></i>Settings</a></li>
-                </ul>
-            </li>` : ''}
-        ` : `
-            <li class="nav-item">
-                <a class="nav-link" href="#/portal" data-route="/portal">
-                    <i class="bi bi-ticket"></i> My Tickets
-                </a>
-            </li>
-        `;
 
         return `
         <nav class="navbar navbar-expand-lg navbar-dark sticky-top terminal-nav">
             <div class="container-fluid">
-                <a class="navbar-brand fw-bold pe-3 terminal-brand" href="#/">
-                    <img src="${App.escapeHtml(App.settings.logo_url || '/Andrea-Helpdesk.png')}" alt="${App.escapeHtml(App.appName)}" style="max-height:32px;max-width:120px;object-fit:contain;" class="me-2">${App.escapeHtml(App.appName)}
+                <a class="navbar-brand fw-bold terminal-brand" href="#/">
+                    <img src="${App.escapeHtml(App.settings.logo_url || '/Andrea-Helpdesk.png')}" alt="${App.escapeHtml(App.appName)}" class="me-2">
+                    <span class="terminal-brand-copy">
+                        <strong>${App.escapeHtml(App.appName)}</strong>
+                    </span>
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="mainNav">
-                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                        ${agentNav}
-                    </ul>
-                    <ul class="navbar-nav">
-                        <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                            <i class="bi bi-person-circle me-1"></i>${App.escapeHtml(user.name || user.email)}
-                        </a>
-                            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark">
-                                <li><span class="dropdown-item-text small" style="color:${API.isAdmin() ? '#a78bfa' : '#6ea8fe'};">${App.escapeHtml(user.email || '')}</span></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <p class="dropdown-item-text terminal-theme-label mb-1 px-2">Theme</p>
-                                    <div class="px-2 pb-2">
+                    <div class="terminal-nav-shell">
+                        <div class="terminal-nav-routes">
+                            ${primaryRoutes.map((route) => this.renderRoute(route)).join('')}
+                        </div>
+                        <div class="terminal-nav-tools">
+                            ${showAdmin ? `
+                                <div class="dropdown">
+                                    <button class="nav-link dropdown-toggle terminal-tool-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-sliders2"></i>
+                                        <span>Admin</span>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end terminal-nav-menu">
+                                        ${isAdmin ? `<li><a class="dropdown-item terminal-menu-link" href="#/admin/agents" data-route="/admin/agents"><i class="bi bi-people-fill me-2"></i>Agents</a></li>` : ''}
+                                        <li><a class="dropdown-item terminal-menu-link" href="#/admin/settings" data-route="/admin/settings"><i class="bi bi-sliders me-2"></i>Settings</a></li>
+                                    </ul>
+                                </div>
+                            ` : ''}
+                            <div class="dropdown">
+                                <button class="nav-link dropdown-toggle terminal-tool-toggle terminal-user-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span class="terminal-user-toggle-copy">
+                                        <small>${App.escapeHtml(currentTheme)} mode</small>
+                                        <strong>${App.escapeHtml(firstName)}</strong>
+                                    </span>
+                                    <i class="bi bi-person-circle"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end terminal-nav-menu terminal-user-menu">
+                                    <li class="terminal-user-card">
+                                        <span class="terminal-menu-heading">User</span>
+                                        <strong>${App.escapeHtml(user.name || 'User')}</strong>
+                                        <small>${App.escapeHtml(user.email || '')}</small>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li class="px-2 pb-2">
+                                        <span class="terminal-menu-heading d-block mb-2">Theme</span>
                                         <div class="terminal-theme-toggle">
-                                            <button type="button" class="${themeBtnClass('light')}" data-theme-choice="light" aria-label="Switch to light theme">☀ Light</button>
-                                            <button type="button" class="${themeBtnClass('dark')}" data-theme-choice="dark" aria-label="Switch to dark theme">◐ Dark</button>
+                                            <button type="button" class="${themeBtnClass('light')}" data-theme-choice="light" aria-label="Switch to light theme">Light</button>
+                                            <button type="button" class="${themeBtnClass('dark')}" data-theme-choice="dark" aria-label="Switch to dark theme">Dark</button>
                                         </div>
-                                    </div>
-                                </li>
-                                <li><a class="dropdown-item" href="#" id="nav-logout"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
-                            </ul>
-                        </li>
-                    </ul>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    ${isAgent ? `<li><a class="dropdown-item terminal-menu-link" href="#/admin/settings?tab=profile" data-route="/admin/settings"><i class="bi bi-person-lines-fill me-2"></i>My Profile</a></li>` : ''}
+                                    <li><a class="dropdown-item terminal-menu-link" href="#" id="nav-logout"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </nav>`;
@@ -156,13 +165,18 @@ const Navbar = {
 
     updateActiveItem() {
         const hash = window.location.hash.replace('#', '') || '/';
-        $('#navbar-container .nav-link').each(function() {
+        $('#navbar-container [data-route]').each(function() {
             const route = $(this).data('route');
             if (route && (hash === route || (route !== '/' && hash.startsWith(route)))) {
                 $(this).addClass('active');
             } else {
                 $(this).removeClass('active');
             }
+        });
+
+        $('#navbar-container .dropdown').each(function() {
+            const hasActiveChild = $(this).find('[data-route].active').length > 0;
+            $(this).find('> .terminal-tool-toggle').toggleClass('active', hasActiveChild);
         });
     },
 

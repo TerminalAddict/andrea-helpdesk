@@ -164,73 +164,161 @@ body::before {
 }
 
 .terminal-nav {
-    background: linear-gradient(180deg, rgba(2, 15, 36, 0.95), var(--terminal-nav));
-    border: 1px solid rgba(255, 255, 255, 0.09);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--terminal-nav) 95%, #09121f), color-mix(in srgb, var(--terminal-nav) 88%, #101927));
+    border: 1px solid color-mix(in srgb, var(--terminal-border-strong) 60%, rgba(255, 255, 255, 0.08));
     border-radius: 0 0 18px 18px;
-    padding-top: .45rem;
-    padding-bottom: .45rem;
+    padding-top: .34rem;
+    padding-bottom: .34rem;
     backdrop-filter: blur(18px);
     box-shadow: 0 18px 44px rgba(3, 8, 20, 0.25);
 }
 
 .terminal-nav .navbar-brand {
-    font-size: 1.05rem;
-    letter-spacing: 0.01em;
     display: inline-flex;
     align-items: center;
+    gap: 0.65rem;
     color: #ecf2ff !important;
+    margin-right: 1rem;
 }
 
 .terminal-brand img {
+    max-height: 32px;
+    max-width: 104px;
+    object-fit: contain;
     filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.22));
-    border-radius: 8px;
+    border-radius: 10px;
+}
+
+.terminal-brand-copy {
+    display: grid;
+    line-height: 1.05;
+}
+
+.terminal-brand-copy strong {
+    font-size: 0.97rem;
+    letter-spacing: -0.03em;
+    font-weight: 700;
 }
 
 .terminal-nav .navbar-collapse {
     justify-content: flex-start;
 }
 
-.terminal-nav .nav-item,
-.terminal-nav .nav-link {
-    color: rgba(231, 241, 255, 0.94);
+.terminal-nav-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
 }
 
-.terminal-nav .nav-link {
-    border-radius: 10px;
-    padding: 0.45rem 0.72rem;
-    transition: background 180ms ease;
+.terminal-nav-routes,
+.terminal-nav-tools {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.terminal-nav-routes {
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-left: 2rem;
+}
+
+.terminal-nav-routes::-webkit-scrollbar {
+    display: none;
+}
+
+.terminal-nav .nav-link,
+.terminal-nav .terminal-tool-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.48rem;
+    min-height: 38px;
+    padding: 0.46rem 0.72rem;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    color: rgba(231, 241, 255, 0.94);
+    background: transparent;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+    font-size: 0.92rem;
 }
 
 .terminal-nav .nav-link:hover,
-.terminal-nav .nav-link.active {
-    background: var(--terminal-nav-soft);
+.terminal-nav .terminal-tool-toggle:hover,
+.terminal-nav .nav-link.active,
+.terminal-nav .terminal-tool-toggle.active,
+.terminal-nav .dropdown.show > .terminal-tool-toggle {
+    background: color-mix(in srgb, var(--terminal-nav-soft) 74%, rgba(255, 255, 255, 0.06));
+    border-color: color-mix(in srgb, var(--terminal-border-strong) 62%, transparent);
     color: #ffffff !important;
 }
 
-.terminal-nav .nav-link:visited {
+.terminal-nav .nav-link:visited,
+.terminal-nav .terminal-tool-toggle:visited {
     color: rgba(231, 241, 255, 0.94) !important;
 }
 
-.terminal-nav .dropdown-menu-dark {
-    background: rgba(11, 20, 35, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 14px;
+.terminal-route-link i,
+.terminal-tool-toggle i {
+    font-size: 0.92rem;
+    color: color-mix(in srgb, var(--terminal-cyan) 70%, #ffffff 30%);
+}
+
+.terminal-route-link > span,
+.terminal-tool-toggle > span {
+    line-height: 1;
+}
+
+.terminal-route-badge {
+    background: color-mix(in srgb, var(--terminal-ruby) 80%, #ffffff) !important;
+    color: #310710 !important;
+    border: 0;
+    margin-left: 0.05rem;
+    min-width: 1.2rem;
+    padding: 0.22rem 0.38rem;
+    font-size: 0.68rem;
+}
+
+.terminal-nav-menu {
+    background: color-mix(in srgb, var(--terminal-surface-raised) 94%, #07111d);
+    border: 1px solid color-mix(in srgb, var(--terminal-border-strong) 88%, transparent);
+    border-radius: 15px;
     box-shadow: var(--terminal-shadow);
-    backdrop-filter: blur(16px);
+    backdrop-filter: blur(18px);
+    min-width: 228px;
+    padding: 0.5rem;
 }
 
 .terminal-nav .dropdown-item,
 .terminal-nav .dropdown-item-text {
-    color: rgba(239, 246, 255, 0.9);
+    color: var(--terminal-text);
 }
 
-.terminal-nav .dropdown-item:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
+.terminal-nav .dropdown-item {
+    border-radius: 10px;
+    padding: 0.62rem 0.72rem;
+    font-size: 0.9rem;
+}
+
+.terminal-nav .dropdown-item:hover,
+.terminal-nav .dropdown-item:focus {
+    background: color-mix(in srgb, var(--terminal-cyan) 16%, transparent);
+    color: var(--terminal-text);
+}
+
+.terminal-nav .dropdown-item.active,
+.terminal-nav .dropdown-item:active {
+    background: linear-gradient(90deg, color-mix(in srgb, var(--terminal-cyan) 20%, transparent), color-mix(in srgb, var(--terminal-emerald) 14%, transparent));
+    color: var(--terminal-text);
 }
 
 .terminal-nav .dropdown-divider {
-    border-top-color: rgba(255, 255, 255, 0.14);
+    border-top-color: var(--terminal-border);
+    margin: 0.45rem 0;
 }
 
 .terminal-nav .btn-close {
@@ -238,13 +326,12 @@ body::before {
 }
 
 .terminal-nav .terminal-theme-toggle {
-    border: 1px solid rgba(255, 255, 255, 0.26);
+    border: 1px solid color-mix(in srgb, var(--terminal-border-strong) 62%, transparent);
     border-radius: 999px;
     display: inline-flex;
     padding: 3px;
-    margin-left: .5rem;
     gap: 3px;
-    background: rgba(7, 20, 40, 0.55);
+    background: color-mix(in srgb, var(--terminal-bg-soft) 62%, transparent);
 }
 
 .terminal-theme-btn {
@@ -252,9 +339,9 @@ body::before {
     border-radius: 999px;
     color: var(--terminal-text-soft);
     background: transparent;
-    font-size: 0.8rem;
-    padding: .34rem .67rem;
-    width: 82px;
+    font-size: 0.78rem;
+    padding: .32rem .62rem;
+    width: 78px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -264,16 +351,76 @@ body::before {
 
 .terminal-theme-btn.active {
     background: linear-gradient(125deg, rgba(56, 181, 255, 0.22), rgba(38, 216, 183, 0.2));
-    color: #ecf6ff;
+    color: #0b1f33;
     border-color: transparent;
 }
 
-.terminal-shell-wrap .terminal-theme-label {
+html[data-theme='dark'] .terminal-theme-btn.active {
+    color: #ecf6ff;
+}
+
+.terminal-shell-wrap .terminal-theme-label,
+.terminal-menu-heading {
     margin: 0;
     font-size: 0.65rem;
     letter-spacing: 0.08em;
     color: var(--terminal-text-muted);
     text-transform: uppercase;
+    font-family: var(--terminal-font-mono);
+}
+
+.terminal-user-toggle {
+    min-width: 112px;
+    justify-content: space-between;
+}
+
+.terminal-user-toggle-copy {
+    display: grid;
+    text-align: left;
+    line-height: 1.05;
+}
+
+.terminal-user-toggle-copy small {
+    font-size: 0.65rem;
+    color: rgba(191, 211, 235, 0.68);
+    text-transform: uppercase;
+}
+
+.terminal-user-toggle-copy strong {
+    font-size: 0.84rem;
+    font-weight: 700;
+}
+
+.terminal-user-menu {
+    min-width: 248px;
+}
+
+.terminal-user-card {
+    display: block;
+    padding: 0.12rem 0.16rem 0.2rem;
+}
+
+.terminal-user-card strong,
+.terminal-user-card small {
+    display: block;
+}
+
+.terminal-user-card strong {
+    margin-top: 0.32rem;
+    color: var(--terminal-text);
+    font-size: 0.94rem;
+}
+
+.terminal-user-card small {
+    margin-top: 0.16rem;
+    color: var(--terminal-text-soft);
+    font-size: 0.8rem;
+}
+
+.terminal-tool-toggle.dropdown-toggle::after {
+    margin-left: 0.28rem;
+    vertical-align: 0.06em;
+    opacity: 0.72;
 }
 
 #app .min-vh-100 {
@@ -1406,18 +1553,48 @@ html[data-theme='dark'] #app .btn-outline-success {
 }
 
 @media (max-width: 992px) {
-    .terminal-nav .nav-item {
-        margin: 2px 0;
-    }
-
     .terminal-nav .navbar-collapse {
         padding-top: 0.65rem;
+    }
+
+    .terminal-nav-shell {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+    }
+
+    .terminal-nav-routes,
+    .terminal-nav-tools {
+        flex-wrap: wrap;
+    }
+
+    .terminal-nav-routes {
+        overflow: visible;
+        padding-left: 0;
+    }
+
+    .terminal-nav .terminal-tool-toggle,
+    .terminal-nav .nav-link {
+        justify-content: center;
+    }
+
+    .terminal-nav .dropdown {
+        width: 100%;
+    }
+
+    .terminal-nav .terminal-tool-toggle,
+    .terminal-nav .terminal-user-toggle {
+        width: 100%;
+    }
+
+    .terminal-nav-menu,
+    .terminal-user-menu {
+        width: 100%;
+        min-width: 0;
     }
 
     .terminal-nav .terminal-theme-toggle {
         width: 100%;
         justify-content: space-around;
-        margin: 0 0 .5rem;
     }
 
     .terminal-theme-btn {

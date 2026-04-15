@@ -52,10 +52,17 @@ const SettingsView = {
         </div>`;
     },
 
-    async init() {
+    async init(params) {
         const isAdmin  = API.isAdmin();
         const canTags  = isAdmin || API.can('can_manage_tags');
         const firstTab = isAdmin ? 'general' : (canTags ? 'tags' : 'profile');
+        const requestedTab = params && params.tab ? String(params.tab) : '';
+        const allowedTabs = [
+            ...(isAdmin ? ['general', 'branding', 'email', 'autoresponse', 'imap', 'slack'] : []),
+            ...(canTags ? ['tags'] : []),
+            'profile'
+        ];
+        const initialTab = allowedTabs.includes(requestedTab) ? requestedTab : firstTab;
         try {
             const fetches = [API.get('/auth/me'), API.get('/settings/public')];
             if (isAdmin) {
@@ -72,7 +79,7 @@ const SettingsView = {
                 this.settings = results[1].data || {};
                 this.agents   = [];
             }
-            this.renderTab(firstTab);
+            this.renderTab(initialTab);
             this.bindTabSwitching();
         } catch (e) {
             $('#settings-content').html('<div class="alert alert-danger">' + App.escapeHtml(e.message) + '</div>');
