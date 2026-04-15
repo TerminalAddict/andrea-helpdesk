@@ -39,6 +39,7 @@ class ReplyRepository
                  FROM attachments WHERE reply_id IN ({$placeholders})",
                 $replyIds
             );
+            $allAttachments = (new AttachmentService())->enrichAttachmentsForDownload($allAttachments);
             foreach ($allAttachments as $att) {
                 $attachmentsByReply[(int)$att['reply_id']][] = $att;
             }

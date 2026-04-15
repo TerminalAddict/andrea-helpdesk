@@ -254,6 +254,10 @@ const SettingsView = {
                 $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Checking…');
                 $result.html('');
                 try {
+                    const checkRes = await API.post('/notifications/check-updates', { force: true });
+                    if (checkRes.data && checkRes.data.created && typeof Notifications !== 'undefined') {
+                        await Notifications.refreshSummary({ silent: true });
+                    }
                     const res       = await API.get('/version/latest');
                     const latest    = res.data;
                     const installed = $('#installed-version').text().trim();

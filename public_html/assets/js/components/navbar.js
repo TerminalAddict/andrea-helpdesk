@@ -83,6 +83,11 @@ const Navbar = {
                                         <div id="notification-menu-body" class="terminal-notification-menu-body">
                                             <div class="terminal-notification-empty">Loading…</div>
                                         </div>
+                                        <div class="terminal-notification-menu-footer">
+                                            <a class="dropdown-item terminal-menu-link" href="#/my-profile/notifications" data-route="/my-profile/notifications">
+                                                <i class="bi bi-layout-text-window-reverse me-2"></i>Alerts Panel
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
                             ` : ''}
@@ -124,7 +129,6 @@ const Navbar = {
                                     </li>
                                     <li><hr class="dropdown-divider"></li>
                                     ${isAgent ? `<li><a class="dropdown-item terminal-menu-link" href="#/my-profile" data-route="/my-profile"><i class="bi bi-person-lines-fill me-2"></i>My Profile</a></li>` : ''}
-                                    ${isAgent ? `<li><a class="dropdown-item terminal-menu-link" href="#/my-profile/notifications" data-route="/my-profile/notifications"><i class="bi bi-bell me-2"></i>Notifications</a></li>` : ''}
                                     <li><a class="dropdown-item terminal-menu-link" href="#" id="nav-logout"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
                                 </ul>
                             </div>

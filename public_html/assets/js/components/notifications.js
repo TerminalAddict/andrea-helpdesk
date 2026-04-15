@@ -197,7 +197,7 @@ const Notifications = {
         if (this.unreadCount > 0) {
             $badge.text(this.unreadCount > 99 ? '99+' : String(this.unreadCount)).show();
         } else if (this.activeCount > 0) {
-            $badge.text('!').addClass('attention').show();
+            $badge.text(this.activeCount > 99 ? '99+' : String(this.activeCount)).addClass('attention').show();
         } else {
             $badge.hide();
         }

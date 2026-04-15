@@ -81,7 +81,8 @@ class NotificationController
 
     public function checkUpdates(Request $request): void
     {
-        Response::success($this->updateChecks->checkForAgent((int)$request->agent->id));
+        $force = in_array((string)$request->input('force', '0'), ['1', 'true', 'yes'], true);
+        Response::success($this->updateChecks->checkForAgent((int)$request->agent->id, $force));
     }
 
     private function normaliseItems(array $items, int $limit, bool $ascending, bool $forMenu): array

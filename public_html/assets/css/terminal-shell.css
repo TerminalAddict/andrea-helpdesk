@@ -395,8 +395,8 @@ html[data-theme='dark'] .terminal-theme-btn.active {
 }
 
 .terminal-notification-badge.attention {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--terminal-warn) 88%, #ffffff), color-mix(in srgb, var(--terminal-danger) 28%, var(--terminal-warn)));
-    color: #102031;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--terminal-warn) 88%, #ffffff), color-mix(in srgb, var(--terminal-danger) 28%, var(--terminal-warn))) !important;
+    color: #102031 !important;
 }
 
 .terminal-notification-menu {
@@ -427,6 +427,12 @@ html[data-theme='dark'] .terminal-theme-btn.active {
     overflow-y: auto;
     overflow-x: hidden;
     padding-right: 0.1rem;
+}
+
+.terminal-notification-menu-footer {
+    margin-top: 0.35rem;
+    padding-top: 0.35rem;
+    border-top: 1px solid color-mix(in srgb, var(--terminal-border) 82%, transparent);
 }
 
 .terminal-notification-item {

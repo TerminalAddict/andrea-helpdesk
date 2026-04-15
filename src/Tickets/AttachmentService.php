@@ -79,7 +79,8 @@ class AttachmentService
         $token = $this->generateDownloadToken($id);
         $db->execute("UPDATE attachments SET download_token = ? WHERE id = ?", [$token, $id]);
 
-        return $db->fetch("SELECT * FROM attachments WHERE id = ?", [$id]) ?? [];
+        $attachment = $db->fetch("SELECT * FROM attachments WHERE id = ?", [$id]) ?? [];
+        return $attachment ? $this->enrichAttachmentForDownload($attachment) : [];
     }
 
     /**
@@ -127,7 +128,8 @@ class AttachmentService
         $token = $this->generateDownloadToken($id);
         $db->execute("UPDATE attachments SET download_token = ? WHERE id = ?", [$token, $id]);
 
-        return $db->fetch("SELECT * FROM attachments WHERE id = ?", [$id]) ?? [];
+        $attachment = $db->fetch("SELECT * FROM attachments WHERE id = ?", [$id]) ?? [];
+        return $attachment ? $this->enrichAttachmentForDownload($attachment) : [];
     }
 
     public function delete(int $attachmentId): bool
@@ -178,18 +180,33 @@ class AttachmentService
 
     public function getAttachmentsForReply(int $replyId): array
     {
-        return Database::getInstance()->fetchAll(
+        $attachments = Database::getInstance()->fetchAll(
             "SELECT * FROM attachments WHERE reply_id = ?",
             [$replyId]
         );
+        return $this->enrichAttachmentsForDownload($attachments);
     }
 
     public function getAttachmentsForTicket(int $ticketId): array
     {
-        return Database::getInstance()->fetchAll(
+        $attachments = Database::getInstance()->fetchAll(
             "SELECT * FROM attachments WHERE ticket_id = ? ORDER BY created_at ASC",
             [$ticketId]
         );
+        return $this->enrichAttachmentsForDownload($attachments);
+    }
+
+    public function enrichAttachmentsForDownload(array $attachments): array
+    {
+        return array_map(fn(array $attachment): array => $this->enrichAttachmentForDownload($attachment), $attachments);
+    }
+
+    public function enrichAttachmentForDownload(array $attachment): array
+    {
+        $token = $this->generateDownloadToken((int)$attachment['id']);
+        $attachment['download_token'] = $token;
+        $attachment['token'] = $token;
+        return $attachment;
     }
 
     private function sanitiseFilename(string $filename): string

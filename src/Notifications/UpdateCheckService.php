@@ -37,10 +37,10 @@ class UpdateCheckService
         return (time() - strtotime((string)$agent['last_update_check_at'])) >= self::CHECK_INTERVAL_SECONDS;
     }
 
-    public function checkForAgent(int $agentId): array
+    public function checkForAgent(int $agentId, bool $force = false): array
     {
         $agent = $this->agents->findById($agentId);
-        if (!$agent || !$this->shouldCheck($agent)) {
+        if (!$agent || (!$force && !$this->shouldCheck($agent))) {
             return ['checked' => false, 'created' => false];
         }
 
@@ -51,7 +51,7 @@ class UpdateCheckService
 
         try {
             $agent = $this->agents->findById($agentId);
-            if (!$agent || !$this->shouldCheck($agent)) {
+            if (!$agent || (!$force && !$this->shouldCheck($agent))) {
                 return ['checked' => false, 'created' => false];
             }
 

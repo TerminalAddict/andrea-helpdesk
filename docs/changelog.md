@@ -8,6 +8,14 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
+## [1.3.3] — 2026-04-15
+
+### Fixed
+- Attachment API payloads now issue fresh signed download tokens when tickets and replies are loaded, restoring access to historical attachments whose previously stored 24-hour tokens had expired
+
+
+---
+
 ## [1.3.2] — 2026-04-15
 
 ### Added
