@@ -68,9 +68,9 @@ db-migrate: ## Run database migrations
 db-seed: ## Seed initial admin agent (reads ADMIN_* from .env)
 	php bin/seed.php
 
-release: ## Bump patch version, update release docs/files, commit, and push current branch
+release: ## Bump patch version, require changelog notes, stage all changes, commit, and push current branch
 	@NEW_VERSION=$$(php bin/release.php) && \
-	git add version.json docs/version.md docs/changelog.md public_html/index.php bin/release.php Makefile && \
+	git add -A && \
 	git commit -m "Bump version to $$NEW_VERSION" && \
 	git push
 

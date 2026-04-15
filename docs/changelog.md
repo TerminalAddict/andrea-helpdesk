@@ -4,6 +4,28 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
+## [Unreleased]
+
+---
+
+## [1.3.2] — 2026-04-15
+
+### Added
+- Added `make release` to bump the patch version, update release metadata files, commit, and push the current branch
+
+### Fixed
+- Removed the old `public_html/test` theme-lab from the repo, deploy flow, and production server
+- Collapsed repeated active notifications for the same ticket issue in `#/my-profile/notifications`
+- Opening `#/my-profile/notifications` now marks the unread notification queue as read immediately
+- Notification and ticket-count badges now refresh more aggressively in the background so nav counts react faster to live changes
+- The notification bell attention state now avoids showing stale numeric counts when all items are read but active issues still remain
+
+### Docs
+- Updated release workflow documentation to require a prepared `Unreleased` changelog section before running `make release`
+
+
+---
+
 ## [1.3.0] — 2026-04-16
 
 ### Added

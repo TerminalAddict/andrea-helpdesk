@@ -80,7 +80,7 @@ try {
 <script>
 window.AppConfig = {
     apiBase: '/api',
-    version: '1.3.0'
+    version: '1.3.2'
 };
 </script>
 

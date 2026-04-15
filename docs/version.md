@@ -1,6 +1,6 @@
 # Version
 
-Current release: **1.3.0** (2026-04-16)
+Current release: **1.3.2** (2026-04-15)
 
 See [changelog.md](changelog.md) for full history.
 
@@ -12,7 +12,7 @@ See [changelog.md](changelog.md) for full history.
 - Admin sessions also perform a silent background update check at most once per day via the notification center. Overlapping checks for the same admin are serialised server-side before fetching upstream metadata, and if a newer version is found, an in-app notification is created linking directly to `#/admin/settings/general`.
 - When an update is available, an **Update Now** button opens a preflight checklist followed by a one-click updater that downloads, extracts, copies files, and runs database migrations automatically.
 - The version metadata source can be overridden with `UPDATE_VERSION_URL`. The updater package source can be overridden with `UPDATE_REPO_ZIP_URL` and `UPDATE_REPO_PREFIX`; otherwise it defaults to the public GitHub `main` metadata and zip.
-- When a new release is ready, update `version.json`, `docs/version.md`, and `docs/changelog.md`, then commit and push. All installed instances will detect the new version on their next check.
+- When a new release is ready, prepare the `docs/changelog.md` `Unreleased` section with the relevant notes, then run `make release`. That target bumps `version.json`, updates `docs/version.md`, updates the client version in `public_html/index.php`, converts the prepared `Unreleased` notes into the new versioned changelog section, stages the current worktree, commits, and pushes.
 - `make deploy` now runs `php bin/migrate.php` on the remote host after `composer install`, so numbered DB migrations are applied during normal rsync deployments as well as in-app updates.
 
 ## In-app updater

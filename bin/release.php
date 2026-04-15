@@ -59,12 +59,24 @@ function updateFile(string $path, string $pattern, string $replacement): void
 function updateChangelog(string $path, string $version, string $date): void
 {
     $contents = (string)file_get_contents($path);
-    $pattern = '/## \[Unreleased\](?: — [0-9-]+)?\n\n/';
-    $replacement = "## [Unreleased]\n\n## [{$version}] — {$date}\n\n";
+    $pattern = '/## \[Unreleased\](?: — [0-9-]+)?\n\n(.*?)(?=\n---\n\n## \[|\z)/s';
+    if (!preg_match($pattern, $contents, $matches)) {
+        fwrite(STDERR, "docs/changelog.md must contain an [Unreleased] section before running make release\n");
+        exit(1);
+    }
+
+    $releaseNotes = trim((string)$matches[1]);
+    if ($releaseNotes === '') {
+        fwrite(STDERR, "docs/changelog.md [Unreleased] section is empty; add release notes before running make release\n");
+        exit(1);
+    }
+
+    $replacement = "## [Unreleased]\n\n---\n\n## [{$version}] — {$date}\n\n{$releaseNotes}\n\n";
     $updated = preg_replace($pattern, $replacement, $contents, 1, $count);
     if ($updated === null || $count !== 1) {
         fwrite(STDERR, "Failed to update {$path}\n");
         exit(1);
     }
+
     file_put_contents($path, $updated);
 }
