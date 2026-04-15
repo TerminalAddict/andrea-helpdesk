@@ -3,6 +3,7 @@
  */
 const SettingsView = {
     settings: {},
+    agents: [],
 
     render() {
         const isAdmin   = API.isAdmin();
@@ -57,14 +58,19 @@ const SettingsView = {
         const firstTab = isAdmin ? 'general' : (canTags ? 'tags' : 'profile');
         try {
             const fetches = [API.get('/auth/me'), API.get('/settings/public')];
-            if (isAdmin) fetches.push(API.get('/admin/settings'));
+            if (isAdmin) {
+                fetches.push(API.get('/admin/settings'));
+                fetches.push(API.get('/agents'));
+            }
             const results = await Promise.all(fetches);
             this.currentAgent = (results[0].data && results[0].data.user) || {};
             // Non-admins get global_signature from public settings; admins get full settings
             if (isAdmin) {
                 this.settings = results[2].data || {};
+                this.agents   = results[3].data || [];
             } else {
                 this.settings = results[1].data || {};
+                this.agents   = [];
             }
             this.renderTab(firstTab);
             this.bindTabSwitching();
@@ -97,7 +103,12 @@ const SettingsView = {
                 { key: 'ticket_prefix',  label: 'Ticket Number Prefix', type: 'text', value: s.ticket_prefix || 'HD' },
                 { key: 'imap_poll_mode', label: 'IMAP Polling Mode', type: 'select', value: s.imap_poll_mode || 'cron',
                   options: [['cron','Cron Job (recommended)'],['web','Web Triggered']] },
-            ]);
+                { key: 'sla_enabled',    label: 'Enable SLA escalation', type: 'checkbox', value: s.sla_enabled },
+                { key: 'sla_high_after_days', label: 'Raise to High after', type: 'number', value: s.sla_high_after_days ?? 3, hint: 'Days without attention before a ticket becomes high priority.' },
+                { key: 'sla_overdue_after_days', label: 'Raise to Overdue after', type: 'number', value: s.sla_overdue_after_days ?? 2, hint: 'Additional days without attention after the high stage before the ticket becomes overdue.' },
+                { key: 'sla_notify_scope', label: 'SLA reminder recipients', type: 'select', value: s.sla_notify_scope || 'all',
+                  options: [['all','All active agents'],['specific','Specific agents only']] },
+            ]) + this.renderSlaRecipients();
         } else if (tab === 'branding') {
             html = this.form('branding', [
                 { key: 'logo_url',              label: 'Logo URL',       type: 'text',  value: s.logo_url || '', hint: 'URL to your logo image (displayed in the navbar)' },
@@ -229,6 +240,8 @@ const SettingsView = {
             };
             $('#s-imap_poll_mode').on('change', function() { updatePollInfo(this.value); });
             updatePollInfo($('#s-imap_poll_mode').val());
+            $('#s-sla_notify_scope').on('change', () => this.syncSlaRecipientVisibility());
+            this.syncSlaRecipientVisibility();
 
             // Version & update check card
             $('#settings-content').append(`
@@ -984,7 +997,7 @@ const SettingsView = {
     async save(tab) {
         const s = this.settings;
         const tabFields = {
-            general:      ['company_name','app_url','timezone','date_format','ticket_prefix','imap_poll_mode'],
+            general:      ['company_name','app_url','timezone','date_format','ticket_prefix','imap_poll_mode','sla_enabled','sla_high_after_days','sla_overdue_after_days','sla_notify_scope'],
             branding:     ['logo_url','favicon_url','primary_color','support_email_display'],
             email:        ['smtp_host','smtp_port','smtp_encryption','smtp_username','smtp_password','smtp_from_address','smtp_from_name','reply_to_address','global_signature','notify_agent_on_new_ticket','notify_agent_on_new_reply'],
             autoresponse: ['auto_response_enabled','auto_response_subject','auto_response_body'],
@@ -1005,6 +1018,19 @@ const SettingsView = {
             }
         });
 
+        if (tab === 'general') {
+            payload.sla_notify_agent_ids = $('.sla-agent-check:checked')
+                .map((_, el) => parseInt(el.value, 10))
+                .get()
+                .filter(Boolean);
+            payload.sla_high_after_days = Math.max(0, parseInt(payload.sla_high_after_days, 10) || 0);
+            payload.sla_overdue_after_days = Math.max(0, parseInt(payload.sla_overdue_after_days, 10) || 0);
+            if (payload.sla_notify_scope === 'specific' && payload.sla_notify_agent_ids.length === 0) {
+                App.toast('Select at least one SLA reminder recipient', 'error');
+                return;
+            }
+        }
+
         try {
             await API.put('/admin/settings', { settings: payload });
             // Update local cache
@@ -1014,12 +1040,45 @@ const SettingsView = {
             // Update public settings cache
             if (tab === 'general' || tab === 'branding') {
                 Object.assign(App.settings, payload);
-                App.applyAppName(App.appName);
+                App.applyAppName(App.settings.company_name || App.appName);
                 if (payload.favicon_url !== undefined) App.applyFavicon(payload.favicon_url);
             }
             App.toast('Settings saved');
         } catch (e) {
             App.toast(e.message, 'error');
         }
+    },
+
+    renderSlaRecipients() {
+        const selectedIds = new Set((this.settings.sla_notify_agent_ids || []).map(id => String(id)));
+        const agents = this.agents.filter(agent => agent.is_active !== 0);
+        const content = agents.length
+            ? agents.map(agent => `
+                <label class="list-group-item d-flex align-items-center gap-2">
+                    <input class="form-check-input m-0 sla-agent-check" type="checkbox" value="${agent.id}" ${selectedIds.has(String(agent.id)) ? 'checked' : ''}>
+                    <span class="fw-medium">${App.escapeHtml(agent.name)}</span>
+                    <span class="text-muted small ms-auto">${App.escapeHtml(agent.email || '')}</span>
+                </label>
+            `).join('')
+            : '<div class="text-muted small">No active agents available.</div>';
+
+        return `
+        <div class="card border-0 shadow-sm mt-3" id="sla-recipient-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                    <div>
+                        <h6 class="mb-1">SLA Reminder Targets</h6>
+                        <p class="text-muted small mb-0">Used for both the high-priority reminder and the overdue reminder when you choose specific agents.</p>
+                    </div>
+                    <span class="badge text-bg-light border">General</span>
+                </div>
+                <div class="list-group mt-3" id="sla-recipient-list">${content}</div>
+            </div>
+        </div>`;
+    },
+
+    syncSlaRecipientVisibility() {
+        const isSpecific = $('#s-sla_notify_scope').val() === 'specific';
+        $('#sla-recipient-card').toggleClass('d-none', !isSpecific);
     }
 };

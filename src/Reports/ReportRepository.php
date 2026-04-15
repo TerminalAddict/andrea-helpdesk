@@ -44,9 +44,17 @@ class ReportRepository
             [$fromDt, $toDt]
         );
 
+        $overdue = $this->db->count(
+            "SELECT COUNT(*) FROM tickets
+             WHERE deleted_at IS NULL
+               AND status NOT IN ('resolved', 'closed')
+               AND priority = 'overdue'"
+        );
+
         return array_merge($result, [
-            'new_in_period'     => $newInPeriod,
-            'closed_in_period'  => $closedInPeriod,
+            'new_in_period'        => $newInPeriod,
+            'closed_in_period'     => $closedInPeriod,
+            'overdue'              => $overdue,
             'avg_response_minutes' => round((float)($avgResponse['avg_minutes'] ?? 0), 1),
         ]);
     }

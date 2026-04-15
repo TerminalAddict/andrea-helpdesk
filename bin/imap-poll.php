@@ -20,6 +20,7 @@ use Andrea\Helpdesk\IMAP\ImapAccountRepository;
 use Andrea\Helpdesk\IMAP\ImapPoller;
 use Andrea\Helpdesk\IMAP\MessageParser;
 use Andrea\Helpdesk\IMAP\ThreadMatcher;
+use Andrea\Helpdesk\Tickets\SlaService;
 
 // Require JWT_SECRET
 $jwtSecret = getenv('JWT_SECRET');
@@ -70,8 +71,12 @@ $totalProcessed = 0;
 try {
     $db          = Database::getInstance();
     $settings    = SettingsService::getInstance();
+    $slaService  = new SlaService();
     $accountRepo = new ImapAccountRepository();
     $accounts    = $accountRepo->findEnabled();
+
+    $slaResult = $slaService->run();
+    echo '[' . date('Y-m-d H:i:s') . "] SLA run: {$slaResult['high_escalated']} raised to high, {$slaResult['overdue_escalated']} raised to overdue." . PHP_EOL;
 
     if (empty($accounts)) {
         echo '[' . date('Y-m-d H:i:s') . '] No enabled IMAP accounts configured.' . PHP_EOL;

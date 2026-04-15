@@ -13,8 +13,9 @@ const DashboardView = {
                     {id:'waiting', label:'Waiting for Reply', color:'text-danger'},
                     {id:'pending', label:'Pending',           color:'text-warning'},
                     {id:'replied', label:'Replied',            color:'text-success'},
+                    {id:'overdue', label:'Overdue',            color:'text-danger'},
                 ].map(s => `
-                <div class="col-6 col-md-3">
+                <div class="col-6 col-md-4 col-xl">
                     <div class="card border-0 shadow-sm h-100">
                         <div class="card-body text-center py-3">
                             <div class="fs-1 fw-bold ${s.color}" id="stat-${s.id}">–</div>
@@ -41,7 +42,19 @@ const DashboardView = {
             </div>
 
             <div class="row g-3">
-                <div class="col-md-6">
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white fw-semibold">
+                            <i class="bi bi-exclamation-octagon me-2 text-danger"></i>Overdue Tickets
+                        </div>
+                        <div class="card-body p-0">
+                            <div id="overdue-tickets-table">
+                                <div class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
                     <div class="card border-0 shadow-sm">
                         <div class="card-header bg-white fw-semibold">
                             <i class="bi bi-person-check me-2"></i>My Assigned Tickets
@@ -53,7 +66,7 @@ const DashboardView = {
                         </div>
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-lg-4">
                     <div class="card border-0 shadow-sm">
                         <div class="card-header bg-white fw-semibold">
                             <i class="bi bi-clock-history me-2"></i>Recently Updated
@@ -77,6 +90,7 @@ const DashboardView = {
                             </select>
                             <select class="form-select form-select-sm w-auto" id="dash-filter-priority">
                                 <option value="">All Priorities</option>
+                                <option value="overdue">Overdue</option>
                                 <option value="urgent">Urgent</option>
                                 <option value="high">High</option>
                                 <option value="normal">Normal</option>
@@ -103,9 +117,19 @@ const DashboardView = {
             $('#stat-waiting').text(data.waiting_for_reply || 0);
             $('#stat-pending').text(data.pending || 0);
             $('#stat-replied').text(data.replied || 0);
+            $('#stat-overdue').text(data.overdue || 0);
         } catch (e) {}
 
         const pageSize = parseInt(API.currentUser?.page_size) || 20;
+
+        // Overdue tickets
+        try {
+            const overdueParams = new URLSearchParams({ status: 'active', priority: 'overdue', sort: 'last_attention_at', dir: 'asc' });
+            const res = await API.get('/tickets', { status: 'active', priority: 'overdue', per_page: 10, sort: 'last_attention_at', dir: 'asc' });
+            this.renderOverdueTable(res.data || [], res.meta || {}, `#/tickets?${overdueParams}`);
+        } catch (e) {
+            $('#overdue-tickets-table').html('<p class="text-muted p-3">No overdue tickets.</p>');
+        }
 
         // My tickets
         try {
@@ -278,13 +302,13 @@ const DashboardView = {
                 ? t.tag_names.split(',').map(tag => `<span class="badge bg-secondary me-1">${App.escapeHtml(tag)}</span>`).join('')
                 : '';
             return `
-            <tr class="dash-ticket-row" data-id="${t.id}" style="cursor:pointer;">
+            <tr class="dash-ticket-row${t.priority === 'overdue' ? ' ticket-overdue-row' : ''}" data-id="${t.id}" style="cursor:pointer;">
                 <td><span class="font-monospace small">${App.escapeHtml(t.ticket_number)}</span></td>
                 <td class="text-truncate" style="max-width:200px;">${App.escapeHtml(t.subject)}</td>
                 <td>${App.priorityBadge(t.priority)}</td>
                 <td>${tags}</td>
                 <td class="small text-center text-muted">${t.reply_count > 0 ? t.reply_count : '–'}</td>
-                <td class="small text-muted">${App.escapeHtml(t.agent_name || '—')}</td>
+                <td class="small ${t.priority === 'overdue' ? 'ticket-overdue-agent' : 'text-muted'}">${App.escapeHtml(t.agent_name || '—')}</td>
                 <td class="small text-muted text-nowrap">${App.formatDate(t.updated_at)}</td>
             </tr>`;
         }).join('');
@@ -317,7 +341,7 @@ const DashboardView = {
                 ? t.tag_names.split(',').map(tag => `<span class="badge bg-secondary me-1">${App.escapeHtml(tag)}</span>`).join('')
                 : '';
             return `
-            <tr class="dash-ticket-row" data-id="${t.id}" style="cursor:pointer;">
+            <tr class="dash-ticket-row${t.priority === 'overdue' ? ' ticket-overdue-row' : ''}" data-id="${t.id}" style="cursor:pointer;">
                 <td><span class="font-monospace small">${App.escapeHtml(t.ticket_number)}</span></td>
                 <td class="text-truncate" style="max-width:160px;">${App.escapeHtml(t.subject)}</td>
                 <td>${App.statusBadge(t.status)}</td>
@@ -342,6 +366,42 @@ const DashboardView = {
                 <tbody>${rows}</tbody>
             </table>${footer}`);
         $(selector).on('click', '.dash-ticket-row', function() {
+            App.navigate('/tickets/' + $(this).data('id'));
+        });
+    },
+
+    renderOverdueTable(tickets, meta = {}, viewAllHref = '#/tickets?priority=overdue') {
+        if (!tickets.length) {
+            $('#overdue-tickets-table').html('<p class="text-muted p-3 mb-0">No overdue tickets.</p>');
+            return;
+        }
+
+        const rows = tickets.map(t => `
+            <tr class="dash-ticket-row ticket-overdue-row" data-id="${t.id}" style="cursor:pointer;">
+                <td><span class="font-monospace small">${App.escapeHtml(t.ticket_number)}</span></td>
+                <td class="text-truncate" style="max-width:180px;">${App.escapeHtml(t.subject)}</td>
+                <td class="small ticket-overdue-agent">${App.escapeHtml(t.agent_name || 'Unassigned')}</td>
+                <td class="small text-muted text-nowrap">${App.formatDate(t.last_attention_at || t.updated_at)}</td>
+            </tr>
+        `).join('');
+
+        const total = meta.total || tickets.length;
+        const showing = tickets.length;
+        const footer = total > showing
+            ? `<div class="px-3 py-2 border-top bg-light d-flex justify-content-between align-items-center">
+                   <span class="small text-muted">Showing ${showing} of ${total}</span>
+                   <a href="${viewAllHref}" class="btn btn-sm btn-outline-danger">View all overdue →</a>
+               </div>`
+            : '';
+
+        $('#overdue-tickets-table').html(`
+            <table class="table table-hover table-sm mb-0">
+                <thead class="table-light">
+                    <tr><th>Ticket</th><th>Subject</th><th>Assigned To</th><th>Last Attention</th></tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>${footer}`);
+        $('#overdue-tickets-table').on('click', '.dash-ticket-row', function() {
             App.navigate('/tickets/' + $(this).data('id'));
         });
     }

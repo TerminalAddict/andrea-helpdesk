@@ -153,6 +153,7 @@ class TicketService
         $replyService = new ReplyService();
         $childNumber = $result['ticket']['ticket_number'];
         $replyService->createSystemReply($parentId, "Sub-ticket {$childNumber} created.", $agentId);
+        $this->ticketRepo->touchAttention($parentId);
 
         return $result;
     }
@@ -199,6 +200,7 @@ class TicketService
             $replyService = new ReplyService();
             $replyService->createSystemReply($targetId, "Ticket {$source['ticket_number']} was merged into this ticket.", $agentId);
             $replyService->createSystemReply($sourceId, "This ticket was merged into {$target['ticket_number']}.", $agentId);
+            $this->ticketRepo->touchAttention($targetId);
 
             $this->db->commit();
             return true;
@@ -231,8 +233,11 @@ class TicketService
 
         $replyService = new ReplyService();
         $replyService->createSystemReply($ticketId, "Status changed to {$status}.", $agentId);
-
-        return $this->ticketRepo->update($ticketId, $updates);
+        $updated = $this->ticketRepo->update($ticketId, $updates);
+        if ($updated) {
+            $this->ticketRepo->touchAttention($ticketId);
+        }
+        return $updated;
     }
 
     public function generateNumber(): string

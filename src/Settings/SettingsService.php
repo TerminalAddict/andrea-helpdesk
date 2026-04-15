@@ -102,6 +102,22 @@ class SettingsService
         ];
     }
 
+    public function getSlaConfig(): array
+    {
+        $scope = (string)$this->repo->get('sla_notify_scope', 'all');
+
+        return [
+            'enabled'            => (bool)$this->repo->get('sla_enabled', false),
+            'high_after_days'    => max(0, (int)$this->repo->get('sla_high_after_days', 3)),
+            'overdue_after_days' => max(0, (int)$this->repo->get('sla_overdue_after_days', 2)),
+            'notify_scope'       => in_array($scope, ['all', 'specific'], true) ? $scope : 'all',
+            'notify_agent_ids'   => array_values(array_filter(
+                array_map('intval', (array)$this->repo->get('sla_notify_agent_ids', [])),
+                fn(int $id): bool => $id > 0
+            )),
+        ];
+    }
+
     public function getTicketPrefix(): string
     {
         $env = getenv('TICKET_PREFIX');

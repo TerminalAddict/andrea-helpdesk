@@ -22,7 +22,8 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Multi-channel intake** — tickets created via email (IMAP polling), agent UI, or the customer portal
 - **Ticket threading** — replies are threaded using `Message-ID`, `In-Reply-To`, and `References` headers so email conversations stay together
 - **Parent / child tickets** — link related tickets in a hierarchy, displayed inline in the ticket list
-- **Priorities** — Urgent, High, Normal, Low with colour-coded badges
+- **Priorities** — Overdue, Urgent, High, Normal, Low with colour-coded badges
+- **Configurable SLA escalation** — in Settings → General, tickets with no attention for a configurable number of days can be raised to **High**, then to **Overdue** after an additional configurable delay; reminder emails can go to all agents or a selected subset
 - **Statuses** — New, Open, Waiting for Reply, Replied, Pending, Resolved, Closed with automatic transitions (customer reply → Waiting for Reply; agent reply → Replied; reopens closed/resolved tickets on customer reply)
 - **Tags** — assign multiple tags per ticket; filter the ticket list by tag
 - **Participants (CC)** — add customers as CC participants; they receive reply notifications and can respond via email or portal
@@ -90,7 +91,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **HTML email containment** — fixed-width HTML emails (tables, images) are contained within the viewport to prevent horizontal scrolling on mobile
 
 ### Reporting
-- **Dashboard** — live stats: New, Waiting for Reply, Pending, and Replied ticket counts; navbar badge shows all active (non-resolved, non-closed) tickets; recent activity by agent
+- **Dashboard** — live stats: New, Waiting for Reply, Pending, Replied, and Overdue ticket counts; dedicated overdue ticket list; navbar badge shows all active (non-resolved, non-closed) tickets; recent activity by agent
 - **Reports** — ticket volume over time, resolution times, agent workload breakdowns
 
 ### Settings (Admin UI)
@@ -100,6 +101,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Ticket prefix** — customise the ticket number prefix
 - **Auto-responder** — enable/disable and customise the automatic acknowledgement email
 - **Date format** — configurable display format
+- **SLA policy** — enable/disable escalation, set the inactivity thresholds for **High** and **Overdue**, and choose whether reminder emails go to all active agents or only specific agents
 - **Slack appearance** — configurable bot display name, icon (image URL or emoji), and link preview toggle per Slack integration
 - **Version & update check** — the General tab shows the currently installed version and a **Check for Updates** button; the server fetches `version.json` from the GitHub `main` branch and reports whether an update is available; when an update is found, an **Update Now** button opens a preflight checklist (write permissions, PHP extensions, disk space) with fix instructions for any failures, then a one-click updater that downloads, extracts, copies files, and runs database migrations automatically
 
@@ -115,7 +117,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 ### Operations
 - **Log rotation** — `imap.log` and `app.log` automatically trimmed to 3 days retention on every poll run
 - **Cron overlap prevention** — `flock()` ensures only one IMAP poller runs at a time
-- **Rsync deployment** — single `make deploy-production` command; vendor and storage directories excluded
+- **Rsync deployment** — single `make deploy` command; vendor and storage directories excluded; remote `composer install` and `php bin/migrate.php` run automatically
 - **No build step** — frontend uses Bootstrap 5, Bootstrap Icons, and jQuery loaded from local vendor files; no Node.js or bundler required
 - **Versioning** — `version.json` in the repository root is the authoritative version record; see [docs/version.md](docs/version.md) and [docs/changelog.md](docs/changelog.md)
 
@@ -193,7 +195,7 @@ make cron-install-production
 
 Then log in at your configured `APP_URL` with the `ADMIN_EMAIL` / `ADMIN_PASSWORD` from `.env`.
 
-SMTP, IMAP accounts, branding, and all other runtime settings are configured through the admin Settings UI — no config file editing required after initial setup.
+SMTP, IMAP accounts, SLA policy, branding, and all other runtime settings are configured through the admin Settings UI — no config file editing required after initial setup.
 
 ---
 
@@ -209,8 +211,7 @@ cp Makefile.local.example Makefile.local
 `Makefile.local` is gitignored and never committed.
 
 ```bash
-make deploy-production   # rsync to production server
-make deploy-local        # rsync to local dev server
+make deploy   # rsync to production, install composer deps, run DB migrations
 ```
 
 Sensitive files (`.env`, `storage/`, `vendor/`) are excluded from rsync. The storage directory (attachments and logs) must live **outside** the web root — set `STORAGE_PATH` in `.env` accordingly.

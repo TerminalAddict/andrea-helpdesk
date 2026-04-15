@@ -39,6 +39,7 @@ const TicketDetailView = {
         const t = this.ticket;
         const canClose  = API.can('can_close_tickets') || API.isAdmin();
         const canDelete = API.can('can_delete_tickets') || API.isAdmin();
+        const isOverduePriority = t.priority === 'overdue';
 
         const html = `
         <div class="container-fluid p-4" id="ticket-detail-wrap">
@@ -161,7 +162,7 @@ const TicketDetailView = {
                             <div class="mb-2">
                                 <label class="form-label small text-muted mb-1">Priority</label>
                                 <select class="form-select form-select-sm" id="edit-priority">
-                                    ${['urgent','high','normal','low'].map(p =>
+                                    ${['overdue','urgent','high','normal','low'].map(p =>
                                         `<option value="${p}" ${t.priority === p ? 'selected' : ''}>${p.charAt(0).toUpperCase()+p.slice(1)}</option>`
                                     ).join('')}
                                 </select>
@@ -174,6 +175,11 @@ const TicketDetailView = {
                                         `<option value="${a.id}" ${t.assigned_agent_id == a.id ? 'selected' : ''}>${App.escapeHtml(a.name)}</option>`
                                     ).join('')}
                                 </select>
+                                ${isOverduePriority ? `
+                                <div class="ticket-overdue-callout mt-2">
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                    Overdue ticket${t.agent_name ? ` assigned to <strong>${App.escapeHtml(t.agent_name)}</strong>` : ' and currently unassigned'}.
+                                </div>` : ''}
                             </div>
                             <div class="mb-2">
                                 <label class="form-label small text-muted mb-1">Channel</label>

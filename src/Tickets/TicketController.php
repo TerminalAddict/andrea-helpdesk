@@ -156,6 +156,9 @@ class TicketController
         }
 
         $this->repo->update($ticket['id'], $data);
+        if ($data) {
+            $this->repo->touchAttention($ticket['id']);
+        }
 
         // Log audit trail for changes
         $replyService = new ReplyService();
@@ -213,6 +216,7 @@ class TicketController
             "UPDATE replies SET body_html = ?, updated_at = NOW() WHERE id = ?",
             [$bodyHtml, $replyId]
         );
+        $this->repo->touchAttention($ticketId);
 
         $replyService = new ReplyService();
         $replyService->createSystemReply($ticketId, 'Message body updated.', $request->agent->id);
@@ -260,6 +264,7 @@ class TicketController
 
         $agentId = $request->input('agent_id');
         $this->repo->update($ticket['id'], ['assigned_agent_id' => $agentId ?: null]);
+        $this->repo->touchAttention($ticket['id']);
 
         if ($agentId) {
             $agent = $this->db->fetch("SELECT * FROM agents WHERE id = ?", [$agentId]);
@@ -318,12 +323,16 @@ class TicketController
         if (!$related) throw new NotFoundException('Related ticket not found');
 
         $this->repo->addRelation($ticket['id'], $relatedId);
+        $this->repo->touchAttention($ticket['id']);
+        $this->repo->touchAttention($relatedId);
         Response::success(null, 'Tickets linked');
     }
 
     public function unrelate(Request $request, array $params): void
     {
         $this->repo->removeRelation((int)$params['id'], (int)$params['related_id']);
+        $this->repo->touchAttention((int)$params['id']);
+        $this->repo->touchAttention((int)$params['related_id']);
         Response::success(null, 'Ticket link removed');
     }
 
@@ -364,12 +373,15 @@ class TicketController
         $customer     = $customerRepo->upsertByEmail($data['email'], $name);
 
         $this->repo->addParticipant($ticketId, $data['email'], $name, 'cc', $customer['id']);
+        $this->repo->touchAttention($ticketId);
         Response::success($this->repo->getParticipants($ticketId));
     }
 
     public function removeParticipant(Request $request, array $params): void
     {
+        $ticketId = (int)$params['id'];
         $this->repo->removeParticipant((int)$params['participant_id']);
+        $this->repo->touchAttention($ticketId);
         Response::success(null, 'Participant removed');
     }
 
@@ -389,12 +401,15 @@ class TicketController
             }
         }
 
+        $this->repo->touchAttention($ticketId);
         Response::success($this->repo->getTags($ticketId));
     }
 
     public function removeTag(Request $request, array $params): void
     {
-        $this->repo->removeTag((int)$params['id'], (int)$params['tag_id']);
+        $ticketId = (int)$params['id'];
+        $this->repo->removeTag($ticketId, (int)$params['tag_id']);
+        $this->repo->touchAttention($ticketId);
         Response::success(null, 'Tag removed');
     }
 }

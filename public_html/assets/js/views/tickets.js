@@ -35,6 +35,7 @@ const TicketsView = {
                         <div class="col-md-2">
                             <select class="form-select form-select-sm" id="filter-priority">
                                 <option value="">All Priorities</option>
+                                <option value="overdue">Overdue</option>
                                 <option value="urgent">Urgent</option>
                                 <option value="high">High</option>
                                 <option value="normal">Normal</option>
@@ -176,7 +177,7 @@ const TicketsView = {
         tickets.filter(t => t.parent_ticket_id && !seenChildIds.has(t.id)).forEach(t => ordered.push({ t, child: true }));
 
         const rows = ordered.map(({ t, child }) => `
-            <tr class="ticket-row${child ? ' table-light ticket-child-row' : ''}" data-id="${t.id}" style="cursor:pointer;">
+            <tr class="ticket-row${child ? ' table-light ticket-child-row' : ''}${t.priority === 'overdue' ? ' ticket-overdue-row' : ''}" data-id="${t.id}" style="cursor:pointer;">
                 <td>
                     ${child ? '<span class="text-muted me-1" style="padding-left:1rem;">↳</span>' : ''}
                     <span class="font-monospace small fw-semibold">${App.escapeHtml(t.ticket_number)}</span>
@@ -189,7 +190,7 @@ const TicketsView = {
                 <td>${App.priorityBadge(t.priority)}</td>
                 <td>${t.tag_names ? t.tag_names.split(',').map(tag => `<span class="badge bg-secondary me-1">${App.escapeHtml(tag)}</span>`).join('') : ''}</td>
                 <td class="small text-center text-muted">${t.reply_count > 0 ? t.reply_count : '–'}</td>
-                <td class="small">${t.agent_name ? App.escapeHtml(t.agent_name) : '<em class="text-muted">Unassigned</em>'}</td>
+                <td class="small ${t.priority === 'overdue' ? 'ticket-overdue-agent' : ''}">${t.agent_name ? App.escapeHtml(t.agent_name) : '<em class="text-muted">Unassigned</em>'}</td>
                 <td class="small text-muted text-nowrap">${App.formatDate(t.created_at)}</td>
                 <td class="small text-muted text-nowrap">${App.formatDate(t.updated_at)}</td>
             </tr>`).join('');

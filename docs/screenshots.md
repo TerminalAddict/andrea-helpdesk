@@ -8,9 +8,9 @@ A visual tour of Andrea Helpdesk. All screens are from the agent UI.
 
 ![Dashboard](screenshots/Dashboard.png)
 
-The dashboard is the first screen agents see after login. It shows four live counters at the top — **New Tickets**, **Waiting for Reply**, **Pending Tickets**, and **Replied Tickets** — giving an at-a-glance health check of the queue.
+The dashboard is the first screen agents see after login. It shows five live counters at the top — **New Tickets**, **Waiting for Reply**, **Pending Tickets**, **Replied Tickets**, and **Overdue Tickets** — giving an at-a-glance health check of the queue.
 
-Below the counters, the dashboard is split into two ticket lists: **My Assigned Tickets** (tickets assigned to the current agent) and **Recently Updated** (across all agents). Each row shows the ticket number, subject, status badge, tags, and last-updated time. A search box at the top searches tickets and knowledge base articles simultaneously.
+Below the counters, the dashboard is split into three ticket lists: **Overdue Tickets**, **My Assigned Tickets** (tickets assigned to the current agent), and **Recently Updated** (across all agents). The overdue list is sorted by oldest `last_attention_at` first so the stalest tickets rise to the top. A search box at the top searches tickets and knowledge base articles simultaneously.
 
 ---
 
@@ -18,7 +18,7 @@ Below the counters, the dashboard is split into two ticket lists: **My Assigned 
 
 ![Tickets](screenshots/Tickets.png)
 
-The main ticket list shows all tickets the agent has access to. Columns include ticket number, subject/customer name, status badge, priority badge, tags, comment count, assigned agent, and created/updated timestamps.
+The main ticket list shows all tickets the agent has access to. Columns include ticket number, subject/customer name, status badge, priority badge, tags, comment count, assigned agent, and created/updated timestamps. Tickets whose priority is **Overdue** are highlighted with a stronger red treatment so the assignee stands out immediately.
 
 The filter bar at the top supports filtering by **status** (Active, New, Open, Waiting for Reply, Replied, Pending, Resolved, Closed), **priority**, **assigned agent**, and **tag**, as well as free-text search. The active ticket count is shown above the table. The navbar badge next to "Tickets" shows the count of active (non-resolved, non-closed) tickets at all times.
 
@@ -38,7 +38,7 @@ The reply and internal note composer supports **@mention** — typing `@` opens 
 
 Customer names in reply/message headers are clickable links that navigate directly to the customer's profile page.
 
-The **Ticket Info** sidebar on the right shows status, priority, assigned agent, channel, created/updated timestamps, and the **Suppress emails** toggle. When suppression is active, all outbound customer emails for this ticket are silenced — the toggle is recorded as a system event each time it changes. The sidebar also shows the linked customer, tags (with a dropdown to select from the global tag list — only tags not already applied are shown; the dropdown is hidden when all tags are applied), attachments, CC participants, and related/parent tickets.
+The **Ticket Info** sidebar on the right shows status, priority, assigned agent, channel, created/updated timestamps, and the **Suppress emails** toggle. When suppression is active, all outbound customer emails for this ticket are silenced — the toggle is recorded as a system event each time it changes. If the ticket priority is **Overdue**, the sidebar also shows a prominent red overdue callout naming the assigned agent (or showing that the ticket is unassigned). The sidebar also shows the linked customer, tags (with a dropdown to select from the global tag list — only tags not already applied are shown; the dropdown is hidden when all tags are applied), attachments, CC participants, and related/parent tickets.
 
 ---
 
@@ -106,13 +106,15 @@ Permission tags visible per agent include: `close_tickets`, `delete_tickets`, `e
 
 ![Settings General](screenshots/Settings_General.png)
 
-The General settings tab covers system-wide options: **Application Name**, **Application URL** (used in outbound email links), **Timezone**, **Date Format** (PHP `date()` format string), **Ticket Number Prefix**, and **IMAP Polling Mode**.
+The General settings tab covers system-wide options: **Application Name**, **Application URL** (used in outbound email links), **Timezone**, **Date Format** (PHP `date()` format string), **Ticket Number Prefix**, **IMAP Polling Mode**, and the SLA controls used for inactivity-based escalation.
+
+The SLA section lets admins enable or disable escalation, choose how many days without attention should raise a ticket to **High**, choose the additional number of days before it becomes **Overdue**, and decide whether reminder emails go to **all active agents** or only **specific agents**.
 
 Below the save button, a **Version &amp; Updates** card shows the currently installed version number (fetched from the server) and a **Check for Updates** button. Clicking the button asks the server to fetch `version.json` from the GitHub `main` branch and compare it to the installed version. The result is shown inline — either "You are running the latest version" or "Version X.Y.Z is available".
 
 When an update is available, an **Update Now** button appears alongside the GitHub link. Clicking it opens a modal that first runs **preflight checks** — PHP ZipArchive extension, HTTP download capability, write permissions on all key directories, temp directory writable, and at least 50 MB free disk space. Each failed check shows specific instructions on how to fix it. If all checks pass, a **Proceed with Update** button is enabled. Clicking that downloads the latest zip from GitHub, extracts it, copies the new files over the installation (preserving `.env`, `storage/`, and `vendor/`), runs the database schema update, applies any new migrations, and clears the opcode cache. A live log is shown in a terminal-style panel, and on success the user is prompted to reload the page.
 
-When IMAP Polling Mode is set to **Cron Job (recommended)**, a help box displays the exact crontab line to add, along with instructions for using `make cron-install-production` as a shortcut. The cron script uses a file lock so overlapping runs are safe.
+When IMAP Polling Mode is set to **Cron Job (recommended)**, a help box displays the exact crontab line to add, along with instructions for using `make cron-install-production` as a shortcut. The cron script uses a file lock so overlapping runs are safe. The same poller process also runs the SLA escalation scan, so cron/web-triggered polling doubles as the SLA scheduler.
 
 ---
 

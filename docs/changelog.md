@@ -4,6 +4,45 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
+## [1.2.1] — 2026-04-15
+
+### Added
+- Configurable inactivity-based SLA escalation in Settings → General, with escalation from normal/high to **High** and then **Overdue**
+- Dashboard overdue metric and dedicated overdue ticket list
+- Overdue ticket highlighting in ticket lists and a prominent overdue assignee callout on ticket detail
+- `last_attention_at`, `sla_high_notified_at`, and `sla_overdue_notified_at` ticket fields plus migration `017_sla_escalation.sql`
+
+### Fixed
+- SLA reminder recipient validation now enforces that “specific agents” must actually have selected recipients
+- SLA reminder sends are now claimed atomically to reduce duplicate notifications under overlapping runners
+- `bin/migrate.php` now applies numbered migrations and fails hard on migration errors instead of continuing silently
+- Deploy command renamed to `make deploy`, with docs updated to match
+
+---
+
+## [1.1.8] — 2026-04-14
+
+### Fixed
+- Hardened inbound and rendered email HTML to strip `<style>`, `<link>`, `<meta>`, and `<base>` tags so embedded email CSS can no longer leak into the app chrome
+- Existing stored HTML replies are now sanitised again at render time in both the agent ticket view and the customer portal thread
+
+---
+
+## [1.1.7] — 2026-04-14
+
+### Added
+- Customer list (`/#/customers`) now supports sortable columns for every visible field, with sorting preserved across pagination
+
+---
+
+## [1.1.6] — 2026-04-14
+
+### Fixed
+- Incorrect login credentials for both agents and portal customers now return `Wrong Username and/or Password` instead of the generic session-expired message
+- Reply, note, and new-ticket forms now support selecting attachments in multiple passes and removing queued files before submit
+
+---
+
 ## [1.1.5] — 2026-04-08
 
 ### Fixed

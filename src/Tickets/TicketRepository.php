@@ -109,7 +109,7 @@ class TicketRepository
         }
 
         $whereClause = implode(' AND ', $where);
-        $sort        = in_array($filters['sort'] ?? '', ['ticket_number', 'created_at', 'updated_at', 'priority', 'status'], true)
+        $sort        = in_array($filters['sort'] ?? '', ['ticket_number', 'created_at', 'updated_at', 'priority', 'status', 'last_attention_at'], true)
             ? $filters['sort'] : 'updated_at';
         $dir         = ($filters['dir'] ?? 'desc') === 'asc' ? 'ASC' : 'DESC';
 
@@ -144,8 +144,8 @@ class TicketRepository
         return $this->db->insert(
             "INSERT INTO tickets (ticket_number, subject, status, priority, channel, customer_id,
              assigned_agent_id, original_message_id, last_message_id, reply_to_address, parent_ticket_id,
-             due_at, due_end, due_all_day)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+             due_at, due_end, due_all_day, last_attention_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $data['ticket_number'],
                 $data['subject'],
@@ -161,6 +161,7 @@ class TicketRepository
                 $data['due_at'] ?? null,
                 $data['due_end'] ?? null,
                 $data['due_all_day'] ?? 0,
+                $data['last_attention_at'] ?? date('Y-m-d H:i:s'),
             ]
         );
     }
@@ -343,6 +344,14 @@ class TicketRepository
              LEFT JOIN customers c ON c.id = t.customer_id
              WHERE t.parent_ticket_id = ? AND t.deleted_at IS NULL",
             [$parentId]
+        );
+    }
+
+    public function touchAttention(int $ticketId): bool
+    {
+        return $this->db->execute(
+            "UPDATE tickets SET last_attention_at = NOW() WHERE id = ?",
+            [$ticketId]
         );
     }
 }

@@ -96,6 +96,29 @@
     border-left: 3px solid #dee2e6;
 }
 
+.ticket-overdue-row td {
+    background: linear-gradient(90deg, rgba(220, 53, 69, 0.12), rgba(220, 53, 69, 0.02));
+}
+
+.ticket-overdue-row:hover td {
+    background: linear-gradient(90deg, rgba(220, 53, 69, 0.18), rgba(220, 53, 69, 0.05));
+}
+
+.ticket-overdue-agent {
+    color: #b42318 !important;
+    font-weight: 700;
+}
+
+.ticket-overdue-callout {
+    border: 1px solid rgba(220, 53, 69, 0.35);
+    background: #fff2f3;
+    color: #842029;
+    border-radius: .5rem;
+    padding: .5rem .75rem;
+    font-size: .8125rem;
+    line-height: 1.35;
+}
+
 /* Table truncation */
 .text-truncate-cell {
     max-width: 0;
@@ -241,13 +264,13 @@
     }
 
     /* Dashboard stat cards */
-    .col-6.col-md-3 .card-body {
+    #summary-cards .card-body {
         padding: 0.75rem 0.5rem;
     }
-    .col-6.col-md-3 .fs-1 {
+    #summary-cards .fs-1 {
         font-size: 2rem !important;
     }
-    .col-6.col-md-3 .card-body .text-muted {
+    #summary-cards .card-body .text-muted {
         font-size: 0.75rem;
     }
 

@@ -21,7 +21,7 @@ RSYNC_EXCLUDE = --exclude=/vendor --exclude=.env --exclude=storage --exclude=.gi
 CRON_ENTRY  = "* * * * * php $(REMOTE_PATH)/bin/imap-poll.php >> $(REMOTE_PATH)/storage/logs/imap.log 2>&1"
 
 .PHONY: help install install-dev db-migrate db-seed update fetch-assets \
-        deploy-local deploy-production \
+        deploy \
         cron-install-local cron-install-production \
         logs-local logs-production storage-setup
 
@@ -72,15 +72,10 @@ storage-setup: ## Create storage directory structure
 	touch storage/logs/app.log storage/logs/imap.log
 	@echo "Storage directories created."
 
-deploy-local: ## Deploy to local dev server
-	rsync $(RSYNC_OPTS) $(RSYNC_EXCLUDE) ./ $(REMOTE_USER)@$(LOCAL_HOST):$(REMOTE_PATH)/
-	ssh $(REMOTE_USER)@$(LOCAL_HOST) "cd $(REMOTE_PATH) && composer install --no-dev --optimize-autoloader"
-	ssh $(REMOTE_USER)@$(LOCAL_HOST) "mkdir -p $(REMOTE_PATH)/storage/attachments $(REMOTE_PATH)/storage/logs"
-	@echo "Deployed to $(LOCAL_HOST)"
-
-deploy-production: ## Deploy to production server
+deploy: ## Deploy to production server
 	rsync $(RSYNC_OPTS) $(RSYNC_EXCLUDE) ./ $(REMOTE_USER)@$(PROD_HOST):$(REMOTE_PATH)/
 	ssh $(REMOTE_USER)@$(PROD_HOST) "cd $(REMOTE_PATH) && composer install --no-dev --optimize-autoloader"
+	ssh $(REMOTE_USER)@$(PROD_HOST) "cd $(REMOTE_PATH) && php bin/migrate.php"
 	ssh $(REMOTE_USER)@$(PROD_HOST) "mkdir -p $(REMOTE_PATH)/storage/attachments $(REMOTE_PATH)/storage/logs"
 	@echo "Deployed to $(PROD_HOST)"
 

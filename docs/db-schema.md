@@ -123,7 +123,7 @@ Core entity. Each row is one support ticket.
 | `ticket_number` | VARCHAR(40) | NO | | Human-readable unique identifier, e.g. `HD-2026-03-17-0001` |
 | `subject` | VARCHAR(255) | NO | | Ticket subject line |
 | `status` | ENUM('new','open','waiting_for_reply','replied','pending','resolved','closed') | NO | 'new' | Current status |
-| `priority` | ENUM('low','normal','high','urgent') | NO | 'normal' | Priority level |
+| `priority` | ENUM('low','normal','high','urgent','overdue') | NO | 'normal' | Priority level |
 | `channel` | ENUM('email','web','phone','portal') | NO | 'email' | How the ticket was created |
 | `customer_id` | INT UNSIGNED | NO | | FK → customers.id. The primary customer for this ticket |
 | `assigned_agent_id` | INT UNSIGNED | YES | NULL | FK → agents.id. NULL means unassigned |
@@ -134,6 +134,9 @@ Core entity. Each row is one support ticket.
 | `merged_into_id` | INT UNSIGNED | YES | NULL | FK → tickets.id. Set on the losing ticket when two tickets are merged; the winning ticket's ID goes here |
 | `suppress_emails` | TINYINT(1) | NO | 0 | When `1`, all outbound customer-facing emails for this ticket are suppressed (auto-responder and agent replies). Can be toggled from the Ticket Info sidebar; each toggle is recorded as a system event in the thread. Slack and agent notifications are unaffected. |
 | `first_response_at` | DATETIME | YES | NULL | Timestamp of first agent reply. Used for SLA response-time reporting |
+| `last_attention_at` | DATETIME | NO | CURRENT_TIMESTAMP | Most recent customer or agent activity used by SLA escalation |
+| `sla_high_notified_at` | DATETIME | YES | NULL | Timestamp of the last high-priority SLA reminder for the current inactivity cycle |
+| `sla_overdue_notified_at` | DATETIME | YES | NULL | Timestamp of the last overdue SLA reminder for the current inactivity cycle |
 | `closed_at` | DATETIME | YES | NULL | Timestamp when status was last set to `closed` |
 | `created_at` | DATETIME | NO | CURRENT_TIMESTAMP | |
 | `updated_at` | DATETIME | NO | CURRENT_TIMESTAMP ON UPDATE | |
@@ -152,6 +155,7 @@ Core entity. Each row is one support ticket.
 | `idx_tickets_deleted` | `deleted_at` | Exclude soft-deleted in all queries |
 | `idx_tickets_deleted_status` | `(deleted_at, status)` | Main ticket list filter (status + not deleted) |
 | `idx_tickets_deleted_agent` | `(deleted_at, assigned_agent_id)` | Agent-filtered ticket list |
+| `idx_tickets_attention` | `last_attention_at` | SLA escalation scans and overdue dashboards |
 | `idx_tickets_original_msg` | `original_message_id(191)` | Email threading lookup by Message-ID |
 
 **Foreign keys:**
@@ -186,6 +190,7 @@ Automatic transitions (no agent action required):
 - Soft-deleted tickets (`deleted_at IS NOT NULL`) are hidden from all normal queries, including the customer detail screen (tickets list and comments/replies tab). The API exposes a `GET /api/tickets?include_deleted=1` option for admins.
 - Merged tickets retain all their replies and attachments; `merged_into_id` links the losing ticket to the canonical one.
 - `channel = 'email'` is set by the IMAP poller; `'web'` and `'portal'` are set when agents/customers create tickets via the UI.
+- SLA escalation uses `last_attention_at` rather than `updated_at` so automatic priority changes do not reset the inactivity timer.
 
 ---
 
@@ -545,7 +550,12 @@ The following settings are seeded by `schema.sql`. Values shown are the defaults
 | `app_url` | `` | string | Absolute base URL of the helpdesk (e.g. `https://support.example.com`). Used in outbound email links and Slack alerts. Must be set after install. Trailing slashes are stripped automatically when building URLs. |
 | `timezone` | `Pacific/Auckland` | string | PHP timezone string for date display |
 | `date_format` | `d/m/Y H:i` | string | PHP `date()` format string |
-| `imap_poll_mode` | `cron` | string | `cron` = external crontab; any other value reserved for future webhook/long-poll modes |
+| `imap_poll_mode` | `cron` | string | `cron` = external crontab; `web` = authenticated agent page views trigger the poller in the background |
+| `sla_enabled` | `0` | boolean | Enable inactivity-based SLA escalation |
+| `sla_high_after_days` | `3` | integer | Days with no attention before a ticket is raised to `high` |
+| `sla_overdue_after_days` | `2` | integer | Additional days with no attention before a ticket is raised to `overdue` |
+| `sla_notify_scope` | `all` | string | `all` or `specific` for SLA reminder recipients |
+| `sla_notify_agent_ids` | `[]` | json | Agent IDs used when `sla_notify_scope = specific` |
 
 ### Branding
 

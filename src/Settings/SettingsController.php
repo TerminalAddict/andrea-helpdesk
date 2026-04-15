@@ -68,6 +68,28 @@ class SettingsController
             return;
         }
 
+        if (array_key_exists('sla_high_after_days', $data)) {
+            $data['sla_high_after_days'] = max(0, (int)$data['sla_high_after_days']);
+        }
+        if (array_key_exists('sla_overdue_after_days', $data)) {
+            $data['sla_overdue_after_days'] = max(0, (int)$data['sla_overdue_after_days']);
+        }
+        if (array_key_exists('sla_notify_scope', $data)) {
+            $data['sla_notify_scope'] = in_array($data['sla_notify_scope'], ['all', 'specific'], true)
+                ? $data['sla_notify_scope']
+                : 'all';
+        }
+        if (array_key_exists('sla_notify_agent_ids', $data)) {
+            $data['sla_notify_agent_ids'] = array_values(array_filter(
+                array_map('intval', (array)$data['sla_notify_agent_ids']),
+                fn(int $id): bool => $id > 0
+            ));
+        }
+        if (($data['sla_notify_scope'] ?? null) === 'specific' && empty($data['sla_notify_agent_ids'])) {
+            Response::error('Select at least one SLA reminder recipient when using specific agents', 422);
+            return;
+        }
+
         // Encrypt passwords before saving
         $sensitiveKeys = ['smtp_password', 'imap_password'];
         foreach ($sensitiveKeys as $key) {

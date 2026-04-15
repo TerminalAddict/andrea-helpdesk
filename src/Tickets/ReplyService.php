@@ -11,11 +11,13 @@ class ReplyService
 {
     private Database $db;
     private ReplyRepository $replyRepo;
+    private TicketRepository $ticketRepo;
 
     public function __construct()
     {
-        $this->db        = Database::getInstance();
-        $this->replyRepo = new ReplyRepository();
+        $this->db         = Database::getInstance();
+        $this->replyRepo  = new ReplyRepository();
+        $this->ticketRepo = new TicketRepository();
     }
 
     public function createAgentReply(int $ticketId, int $agentId, string $bodyHtml, bool $isPrivate = false, array $ccEmails = [], array $attachmentIds = [], bool $includeSignature = true): array
@@ -43,6 +45,8 @@ class ReplyService
                 [$ticketId]
             );
         }
+
+        $this->ticketRepo->touchAttention($ticketId);
 
         $reply = $this->replyRepo->findById($replyId);
 
@@ -111,7 +115,10 @@ class ReplyService
             ]);
 
             // Auto-set status to waiting_for_reply on customer reply (always, even if closed/resolved)
-            $this->db->execute("UPDATE tickets SET status = 'waiting_for_reply' WHERE id = ?", [$ticketId]);
+            $this->db->execute(
+                "UPDATE tickets SET status = 'waiting_for_reply', last_attention_at = NOW() WHERE id = ?",
+                [$ticketId]
+            );
 
             // Update last_message_id
             if ($rawMessageId) {

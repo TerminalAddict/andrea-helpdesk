@@ -66,6 +66,73 @@ try {
     }
 
     echo "Migration complete. Executed {$count} statements.\n";
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS schema_migrations (
+        filename   VARCHAR(255) NOT NULL PRIMARY KEY,
+        applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    $applied = array_column(
+        $pdo->query("SELECT filename FROM schema_migrations")->fetchAll(),
+        'filename'
+    );
+
+    $migrationFiles = glob($projectRoot . '/database/migrations/*.sql') ?: [];
+    sort($migrationFiles);
+
+    $migrationCount = 0;
+    foreach ($migrationFiles as $file) {
+        $name = basename($file);
+        if ($name === '001_initial.sql' || in_array($name, $applied, true)) {
+            continue;
+        }
+
+        $sql = file_get_contents($file);
+        $statements = array_filter(
+            array_map(function($chunk) {
+                $lines = array_filter(
+                    explode("\n", $chunk),
+                    fn($line) => !str_starts_with(ltrim($line), '--')
+                );
+                return trim(implode("\n", $lines));
+            }, explode(';', $sql)),
+            fn($s) => !empty($s)
+        );
+
+        $inTransaction = false;
+        try {
+            $pdo->beginTransaction();
+            $inTransaction = true;
+
+            foreach ($statements as $statement) {
+                try {
+                    $pdo->exec($statement);
+                } catch (PDOException $e) {
+                    $code = isset($e->errorInfo[1]) ? (int)$e->errorInfo[1] : 0;
+                    if (!in_array($code, [1060, 1061, 1068], true)) {
+                        throw new RuntimeException("Migration {$name} failed: " . $e->getMessage(), 0, $e);
+                    }
+                }
+            }
+
+            if ($pdo->inTransaction()) {
+                $pdo->commit();
+                $inTransaction = false;
+            }
+        } catch (Throwable $e) {
+            if ($inTransaction && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            echo "ERROR: " . $e->getMessage() . "\n";
+            exit(1);
+        }
+
+        $stmt = $pdo->prepare("INSERT INTO schema_migrations (filename) VALUES (?)");
+        $stmt->execute([$name]);
+        $migrationCount++;
+    }
+
+    echo "Numbered migrations applied: {$migrationCount}\n";
 } catch (PDOException $e) {
     echo "ERROR: " . $e->getMessage() . "\n";
     exit(1);

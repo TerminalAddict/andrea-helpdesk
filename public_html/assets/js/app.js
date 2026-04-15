@@ -320,12 +320,20 @@ const App = {
 
     priorityBadge(priority) {
         const map = {
+            overdue:'bg-danger',
             urgent: 'bg-danger',
             high:   'bg-warning text-dark',
             normal: 'bg-info text-dark',
             low:    'bg-light text-dark border',
         };
-        return `<span class="badge ${map[priority] || 'bg-light text-dark'}">${App.escapeHtml(String(priority))}</span>`;
+        const labels = {
+            overdue: 'Overdue',
+            urgent: 'Urgent',
+            high: 'High',
+            normal: 'Normal',
+            low: 'Low',
+        };
+        return `<span class="badge ${map[priority] || 'bg-light text-dark'}">${App.escapeHtml(labels[priority] || String(priority))}</span>`;
     }
 };
 

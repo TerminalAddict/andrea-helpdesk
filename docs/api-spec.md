@@ -232,7 +232,7 @@ List tickets with optional filters.
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `status` | string | Any single status: `new`, `open`, `waiting_for_reply`, `replied`, `pending`, `resolved`, `closed`. Use `active` to return all non-resolved, non-closed tickets. |
-| `priority` | string | `urgent`, `high`, `normal`, `low` |
+| `priority` | string | `overdue`, `urgent`, `high`, `normal`, `low` |
 | `assigned_to` | int | Agent ID. Use `unassigned` for unassigned tickets |
 | `customer_id` | int | Filter by customer |
 | `channel` | string | `email`, `web`, `phone`, `portal` |
@@ -240,14 +240,14 @@ List tickets with optional filters.
 | `from` | date | Created on or after (YYYY-MM-DD) |
 | `to` | date | Created on or before (YYYY-MM-DD) |
 | `tag_id` | int | Filter by tag |
-| `sort` | string | Column to sort by: `ticket_number`, `status`, `priority`, `created_at`, `updated_at`. Default: `updated_at` |
+| `sort` | string | Column to sort by: `ticket_number`, `status`, `priority`, `created_at`, `updated_at`, `last_attention_at`. Default: `updated_at` |
 | `dir` | string | `asc` or `desc`. Default: `desc` |
 | `page` | int | Page number. Default: `1` |
 | `per_page` | int | Results per page. Default: `25`, max `100` |
 
 **Response `200`** — paginated list of ticket objects.
 
-Each ticket includes: `id`, `ticket_number`, `subject`, `status`, `priority`, `channel`, `customer_id`, `customer_name`, `customer_email`, `assigned_agent_id`, `agent_name`, `tag_names` (comma-separated), `reply_count`, `parent_ticket_id`, `created_at`, `updated_at`.
+Each ticket includes: `id`, `ticket_number`, `subject`, `status`, `priority`, `channel`, `customer_id`, `customer_name`, `customer_email`, `assigned_agent_id`, `agent_name`, `tag_names` (comma-separated), `reply_count`, `parent_ticket_id`, `last_attention_at`, `created_at`, `updated_at`.
 
 ---
 
@@ -300,7 +300,7 @@ Update a ticket's subject, priority, assigned agent, or customer. Changes are re
 | Field | Type | Description |
 |-------|------|-------------|
 | `subject` | string | New subject (max 255 chars) |
-| `priority` | string | `urgent`, `high`, `normal`, `low` |
+| `priority` | string | `overdue`, `urgent`, `high`, `normal`, `low` |
 | `assigned_agent_id` | int\|null | Assign or unassign |
 | `customer_id` | int | Change the primary customer on the ticket |
 | `suppress_emails` | bool | `1` to suppress all outbound customer emails for this ticket; `0` to resume. Does not affect Slack or agent notifications. |
@@ -960,6 +960,16 @@ Update one or more settings.
 
 `smtp_password` and `imap_password` are encrypted with AES-256-CBC before storage. Sending `***` or an empty string for a password field leaves the existing value unchanged.
 
+SLA-related keys used by the General tab:
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `sla_enabled` | boolean | Enable inactivity-based escalation |
+| `sla_high_after_days` | integer | Days with no attention before a ticket is raised to `high` |
+| `sla_overdue_after_days` | integer | Additional days with no attention before the ticket is raised to `overdue` |
+| `sla_notify_scope` | string | `all` or `specific` |
+| `sla_notify_agent_ids` | json array | Agent IDs used when `sla_notify_scope = specific` |
+
 **Response `200`** — `data: null`.
 
 ---
@@ -1073,7 +1083,11 @@ Ticket counts by status for the period.
     "replied": 11,
     "pending": 3,
     "resolved": 42,
-    "closed": 108
+    "closed": 108,
+    "overdue": 2,
+    "new_in_period": 5,
+    "closed_in_period": 12,
+    "avg_response_minutes": 43.5
   }
 }
 ```

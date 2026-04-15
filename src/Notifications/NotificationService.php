@@ -150,6 +150,37 @@ class NotificationService
         }
     }
 
+    public function sendSlaReminder(array $ticket, string $stage, array $agentIds, int $daysWithoutAttention): void
+    {
+        if (empty($agentIds)) {
+            return;
+        }
+
+        $stageLabel = $stage === 'overdue' ? 'Overdue' : 'High Priority';
+        $icon       = $stage === 'overdue' ? '&#9888;' : '&#128276;';
+        $appUrl     = rtrim(SettingsService::getInstance()->get('app_url') ?: getenv('APP_URL') ?: '', '/');
+        $ticketUrl  = "{$appUrl}/#/tickets/{$ticket['id']}";
+        $customer   = $ticket['customer_name'] ?: $ticket['customer_email'] ?: 'Unknown customer';
+        $assigned   = $ticket['agent_name'] ?: 'Unassigned';
+
+        $subject = "{$stageLabel} SLA alert: {$ticket['ticket_number']}";
+        $body = "<p>{$icon} Ticket <strong>" . htmlspecialchars($ticket['ticket_number']) . "</strong> is now marked <strong>"
+            . htmlspecialchars($stageLabel) . "</strong>.</p>"
+            . "<p><strong>Subject:</strong> " . htmlspecialchars($ticket['subject']) . "<br>"
+            . "<strong>Customer:</strong> " . htmlspecialchars($customer) . "<br>"
+            . "<strong>Assigned To:</strong> " . htmlspecialchars($assigned) . "<br>"
+            . "<strong>No attention for:</strong> " . (int)$daysWithoutAttention . " day(s)</p>"
+            . "<p><a href='" . htmlspecialchars($ticketUrl) . "'>View Ticket</a></p>";
+
+        foreach (array_unique(array_map('intval', $agentIds)) as $agentId) {
+            try {
+                $this->emailNotifier->sendAgentNotification($agentId, $subject, $body);
+            } catch (\Throwable $e) {
+                $this->log("sendSlaReminder({$stage}) agent {$agentId}: " . $e->getMessage());
+            }
+        }
+    }
+
     private function log(string $message): void
     {
         $logFile = (getenv('STORAGE_PATH') ?: '/tmp') . '/logs/app.log';
