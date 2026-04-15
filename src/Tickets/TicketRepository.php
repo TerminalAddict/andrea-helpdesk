@@ -143,9 +143,9 @@ class TicketRepository
     {
         return $this->db->insert(
             "INSERT INTO tickets (ticket_number, subject, status, priority, channel, customer_id,
-             assigned_agent_id, original_message_id, last_message_id, reply_to_address, parent_ticket_id,
+             created_by_agent_id, assigned_agent_id, original_message_id, last_message_id, reply_to_address, parent_ticket_id,
              due_at, due_end, due_all_day, last_attention_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $data['ticket_number'],
                 $data['subject'],
@@ -153,6 +153,7 @@ class TicketRepository
                 $data['priority'] ?? 'normal',
                 $data['channel'] ?? 'email',
                 $data['customer_id'],
+                $data['created_by_agent_id'] ?? null,
                 $data['assigned_agent_id'] ?? null,
                 $data['original_message_id'] ?? null,
                 $data['last_message_id'] ?? null,
@@ -169,7 +170,7 @@ class TicketRepository
     public function update(int $id, array $data): bool
     {
         $allowed = ['subject', 'status', 'priority', 'assigned_agent_id', 'closed_at',
-                    'first_response_at', 'last_message_id', 'merged_into_id', 'customer_id',
+                    'first_response_at', 'last_message_id', 'merged_into_id', 'customer_id', 'created_by_agent_id',
                     'suppress_emails', 'due_at', 'due_end', 'due_all_day'];
         $set     = [];
         $params  = [];

@@ -76,9 +76,9 @@ The right panel lists the customer's tickets (ticket number, subject, status, pr
 
 ![Reports](screenshots/Reports.png)
 
-The reports screen provides a date-range report (From / To with a **Run Report** button). It returns four summary counters — **Open**, **Pending**, **Resolved**, and **Closed** — for the selected period, along with an **Avg. Time to Close** metric.
+The reports screen provides a date-range report (From / To with a **Run Report** button). The default range is from the **first day of the current month** through today. The summary row mirrors the dashboard labels — **New**, **Waiting for Reply**, **Pending**, **Replied**, and **Overdue** — but counts only tickets that had activity inside the selected range. A sixth card shows how many tickets are in scope overall.
 
-Below the summary, two tables break down activity further: **Ticket Volume (Daily)** shows new tickets created per day, and **Tickets by Agent** shows each agent's open, resolved, and closed counts for the period. Access to reports is controlled by the `view_reports` permission flag.
+Below the summary, the **Avg. Time to Close** card measures tickets whose `closed_at` falls inside the selected range. The two tables underneath break activity down further: **Ticket Activity (Daily)** shows created tickets, customer replies, agent replies, internal notes, system events, and total activity per day; **Agent Activity** shows each agent's assigned, created, replied, noted, resolved, and closed counts for the period. Access to reports is controlled by the `view_reports` permission flag.
 
 ---
 

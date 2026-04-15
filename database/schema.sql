@@ -76,6 +76,7 @@ CREATE TABLE IF NOT EXISTS tickets (
     due_all_day         TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '1 = all-day event (date only)',
     channel             ENUM('email','web','phone','portal') NOT NULL DEFAULT 'email',
     customer_id         INT UNSIGNED NOT NULL,
+    created_by_agent_id INT UNSIGNED NULL COMMENT 'Agent who created the ticket manually',
     assigned_agent_id   INT UNSIGNED NULL,
     original_message_id VARCHAR(512) NULL COMMENT 'Message-ID of first inbound email',
     last_message_id     VARCHAR(512) NULL COMMENT 'For In-Reply-To on outbound emails',
@@ -93,6 +94,7 @@ CREATE TABLE IF NOT EXISTS tickets (
     deleted_at          DATETIME NULL,
     UNIQUE KEY uq_tickets_number (ticket_number),
     INDEX idx_tickets_customer (customer_id),
+    INDEX idx_tickets_created_by_agent (created_by_agent_id),
     INDEX idx_tickets_agent (assigned_agent_id),
     INDEX idx_tickets_status (status),
     INDEX idx_tickets_created (created_at),
@@ -103,6 +105,7 @@ CREATE TABLE IF NOT EXISTS tickets (
     INDEX idx_tickets_due_at (due_at),
     INDEX idx_tickets_original_msg (original_message_id(191)),
     CONSTRAINT fk_tickets_customer   FOREIGN KEY (customer_id)       REFERENCES customers(id),
+    CONSTRAINT fk_tickets_created_by_agent FOREIGN KEY (created_by_agent_id) REFERENCES agents(id) ON DELETE SET NULL,
     CONSTRAINT fk_tickets_agent      FOREIGN KEY (assigned_agent_id) REFERENCES agents(id) ON DELETE SET NULL,
     CONSTRAINT fk_tickets_parent     FOREIGN KEY (parent_ticket_id)  REFERENCES tickets(id) ON DELETE SET NULL,
     CONSTRAINT fk_tickets_merged     FOREIGN KEY (merged_into_id)    REFERENCES tickets(id) ON DELETE SET NULL

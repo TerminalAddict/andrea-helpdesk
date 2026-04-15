@@ -1064,13 +1064,15 @@ Trigger a poll of all enabled IMAP accounts.
 
 ## Report endpoints
 
-All report endpoints require `auth:agent` and `permission:can_view_reports`.
+`GET /api/reports/snapshot` requires only `auth:agent`.
 
-All accept `from` and `to` query parameters (YYYY-MM-DD). Default: last 30 days. If `from > to` they are swapped.
+The range-based report endpoints below require both `auth:agent` and `permission:can_view_reports`.
 
-### `GET /api/reports/summary`
+All range-based endpoints accept `from` and `to` query parameters (`YYYY-MM-DD`). Default: first day of the current month through today. If `from > to` they are swapped.
 
-Ticket counts by status for the period.
+### `GET /api/reports/snapshot`
+
+Live dashboard counters.
 
 **Response `200`**
 
@@ -1078,41 +1080,65 @@ Ticket counts by status for the period.
 {
   "data": {
     "new": 5,
-    "open": 14,
     "waiting_for_reply": 8,
-    "replied": 11,
     "pending": 3,
-    "resolved": 42,
-    "closed": 108,
-    "overdue": 2,
-    "new_in_period": 5,
-    "closed_in_period": 12,
-    "avg_response_minutes": 43.5
+    "replied": 11,
+    "overdue": 2
   }
 }
 ```
 
 ---
 
-### `GET /api/reports/by-agent`
+### `GET /api/reports/activity-summary`
 
-Ticket counts and average resolution time per agent for the period.
+Summary cards for the selected range. Counts are based on tickets that had any activity in range, bucketed by their current status/priority.
 
-**Response `200`** — array of `{ agent_id, agent_name, ticket_count, avg_resolution_hours }`.
+**Response `200`**
+
+```json
+{
+  "data": {
+    "new": 5,
+    "waiting_for_reply": 8,
+    "pending": 3,
+    "replied": 11,
+    "overdue": 2,
+    "ticket_count": 24
+  }
+}
+```
 
 ---
 
-### `GET /api/reports/by-status`
+### `GET /api/reports/activity-by-agent`
 
-Ticket counts grouped by status for the period.
+Agent activity rows for the selected range.
 
-**Response `200`** — array of `{ status, count }`.
+**Response `200`**
+
+```json
+{
+  "data": [
+    {
+      "agent_id": 1,
+      "agent_name": "Jane Smith",
+      "assigned": 9,
+      "created": 2,
+      "replies": 14,
+      "notes": 5,
+      "resolved": 3,
+      "closed": 1
+    }
+  ]
+}
+```
 
 ---
 
 ### `GET /api/reports/time-to-close`
 
-Average time from ticket creation to first agent reply and to close.
+Average/min/max time from ticket creation to close for tickets closed in the selected range.
 
 **Query parameters**
 
@@ -1120,15 +1146,15 @@ Average time from ticket creation to first agent reply and to close.
 |-----------|------|-------------|
 | `from` | date | |
 | `to` | date | |
-| `agent_id` | int | Optionally filter by assigned agent |
+| `agent_id` | int | Optionally filter by an agent who recorded the closing system event |
 
-**Response `200`** — `{ avg_first_response_hours, avg_close_hours, ticket_count }`.
+**Response `200`** — `{ avg_minutes, min_minutes, max_minutes, count, tickets[] }`.
 
 ---
 
-### `GET /api/reports/volume`
+### `GET /api/reports/activity-volume`
 
-Ticket volume over time, grouped by day, week, or month.
+Ticket activity over time, grouped by day, week, or month.
 
 **Query parameters**
 
@@ -1139,6 +1165,22 @@ Ticket volume over time, grouped by day, week, or month.
 | `group_by` | string | `day` (default), `week`, `month` |
 
 **Response `200`** — array of `{ period, count }`.
+
+```json
+{
+  "data": [
+    {
+      "period": "2026-04-01",
+      "created": 2,
+      "customer_replies": 4,
+      "agent_replies": 5,
+      "internal_notes": 1,
+      "system_events": 3,
+      "total": 15
+    }
+  ]
+}
+```
 
 ---
 

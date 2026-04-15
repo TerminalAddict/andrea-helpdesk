@@ -94,7 +94,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 
 ### Reporting
 - **Dashboard** — live stats: New, Waiting for Reply, Pending, Replied, and Overdue ticket counts; dedicated overdue ticket list; navbar badge shows all active (non-resolved, non-closed) tickets; recent activity by agent
-- **Reports** — ticket volume over time, resolution times, agent workload breakdowns
+- **Reports** — month-to-date by default; summary cards match the dashboard labels but are scoped to tickets with activity in range; daily volume breaks out created tickets, customer replies, agent replies, internal notes, and system events; agent activity shows assigned, created, replied, noted, resolved, and closed counts; average time to close is based on tickets closed in range
 
 ### Settings And Profile Routes
 - **SMTP configuration** — host, port, encryption, credentials, from address — all managed in the UI

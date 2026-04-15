@@ -114,7 +114,7 @@ const DashboardView = {
     async init() {
         // Load summary
         try {
-            const res  = await API.get('/reports/summary', { from: new Date().toISOString().slice(0,10), to: new Date().toISOString().slice(0,10) });
+            const res  = await API.get('/reports/snapshot');
             const data = res.data;
             $('#stat-new').text(data.new || 0);
             $('#stat-waiting').text(data.waiting_for_reply || 0);

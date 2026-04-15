@@ -1,5 +1,5 @@
 {
-    "version": "1.2.6",
+    "version": "1.2.7",
     "released": "2026-04-16",
-    "description": "Ship the security hardening review fixes and documentation updates"
+    "description": "Ship the rebuilt activity-based reports page and dashboard snapshot split"
 }

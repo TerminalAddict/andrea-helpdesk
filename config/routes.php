@@ -119,11 +119,11 @@ return [
     ['POST', '/api/update/run',       UpdateController::class,  'run',       ['role:admin']],
 
     // ── Reports ───────────────────────────────────────────────────────────────
-    ['GET', '/api/reports/summary',       ReportController::class, 'summary',     ['auth:agent', 'permission:can_view_reports']],
-    ['GET', '/api/reports/by-agent',      ReportController::class, 'byAgent',     ['auth:agent', 'permission:can_view_reports']],
-    ['GET', '/api/reports/by-status',     ReportController::class, 'byStatus',    ['auth:agent', 'permission:can_view_reports']],
+    ['GET', '/api/reports/snapshot',      ReportController::class, 'snapshot',    ['auth:agent']],
+    ['GET', '/api/reports/activity-summary', ReportController::class, 'activitySummary', ['auth:agent', 'permission:can_view_reports']],
+    ['GET', '/api/reports/activity-by-agent', ReportController::class, 'activityByAgent', ['auth:agent', 'permission:can_view_reports']],
+    ['GET', '/api/reports/activity-volume', ReportController::class, 'activityVolume', ['auth:agent', 'permission:can_view_reports']],
     ['GET', '/api/reports/time-to-close', ReportController::class, 'timeToClose', ['auth:agent', 'permission:can_view_reports']],
-    ['GET', '/api/reports/volume',        ReportController::class, 'volume',      ['auth:agent', 'permission:can_view_reports']],
 
     // ── Knowledge Base (GET routes are public) ────────────────────────────────
     ['GET',  '/api/kb/categories',              KbController::class, 'categories',     []],

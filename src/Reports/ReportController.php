@@ -15,14 +15,19 @@ class ReportController
         $this->repo = new ReportRepository();
     }
 
+    private function defaultFrom(): string
+    {
+        return date('Y-m-01');
+    }
+
     private function getDateRange(Request $request): array
     {
         $to   = $request->input('to')   ?: date('Y-m-d');
-        $from = $request->input('from') ?: date('Y-m-d', strtotime('-30 days'));
+        $from = $request->input('from') ?: $this->defaultFrom();
 
         // Validate format — fall back to defaults if input is malformed
         $validDate = fn(string $d) => (bool)\DateTime::createFromFormat('Y-m-d', $d);
-        if (!$validDate($from)) $from = date('Y-m-d', strtotime('-30 days'));
+        if (!$validDate($from)) $from = $this->defaultFrom();
         if (!$validDate($to))   $to   = date('Y-m-d');
 
         // Ensure from <= to
@@ -31,22 +36,21 @@ class ReportController
         return [$from, $to];
     }
 
-    public function summary(Request $request): void
+    public function snapshot(Request $request): void
     {
-        [$from, $to] = $this->getDateRange($request);
-        Response::success($this->repo->summary($from, $to));
+        Response::success($this->repo->snapshot());
     }
 
-    public function byAgent(Request $request): void
+    public function activitySummary(Request $request): void
     {
         [$from, $to] = $this->getDateRange($request);
-        Response::success($this->repo->byAgent($from, $to));
+        Response::success($this->repo->activitySummary($from, $to));
     }
 
-    public function byStatus(Request $request): void
+    public function activityByAgent(Request $request): void
     {
         [$from, $to] = $this->getDateRange($request);
-        Response::success($this->repo->byStatus($from, $to));
+        Response::success($this->repo->activityByAgent($from, $to));
     }
 
     public function timeToClose(Request $request): void
@@ -56,11 +60,11 @@ class ReportController
         Response::success($this->repo->timeToClose($from, $to, $agentId));
     }
 
-    public function volume(Request $request): void
+    public function activityVolume(Request $request): void
     {
         [$from, $to] = $this->getDateRange($request);
-        $groupBy     = in_array($request->input('group_by'), ['day', 'week', 'month'], true)
-            ? $request->input('group_by') : 'day';
-        Response::success($this->repo->volume($from, $to, $groupBy));
+        $groupBy     = in_array($request->input('group_by') ?? $request->input('group'), ['day', 'week', 'month'], true)
+            ? ($request->input('group_by') ?? $request->input('group')) : 'day';
+        Response::success($this->repo->activityVolume($from, $to, $groupBy));
     }
 }

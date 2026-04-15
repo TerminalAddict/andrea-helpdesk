@@ -102,6 +102,7 @@ class TicketService
             'status'            => !empty($data['body_html']) ? 'replied' : 'new',
             'channel'           => $data['channel'] ?? 'phone',
             'customer_id'       => $data['customer_id'],
+            'created_by_agent_id' => $agentId,
             'priority'          => $data['priority'] ?? 'normal',
             'assigned_agent_id' => $data['assigned_agent_id'] ?? $agentId,
             'parent_ticket_id'  => $data['parent_ticket_id'] ?? null,

@@ -126,6 +126,7 @@ Core entity. Each row is one support ticket.
 | `priority` | ENUM('low','normal','high','urgent','overdue') | NO | 'normal' | Priority level |
 | `channel` | ENUM('email','web','phone','portal') | NO | 'email' | How the ticket was created |
 | `customer_id` | INT UNSIGNED | NO | | FK → customers.id. The primary customer for this ticket |
+| `created_by_agent_id` | INT UNSIGNED | YES | NULL | FK → agents.id. Set when a ticket is manually created by an agent; used for agent activity reporting |
 | `assigned_agent_id` | INT UNSIGNED | YES | NULL | FK → agents.id. NULL means unassigned |
 | `original_message_id` | VARCHAR(512) | YES | NULL | `Message-ID` header of the first inbound email (used for email threading) |
 | `last_message_id` | VARCHAR(512) | YES | NULL | `Message-ID` of the most recent outbound email (used as `In-Reply-To` on next reply) |
@@ -149,6 +150,7 @@ Core entity. Each row is one support ticket.
 | Index | Columns | Purpose |
 |-------|---------|---------|
 | `idx_tickets_customer` | `customer_id` | Ticket list filtered by customer |
+| `idx_tickets_created_by_agent` | `created_by_agent_id` | Agent activity reporting for manually-created tickets |
 | `idx_tickets_agent` | `assigned_agent_id` | Ticket list filtered by assignee |
 | `idx_tickets_status` | `status` | Ticket list filtered by status |
 | `idx_tickets_created` | `created_at` | Chronological ordering |
@@ -163,6 +165,7 @@ Core entity. Each row is one support ticket.
 | Constraint | Column | References | On Delete |
 |------------|--------|-----------|-----------|
 | `fk_tickets_customer` | `customer_id` | `customers(id)` | RESTRICT |
+| `fk_tickets_created_by_agent` | `created_by_agent_id` | `agents(id)` | SET NULL |
 | `fk_tickets_agent` | `assigned_agent_id` | `agents(id)` | SET NULL |
 | `fk_tickets_parent` | `parent_ticket_id` | `tickets(id)` | SET NULL |
 | `fk_tickets_merged` | `merged_into_id` | `tickets(id)` | SET NULL |

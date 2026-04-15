@@ -4,6 +4,22 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
+## [1.2.7] — 2026-04-16
+
+### Fixed
+- Rebuilt reporting around separate live snapshot and ranged activity endpoints so the dashboard and reports page no longer share conflicting semantics
+- Changed the reports default range to the first day of the current month through today
+- Replaced the old reports summary with dashboard-matching `New`, `Waiting for Reply`, `Pending`, `Replied`, and `Overdue` cards scoped to tickets with activity in range
+- Replaced daily ticket volume with daily ticket activity breakdowns for created tickets, customer replies, agent replies, internal notes, and system events
+- Replaced the old assigned-ticket report with agent activity metrics for assigned, created, replied, noted, resolved, and closed work in range
+- Added `created_by_agent_id` tracking plus migration `018_ticket_creator_reporting.sql` so manually-created tickets can be reported correctly by agent
+- Fixed the production SQL error in the activity-volume report caused by ambiguous `created_at` references
+
+### Docs
+- Updated README, API spec, screenshot notes, and DB schema docs to describe the new reports model
+
+---
+
 ## [1.2.6] — 2026-04-16
 
 ### Security
