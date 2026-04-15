@@ -17,7 +17,7 @@ const KnowledgeBaseView = {
                 </div>
             </div>
 
-            <div class="card border-0 shadow-sm mb-3">
+            <div class="card border-0 shadow-sm mb-3 terminal-control-card">
                 <div class="card-body py-2">
                     <div class="row g-2">
                         <div class="col-md-5">
@@ -32,7 +32,7 @@ const KnowledgeBaseView = {
                 </div>
             </div>
 
-            <div id="kb-list">
+            <div id="kb-list" class="terminal-knowledge-list">
                 <div class="text-center py-5 text-muted">
                     <div class="spinner-border"></div><p class="mt-2">Loading…</p>
                 </div>
@@ -174,13 +174,13 @@ const KnowledgeBaseView = {
         }
 
         const cards = articles.map(a => `
-            <div class="card border-0 shadow-sm mb-2 kb-article" data-slug="${App.escapeHtml(a.slug)}" style="cursor:pointer;">
+            <div class="card border-0 shadow-sm mb-2 kb-article terminal-kb-article-card" data-slug="${App.escapeHtml(a.slug)}" style="cursor:pointer;">
                 <div class="card-body py-3">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
                             <h6 class="mb-1 fw-semibold">${App.escapeHtml(a.title)}</h6>
                             <div class="small text-muted">
-                                ${a.category_name ? `<span class="badge bg-light text-dark border me-1">${App.escapeHtml(a.category_name)}</span>` : ''}
+                                ${a.category_name ? `<span class="badge terminal-kb-category me-1">${App.escapeHtml(a.category_name)}</span>` : ''}
                                 Updated ${App.formatDate(a.updated_at)}
                             </div>
                         </div>
@@ -466,7 +466,7 @@ const KnowledgeBaseView = {
 const KbArticleView = {
     render() {
         return `
-        <div class="container py-4" style="max-width:800px;" id="kb-article-wrap">
+        <div class="container terminal-screen terminal-screen-kb-article py-4" style="max-width:800px;" id="kb-article-wrap">
             <div class="text-center py-5 text-muted">
                 <div class="spinner-border"></div>
             </div>
@@ -487,18 +487,18 @@ const KbArticleView = {
                     </ol>
                 </nav>
                 <div class="d-flex justify-content-between align-items-start mb-3">
-                    <h3 class="fw-bold">${App.escapeHtml(a.title)}</h3>
+                    <h3 class="terminal-heading fw-bold">${App.escapeHtml(a.title)}</h3>
                     ${canEdit ? `<button class="btn btn-sm btn-outline-secondary" onclick="App.navigate('/kb?edit=${a.id}')">
                         <i class="bi bi-pencil me-1"></i>Edit
                     </button>` : ''}
                 </div>
                 <div class="text-muted small mb-4">
-                    ${a.category_name ? `<span class="badge bg-light text-dark border me-2">${App.escapeHtml(a.category_name)}</span>` : ''}
+                    ${a.category_name ? `<span class="badge terminal-kb-category me-2">${App.escapeHtml(a.category_name)}</span>` : ''}
                     Updated ${App.formatDate(a.updated_at)}
                 </div>
-                <div class="card border-0 shadow-sm">
+                <div class="card border-0 shadow-sm terminal-kb-article-card">
                     <div class="card-body">
-                        <div class="article-body" style="white-space:pre-wrap;">${a.body_html ? DOMPurify.sanitize(a.body_html) : App.escapeHtml(a.body || '')}</div>
+                        <div class="article-body terminal-kb-article-body" style="white-space:pre-wrap;">${a.body_html ? DOMPurify.sanitize(a.body_html) : App.escapeHtml(a.body || '')}</div>
                     </div>
                 </div>`);
         } catch (e) {

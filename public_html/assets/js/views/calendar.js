@@ -13,14 +13,14 @@ const CalendarView = {
         return `
         <div class="container-fluid terminal-screen terminal-screen-calendar py-3">
             <div class="terminal-screen-header d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-                <h4 class="mb-0"><i class="bi bi-calendar3 me-2"></i>Calendar</h4>
+                <h4 class="terminal-heading mb-0"><i class="bi bi-calendar3 me-2"></i>Calendar</h4>
                 <button class="btn btn-outline-success btn-sm" id="cal-subscribe-btn">
                     <i class="bi bi-calendar-plus me-1"></i>Subscribe
                 </button>
             </div>
 
             <!-- Calendar card -->
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm terminal-calendar-card">
                 <div class="card-header bg-white d-flex align-items-center justify-content-between py-2">
                     <div class="d-flex gap-2 align-items-center">
                         <button class="btn btn-sm btn-outline-secondary" id="cal-prev">
@@ -59,7 +59,7 @@ const CalendarView = {
             </div>
 
             <!-- Legend -->
-            <div class="mt-2 d-flex gap-3 flex-wrap">
+            <div class="mt-2 d-flex gap-3 flex-wrap terminal-calendar-legend">
                 <span class="small"><span class="badge bg-danger me-1">●</span>Urgent</span>
                 <span class="small"><span class="badge bg-warning text-dark me-1">●</span>High</span>
                 <span class="small"><span class="badge bg-primary me-1">●</span>Normal</span>

@@ -30,15 +30,15 @@ const SettingsView = {
 
         return `
         <div class="container-fluid terminal-screen terminal-screen-settings p-4 terminal-compact">
-            <h4 class="terminal-heading mb-4"><i class="bi bi-sliders me-2"></i>Settings</h4>
+            <h4 class="terminal-heading mb-3"><i class="bi bi-sliders me-2"></i>Settings</h4>
 
-            <ul class="nav nav-tabs mb-4 d-none d-md-flex" id="settings-tabs">
+            <ul class="nav nav-tabs d-none d-md-flex" id="settings-tabs">
                 ${adminTabs}
                 ${tagTab}
                 ${profileTab}
             </ul>
 
-            <select class="form-select mb-4 d-md-none" id="settings-tab-select">
+            <select class="form-select mb-2 d-md-none" id="settings-tab-select">
                 ${adminOpts}
                 ${tagOpt}
                 ${profileOpt}
@@ -216,14 +216,15 @@ const SettingsView = {
 
         // Add IMAP poll mode instructions on general tab
         if (tab === 'general') {
-            const appUrl  = this.settings.app_url || window.location.origin;
-            const cronCmd = `* * * * * php /path/to/helpdesk/bin/imap-poll.php >> /path/to/helpdesk/storage/logs/imap.log 2>&1`;
-            $('.btn-save-settings').closest('.card-body').find('#s-imap_poll_mode').closest('.mb-3').after(`
+        const appUrl  = this.settings.app_url || window.location.origin;
+        const cronCmd = `* * * * * php /path/to/helpdesk/bin/imap-poll.php >> /path/to/helpdesk/storage/logs/imap.log 2>&1`;
+        $('.btn-save-settings').closest('.card-body').find('#s-imap_poll_mode').closest('.mb-3').after(`
                 <div id="imap-poll-info-cron" class="mb-3 d-none">
                     <div class="alert alert-secondary py-2 mb-0">
                         <div class="fw-semibold small mb-1"><i class="bi bi-terminal me-1"></i>Cron Job Setup</div>
                         <p class="small mb-2">Add the following line to your server crontab (<code>crontab -e</code> as the web server user, or use <code>make cron-install-production</code> from your local machine):</p>
-                        <code class="d-block bg-dark text-light rounded p-2 small user-select-all">${App.escapeHtml(cronCmd)}</code>
+                        <pre class="imap-cron-sample user-select-all mb-2">${App.escapeHtml(cronCmd)}</pre>
+                        <p class="small mb-1"><i class="bi bi-folder2-open me-1"></i>Example app path: <code>${App.escapeHtml(appUrl)}/bin/imap-poll.php</code> (adjust for your install)</p>
                         <p class="small mt-2 mb-0 text-muted">Replace <code>/path/to/helpdesk/</code> with the actual path to this application on your server. The script uses a file lock so overlapping runs are safe.</p>
                     </div>
                 </div>
@@ -619,8 +620,20 @@ const SettingsView = {
     },
 
     openImapModal(id = null, accounts = []) {
-        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('imapAccountModal'));
-        document.getElementById('imapAccountModal').addEventListener('hide.bs.modal', () => {
+        App.clearModalArtifacts();
+        const modalEl = App.detachModal(document.getElementById('imapAccountModal'));
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        if (!modalEl.dataset.andreaImapCleanupBound) {
+            modalEl.addEventListener('hidden.bs.modal', () => {
+                document.body.classList.remove('modal-open');
+                document.body.style.removeProperty('overflow');
+                document.body.style.removeProperty('padding-right');
+                document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+            });
+            modalEl.dataset.andreaImapCleanupBound = '1';
+        }
+
+        modalEl.addEventListener('hide.bs.modal', () => {
             if (document.activeElement) document.activeElement.blur();
         }, { once: true });
 
@@ -686,7 +699,7 @@ const SettingsView = {
             } else {
                 await API.post('/admin/imap-accounts', payload);
             }
-            bootstrap.Modal.getInstance(document.getElementById('imapAccountModal')).hide();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('imapAccountModal')).hide();
             await this.loadImapAccounts();
             App.toast('IMAP account saved');
         } catch (e) { App.toast(e.message, 'error'); }

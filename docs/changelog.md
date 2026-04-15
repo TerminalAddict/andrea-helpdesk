@@ -4,6 +4,15 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
+## [1.2.2] — 2026-04-16
+
+### Fixed
+- Hardened route-mounted modal handling by detaching view modals to `document.body`, resolving greyed-out edit modals in Agents and IMAP Polling
+- Removed hover-induced horizontal scrolling from the Tickets list by dropping row translation on hover
+- Tightened Settings tab and content spacing and refined dashboard toolbar padding in the terminal theme
+
+---
+
 ## [1.2.1] — 2026-04-15
 
 ### Added

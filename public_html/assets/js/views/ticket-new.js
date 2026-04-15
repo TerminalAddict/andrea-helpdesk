@@ -16,7 +16,7 @@ const TicketNewView = {
             </nav>
             <h5 class="terminal-heading fw-bold mb-4"><i class="bi bi-plus-circle me-2"></i>Create New Ticket</h5>
 
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm terminal-control-card">
                 <div class="card-body">
                     <form id="new-ticket-form">
                         <div class="row g-3">
@@ -277,7 +277,7 @@ const TicketNewView = {
         }
 
         const html = this._files.map((file, index) => `
-            <span class="badge bg-light text-dark border d-inline-flex align-items-center gap-2">
+            <span class="badge terminal-attachment-chip d-inline-flex align-items-center gap-2">
                 <span title="${App.escapeHtml(file.name)}">${App.escapeHtml(file.name)}</span>
                 <button type="button" class="btn-close" aria-label="Remove file" data-index="${index}" style="font-size:.65rem;"></button>
             </span>

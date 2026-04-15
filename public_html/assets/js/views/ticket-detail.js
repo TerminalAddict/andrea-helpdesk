@@ -90,7 +90,7 @@ const TicketDetailView = {
                     <div id="ticket-thread" class="mb-3"></div>
 
                     <!-- Reply Editor -->
-                    <div class="card border-0 shadow-sm reply-collapsed" id="reply-card">
+                    <div class="card border-0 shadow-sm reply-collapsed terminal-control-card" id="reply-card">
                         <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
                             <div class="btn-group btn-group-sm" role="group" id="reply-type-group">
                                 <input type="radio" class="btn-check" name="replyType" id="rt-reply" value="reply" checked>
@@ -254,7 +254,7 @@ const TicketDetailView = {
                     </div>
 
                     <!-- Customer Info -->
-                    <div class="card border-0 shadow-sm mb-3">
+                    <div class="card border-0 shadow-sm mb-3 terminal-ticket-card">
                         <div class="card-header bg-white fw-semibold py-2 d-flex justify-content-between align-items-center">
                             <span><i class="bi bi-person me-2"></i>Customer</span>
                             ${t.customer_id ? `<a href="#/customers/${t.customer_id}" class="btn btn-xs btn-outline-secondary btn-sm py-0 px-2" style="font-size:.75rem;">View</a>` : ''}
@@ -267,7 +267,7 @@ const TicketDetailView = {
                     </div>
 
                     <!-- Tags -->
-                    <div class="card border-0 shadow-sm mb-3">
+                    <div class="card border-0 shadow-sm mb-3 terminal-ticket-card">
                         <div class="card-header bg-white fw-semibold py-2">
                             <i class="bi bi-tags me-2"></i>Tags
                         </div>
@@ -290,7 +290,7 @@ const TicketDetailView = {
                     </div>
 
                     <!-- Attachments -->
-                    <div class="card border-0 shadow-sm mb-3">
+                    <div class="card border-0 shadow-sm mb-3 terminal-ticket-card">
                         <div class="card-header bg-white fw-semibold py-2">
                             <i class="bi bi-paperclip me-2"></i>Attachments
                         </div>
@@ -300,7 +300,7 @@ const TicketDetailView = {
                     </div>
 
                     <!-- Participants -->
-                    <div class="card border-0 shadow-sm mb-3">
+                    <div class="card border-0 shadow-sm mb-3 terminal-ticket-card">
                         <div class="card-header bg-white fw-semibold py-2">
                             <i class="bi bi-people me-2"></i>Participants (CC)
                         </div>
@@ -322,7 +322,7 @@ const TicketDetailView = {
                     </div>
 
                     <!-- Related Tickets -->
-                    <div class="card border-0 shadow-sm mb-3">
+                    <div class="card border-0 shadow-sm mb-3 terminal-ticket-card">
                         <div class="card-header bg-white fw-semibold py-2">
                             <i class="bi bi-link-45deg me-2"></i>Related Tickets
                         </div>
@@ -535,7 +535,7 @@ const TicketDetailView = {
         }
 
         const html = this.pendingReplyFiles.map((file, index) => `
-            <span class="badge bg-light text-dark border d-inline-flex align-items-center gap-2">
+            <span class="badge terminal-attachment-chip d-inline-flex align-items-center gap-2">
                 <span title="${App.escapeHtml(file.name)}">${App.escapeHtml(file.name)}</span>
                 <button type="button" class="btn-close" aria-label="Remove file" data-index="${index}" style="font-size:.65rem;"></button>
             </span>

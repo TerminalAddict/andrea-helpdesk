@@ -13,7 +13,7 @@ const AgentsView = {
                     <i class="bi bi-plus-lg me-1"></i>Add Agent
                 </button>
             </div>
-            <div id="agents-table-wrap" class="card border-0 shadow-sm">
+            <div id="agents-table-wrap" class="card border-0 shadow-sm terminal-control-card">
                 <div class="card-body p-0">
                     <div class="text-center py-5 text-muted">
                         <div class="spinner-border"></div><p class="mt-2">Loading…</p>
@@ -153,6 +153,18 @@ const AgentsView = {
         $('#btn-save-agent').on('click', () => this.saveAgent());
     },
 
+    _bindModalCleanup(modalId) {
+        const modalEl = document.getElementById(modalId);
+        if (!modalEl || modalEl.dataset.andreaCleanupBound === '1') return;
+        modalEl.addEventListener('hidden.bs.modal', () => {
+            document.body.classList.remove('modal-open');
+            document.body.style.removeProperty('overflow');
+            document.body.style.removeProperty('padding-right');
+            document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        }, { once: false });
+        modalEl.dataset.andreaCleanupBound = '1';
+    },
+
     openNewModal() {
         $('#agent-modal-title').text('Add Agent');
         $('#agent-form')[0].reset();
@@ -160,8 +172,11 @@ const AgentsView = {
         $('#pw-required').show();
         $('#pw-hint').hide();
         $('#agent-modal-error').addClass('d-none');
-        const modal = new bootstrap.Modal(document.getElementById('agentModal'));
-        document.getElementById('agentModal').addEventListener('hide.bs.modal', () => {
+        App.clearModalArtifacts();
+        const modalEl = document.getElementById('agentModal');
+        this._bindModalCleanup('agentModal');
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modalEl.addEventListener('hide.bs.modal', () => {
             if (document.activeElement) document.activeElement.blur();
         }, { once: true });
         modal.show();
@@ -185,8 +200,11 @@ const AgentsView = {
             $(this).prop('checked', !!agent[$(this).val()]);
         });
 
-        const modal = new bootstrap.Modal(document.getElementById('agentModal'));
-        document.getElementById('agentModal').addEventListener('hide.bs.modal', () => {
+        App.clearModalArtifacts();
+        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('agentModal'));
+        this._bindModalCleanup('agentModal');
+        const modalEl = document.getElementById('agentModal');
+        modalEl.addEventListener('hide.bs.modal', () => {
             if (document.activeElement) document.activeElement.blur();
         }, { once: true });
         modal.show();
@@ -217,7 +235,7 @@ const AgentsView = {
                 if (!password) { throw new Error('Password is required for new agents'); }
                 await API.post('/agents', payload);
             }
-            bootstrap.Modal.getInstance(document.getElementById('agentModal')).hide();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('agentModal')).hide();
             App.toast('Agent saved');
             await this.loadAgents();
         } catch (e) {

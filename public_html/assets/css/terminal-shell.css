@@ -104,6 +104,7 @@ body::before {
     min-height: 100vh;
     padding: clamp(0.75rem, 1.7vw, 1.35rem);
     z-index: 0;
+    overflow-x: hidden;
 }
 
 #app {
@@ -119,7 +120,6 @@ body::before {
 
 #app .helpdesk-shell {
     position: relative;
-    isolation: isolate;
 }
 
 #app .helpdesk-shell .container-fluid,
@@ -564,8 +564,18 @@ body::before {
     color: var(--terminal-text);
 }
 
-#app .modal-backdrop.show {
+.modal-backdrop.show {
     opacity: 0.62;
+    z-index: 1050;
+}
+
+.modal {
+    z-index: 1060 !important;
+}
+
+.modal-dialog {
+    position: relative;
+    z-index: 1061;
 }
 
 #app .modal-content {
@@ -720,6 +730,9 @@ body::before {
 }
 
 #app .form-switch .form-check-input {
+    background-color: color-mix(in srgb, var(--terminal-surface-grid) 70%, transparent);
+    border-color: var(--terminal-border);
+    height: 1.35rem;
     width: 2.7em;
     border-radius: 2rem;
 }
@@ -727,6 +740,47 @@ body::before {
 #app .form-switch .form-check-input:checked {
     background-color: color-mix(in srgb, var(--terminal-cyan) 75%, #fff);
     border-color: color-mix(in srgb, var(--terminal-cyan) 65%, #fff);
+}
+
+#app .form-check-input[type="checkbox"] {
+    width: 2.62rem;
+    height: 1.35rem;
+    border-radius: 999px;
+    cursor: pointer;
+    border: 1px solid var(--terminal-border);
+    appearance: none;
+    -webkit-appearance: none;
+    background-color: color-mix(in srgb, var(--terminal-surface-grid) 74%, transparent);
+    position: relative;
+}
+
+#app .form-check-input[type="checkbox"]::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0.15rem;
+    width: 0.95rem;
+    height: 0.95rem;
+    border-radius: 50%;
+    background: var(--terminal-text-soft);
+    transform: translateY(-50%);
+    transition: left 120ms ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+#app .form-check-input[type="checkbox"]:checked {
+    background-color: color-mix(in srgb, var(--terminal-cyan) 75%, #fff);
+    border-color: color-mix(in srgb, var(--terminal-cyan) 65%, #fff);
+}
+
+#app .form-check-input[type="checkbox"]:checked::before {
+    left: 1.42rem;
+    background: #ffffff;
+}
+
+#app .form-check-input[type="checkbox"]:focus,
+#app .form-check-input[type="checkbox"]:focus-visible {
+    box-shadow: 0 0 0 .2rem color-mix(in srgb, var(--terminal-cyan) 24%, transparent);
 }
 
 #app .tagify {
@@ -801,6 +855,47 @@ body::before {
     position: relative;
 }
 
+@keyframes terminal-screen-enter {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+        filter: blur(3px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+    }
+}
+
+@keyframes terminal-panel-fade {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes terminal-panel-slide {
+    from {
+        opacity: 0.92;
+        transform: translateX(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+#app .helpdesk-shell .terminal-screen,
+#app .terminal-portal-shell,
+#app .terminal-login-shell {
+    animation: terminal-screen-enter 340ms cubic-bezier(0.2, 0.6, 0.2, 1);
+}
+
 #app .helpdesk-shell .terminal-screen::before,
 #app .terminal-login-shell::before,
 #app .terminal-portal-shell::before {
@@ -820,6 +915,16 @@ body::before {
     border-radius: 18px;
     box-shadow: var(--terminal-shadow);
     margin: 0.1rem auto;
+}
+
+#app .helpdesk-shell .terminal-screen > * {
+    animation: terminal-panel-fade 240ms ease-out;
+}
+
+#app .helpdesk-shell .terminal-screen > .card,
+#app .helpdesk-shell .terminal-screen > .container,
+#app .helpdesk-shell .terminal-screen > .container-fluid {
+    animation: terminal-panel-slide 250ms ease-out;
 }
 
 #app .terminal-compact {
@@ -845,6 +950,84 @@ body::before {
 
 #app .terminal-screen-knowledge-base {
     position: relative;
+}
+
+#app .terminal-screen-calendar,
+#app .terminal-screen-kb-article {
+    width: min(1620px, 100%);
+    margin-inline: auto;
+}
+
+#app .imap-cron-sample {
+    margin: 0;
+    border: 1px solid color-mix(in srgb, var(--terminal-border) 75%, transparent);
+    border-radius: 10px;
+    padding: 0.55rem 0.7rem;
+    background: color-mix(in srgb, var(--terminal-surface-grid) 78%, var(--terminal-surface));
+    color: var(--terminal-text);
+    font-size: 0.84rem;
+    line-height: 1.45;
+    font-family: var(--terminal-font-mono);
+    white-space: pre-wrap;
+    word-break: break-all;
+    overflow-x: auto;
+}
+
+#app .terminal-knowledge-list {
+    display: grid;
+    gap: 0.7rem;
+}
+
+#app .terminal-kb-article-card {
+    position: relative;
+    border-left: 3px solid color-mix(in srgb, var(--terminal-cyan) 58%, transparent);
+    transition: transform 140ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    overflow: hidden;
+}
+
+#app .terminal-kb-article-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(112deg, transparent 64%, color-mix(in srgb, var(--terminal-cyan) 11%, transparent));
+    pointer-events: none;
+    opacity: 0.28;
+}
+
+#app .terminal-kb-article-card:hover {
+    transform: translateY(-2px);
+    border-left-color: color-mix(in srgb, var(--terminal-cyan) 85%, transparent);
+    box-shadow: 0 16px 36px color-mix(in srgb, var(--terminal-cyan) 18%, transparent);
+}
+
+#app .terminal-kb-article-card .card-body {
+    position: relative;
+}
+
+#app .terminal-kb-article-body {
+    white-space: pre-wrap;
+    line-height: 1.7;
+    color: var(--terminal-text);
+    letter-spacing: 0.01em;
+}
+
+#app .terminal-kb-article-body img {
+    max-width: 100%;
+    border-radius: 12px;
+}
+
+#app .terminal-kb-article-body pre {
+    max-width: 100%;
+    overflow: auto;
+}
+
+#app .terminal-kb-category,
+#app .terminal-kb-meta-chip {
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--terminal-border) 70%, transparent);
+    background: color-mix(in srgb, var(--terminal-surface-grid) 70%, transparent);
+    color: var(--terminal-text-soft);
+    padding: 0.25rem 0.62rem;
 }
 
 #app .terminal-screen-dashboard,
@@ -884,6 +1067,7 @@ body::before {
     margin-bottom: 0.95rem;
     padding-bottom: 0.6rem;
     border-bottom: 1px solid color-mix(in srgb, var(--terminal-border) 80%, transparent);
+    animation: terminal-panel-fade 250ms ease-out;
 }
 
 #app .terminal-toolbar,
@@ -893,11 +1077,60 @@ body::before {
     z-index: 1;
 }
 
+#app .terminal-control-card {
+    border-radius: 14px;
+    overflow: hidden;
+}
+
 #app .terminal-toolbar {
-    padding: 0.65rem 0.65rem 0;
+    padding: 0.65rem 0.65rem 0.65rem;
     border-radius: 14px;
     border: 1px solid color-mix(in srgb, var(--terminal-border) 74%, transparent);
     background: color-mix(in srgb, var(--terminal-surface-raised) 50%, transparent);
+}
+
+#app .terminal-table-card {
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+#app .terminal-ticket-card {
+    border-left: 2px solid color-mix(in srgb, var(--terminal-text-soft) 45%, transparent);
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+#app .terminal-ticket-card .card-header,
+#app .terminal-ticket-card .card-body {
+    background: color-mix(in srgb, var(--terminal-surface-raised) 88%, transparent) !important;
+}
+
+#app .terminal-attachment-chip {
+    border: 1px solid color-mix(in srgb, var(--terminal-border) 65%, transparent);
+    border-radius: 999px;
+    padding: 0.3rem 0.6rem 0.35rem;
+    max-width: 100%;
+    background: color-mix(in srgb, var(--terminal-bg-soft) 50%, var(--terminal-surface));
+    color: var(--terminal-text-soft);
+}
+
+#app .terminal-attachment-chip .btn-close {
+    filter: invert(45%);
+    opacity: 0.85;
+}
+
+#app .terminal-calendar-card {
+    border: 1px solid color-mix(in srgb, var(--terminal-border) 68%, transparent);
+}
+
+#app .terminal-calendar-card .card-header {
+    border-bottom: 1px solid color-mix(in srgb, var(--terminal-border) 72%, transparent);
+}
+
+#app .terminal-calendar-legend {
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+    border-top: 1px dashed color-mix(in srgb, var(--terminal-border) 45%, transparent);
 }
 
 #app .terminal-stat-row .card {
@@ -922,10 +1155,10 @@ body::before {
 
 #app .terminal-control-card .card-body,
 #app .terminal-table-card .card-body {
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
     border: 1px solid color-mix(in srgb, var(--terminal-border) 65%, transparent);
-    border-top: 0;
-    border-bottom-left-radius: 12px;
-    border-bottom-right-radius: 12px;
+    border-radius: 12px;
 }
 
 #app .terminal-table-card .table-responsive {
@@ -946,11 +1179,10 @@ body::before {
 }
 
 #app .terminal-table-card .table-hover tbody tr {
-    transition: transform 110ms ease, box-shadow 110ms ease;
+    transition: box-shadow 110ms ease, background-color 110ms ease;
 }
 
 #app .terminal-table-card .table-hover tbody tr:hover {
-    transform: translateX(2px);
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--terminal-cyan) 24%, transparent);
 }
 
@@ -1069,6 +1301,33 @@ body::before {
 
 #app .helpdesk-shell[data-view="SettingsView"] .terminal-screen .card {
     border-radius: 14px;
+}
+
+#app .helpdesk-shell[data-view="SettingsView"] .container-fluid {
+    padding-top: 0.35rem;
+}
+
+#app .helpdesk-shell[data-view="SettingsView"] .container-fluid::before {
+    inset: 0.4rem 0 0;
+}
+
+#app .helpdesk-shell[data-view="SettingsView"] .terminal-screen {
+    padding-top: 0.8rem;
+}
+
+#app .helpdesk-shell[data-view="SettingsView"] #settings-tabs,
+#app .helpdesk-shell[data-view="SettingsView"] #settings-tab-select {
+    margin-bottom: 0 !important;
+}
+
+#app .helpdesk-shell[data-view="SettingsView"] #settings-content {
+    margin-top: 0;
+}
+
+#app .helpdesk-shell[data-view="SettingsView"] #settings-content > .card,
+#app .helpdesk-shell[data-view="SettingsView"] #settings-content > .terminal-control-card,
+#app .helpdesk-shell[data-view="SettingsView"] #settings-content > .terminal-table-card {
+    margin-top: 0 !important;
 }
 
 #app .helpdesk-shell[data-view="AgentsView"] .btn-edit-agent,

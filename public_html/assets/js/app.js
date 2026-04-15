@@ -159,6 +159,8 @@ const App = {
             return;
         }
 
+        this.clearModalArtifacts();
+        this.clearDetachedModals();
         this.showLoading();
         Navbar.updateActiveItem();
 
@@ -166,6 +168,7 @@ const App = {
             const html = (typeof view.render === 'function') ? view.render(params) : '<div></div>';
             const shellHtml = `<section class="helpdesk-shell" data-view="${viewName}">${html}</section>`;
             $('#app').html(shellHtml);
+            this.mountViewModals();
             if (typeof view.init === 'function') await view.init(params);
         } catch (e) {
             $('#app').html('<div class="container mt-5"><div class="alert alert-danger">Error loading page: ' + App.escapeHtml(e.message || 'Unknown error') + '</div></div>');
@@ -247,6 +250,40 @@ const App = {
                 resolve(true);
             });
             $('#confirmModal').one('hidden.bs.modal', () => resolve(false));
+        });
+    },
+
+    clearModalArtifacts() {
+        document.querySelectorAll('.modal.show').forEach(modalEl => {
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+            modalEl.classList.remove('show');
+            modalEl.style.display = 'none';
+            modalEl.setAttribute('aria-hidden', 'true');
+            modalEl.removeAttribute('aria-modal');
+        });
+        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+    },
+
+    clearDetachedModals() {
+        document.querySelectorAll('[data-app-detached-modal="1"]').forEach(el => el.remove());
+    },
+
+    detachModal(modalEl) {
+        if (!modalEl) return null;
+        modalEl.dataset.appDetachedModal = '1';
+        if (modalEl.parentElement !== document.body) {
+            document.body.appendChild(modalEl);
+        }
+        return modalEl;
+    },
+
+    mountViewModals() {
+        document.querySelectorAll('#app .modal').forEach(modalEl => {
+            this.detachModal(modalEl);
         });
     },
 

@@ -92,7 +92,7 @@ const CustomersView = {
                 </div>
             </div>
 
-            <div class="card border-0 shadow-sm mb-3">
+            <div class="card border-0 shadow-sm mb-3 terminal-control-card">
                 <div class="card-body py-2">
                     <div class="row g-2">
                         <div class="col-md-5">
@@ -105,7 +105,7 @@ const CustomersView = {
                 </div>
             </div>
 
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm terminal-table-card">
                 <div class="card-body p-0" id="customers-table-wrap">
                     <div class="text-center py-5 text-muted">
                         <div class="spinner-border"></div><p class="mt-2">Loading…</p>
