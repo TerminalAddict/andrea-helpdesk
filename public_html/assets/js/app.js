@@ -15,6 +15,7 @@ const App = {
         '/customers':      'CustomersView',
         '/customers/:id':  'CustomerDetailView',
         '/my-profile':     'MyProfileView',
+        '/my-profile/:section': 'MyProfileView',
         '/admin/agents':   'AgentsView',
         '/admin/settings': 'SettingsView',
         '/admin/settings/:section': 'SettingsView',
@@ -43,6 +44,9 @@ const App = {
             if (user) {
                 this.applyTheme(user.theme || 'light');
                 Navbar.init();
+                if (typeof Notifications !== 'undefined') {
+                    Notifications.init();
+                }
                 this.startImapWebPoller();
             } else {
                 window.location.hash = '#/login';

@@ -4,6 +4,25 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
+## [1.3.0] — 2026-04-16
+
+### Added
+- Added an in-app notification center with a navbar bell, unread badge, ticket/deep-link alerts, and mark-read / mark-all-read actions
+- Added optional browser notification subscription per agent in `My Profile` for live browser/OS alerts while the app is open
+- Added once-per-day silent admin update checks that create an in-app alert linking to `Settings → General → Version & Updates`
+- Added `/my-profile/notifications` as an active notification overview so read items remain visible there until the underlying issue is actually resolved
+
+### Fixed
+- Manual ticket priority changes to `overdue` now raise the same overdue alert flow instead of silently changing state
+- Tickets whose due date has passed are now automatically escalated to `overdue` during the regular SLA/background runner
+- Silent admin update checks now support a configurable version metadata URL and are serialised per admin to avoid overlapping upstream fetches during concurrent sessions
+- The navbar bell now acts as a live unread queue, while its badge still signals active issues that need attention even after everything has been marked read
+
+### Docs
+- Updated README, API spec, DB schema notes, screenshot text, and versioning notes to describe the notification center and background update checks
+
+---
+
 ## [1.2.8] — 2026-04-16
 
 ### Fixed
@@ -30,22 +49,6 @@ All notable changes to Andrea Helpdesk are documented here.
 ---
 
 ## [1.2.6] — 2026-04-16
-
-### Security
-- Sanitised agent replies, knowledge base article HTML, agent signatures, and HTML email settings server-side on write instead of trusting only the browser editor
-- Tightened server-side link sanitisation to allow only `http`, `https`, `mailto`, `tel`, and relative links inside rich-text content
-- Validated DB charset/collation config before using it in connection bootstrap SQL
-- Ignored `X-Forwarded-For` unless `TRUST_PROXY_HEADERS=true` is explicitly enabled
-- Enforced the attachment MIME allowlist during upload and IMAP attachment storage, and switched stored attachment filenames to cryptographically random prefixes
-- Held the in-app updater lock until file copy, schema updates, and migrations fully complete to prevent overlapping update runs
-- Replaced the shipped theme-lab fallback snapshot data with anonymised sample identities
-
-### Docs
-- Updated README, versioning notes, and theme-lab documentation to describe the new hardening and configuration options
-
----
-
-## [Unreleased]
 
 ### Security
 - Sanitised agent replies, knowledge base article HTML, agent signatures, and HTML email settings server-side on write instead of trusting only the browser editor

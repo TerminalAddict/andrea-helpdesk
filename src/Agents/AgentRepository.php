@@ -40,8 +40,8 @@ class AgentRepository
     public function create(array $data): int
     {
         return $this->db->insert(
-            "INSERT INTO agents (name, email, password_hash, role, can_close_tickets, can_delete_tickets, can_edit_customers, can_view_reports, can_manage_kb, can_manage_tags, signature)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO agents (name, email, password_hash, role, can_close_tickets, can_delete_tickets, can_edit_customers, can_view_reports, can_manage_kb, can_manage_tags, signature, browser_notifications_enabled)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $data['name'],
                 strtolower(trim($data['email'])),
@@ -54,6 +54,7 @@ class AgentRepository
                 $data['can_manage_kb'] ?? 0,
                 $data['can_manage_tags'] ?? 0,
                 $data['signature'] ?? null,
+                $data['browser_notifications_enabled'] ?? 0,
             ]
         );
     }
@@ -61,12 +62,12 @@ class AgentRepository
     public function update(int $id, array $data): bool
     {
         $allowed = ['name', 'email', 'password_hash', 'role', 'can_close_tickets',
-                    'can_delete_tickets', 'can_edit_customers', 'can_view_reports', 'can_manage_kb', 'can_manage_tags', 'signature', 'page_size', 'theme', 'is_active'];
+                    'can_delete_tickets', 'can_edit_customers', 'can_view_reports', 'can_manage_kb', 'can_manage_tags', 'signature', 'page_size', 'theme', 'browser_notifications_enabled', 'is_active', 'last_update_check_at'];
         $set     = [];
         $params  = [];
 
         $boolCols = ['can_close_tickets', 'can_delete_tickets', 'can_edit_customers',
-                     'can_view_reports', 'can_manage_kb', 'can_manage_tags', 'is_active'];
+                     'can_view_reports', 'can_manage_kb', 'can_manage_tags', 'browser_notifications_enabled', 'is_active'];
 
         foreach ($allowed as $col) {
             if (array_key_exists($col, $data)) {

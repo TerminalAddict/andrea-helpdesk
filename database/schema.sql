@@ -24,8 +24,10 @@ CREATE TABLE IF NOT EXISTS agents (
     signature           TEXT NULL COMMENT 'Per-agent email signature HTML',
     page_size           TINYINT UNSIGNED NOT NULL DEFAULT 20 COMMENT 'Rows per page for tickets list and dashboard blocks (10/20/50)',
     theme               VARCHAR(20) NOT NULL DEFAULT 'light' COMMENT 'UI theme preference: light or dark',
+    browser_notifications_enabled TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Whether this agent wants browser notifications while the app is open',
     is_active           TINYINT(1) NOT NULL DEFAULT 1,
     last_login_at       DATETIME NULL,
+    last_update_check_at DATETIME NULL COMMENT 'Last successful background update check for this admin',
     created_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uq_agents_email (email),
@@ -236,6 +238,27 @@ CREATE TABLE IF NOT EXISTS settings (
     label       VARCHAR(120) NOT NULL,
     updated_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (key_name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- Agent Notifications
+-- ============================================================
+CREATE TABLE IF NOT EXISTS agent_notifications (
+    id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    agent_id    INT UNSIGNED NOT NULL,
+    type        VARCHAR(60) NOT NULL,
+    severity    ENUM('info','success','warning','danger') NOT NULL DEFAULT 'info',
+    title       VARCHAR(180) NOT NULL,
+    body        TEXT NULL,
+    link        VARCHAR(255) NULL,
+    data_json   TEXT NULL,
+    dedupe_key  VARCHAR(191) NULL,
+    read_at     DATETIME NULL,
+    created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_agent_notifications_agent_created (agent_id, created_at),
+    INDEX idx_agent_notifications_agent_read (agent_id, read_at),
+    UNIQUE KEY uq_agent_notifications_dedupe (agent_id, dedupe_key),
+    CONSTRAINT fk_agent_notifications_agent FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================

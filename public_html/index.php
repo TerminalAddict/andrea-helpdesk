@@ -80,7 +80,7 @@ try {
 <script>
 window.AppConfig = {
     apiBase: '/api',
-    version: '1.2.8'
+    version: '1.3.0'
 };
 </script>
 
@@ -94,6 +94,7 @@ window.AppConfig = {
 <script src="/assets/js/api.js"></script>
 
 <!-- Components -->
+<script src="/assets/js/components/notifications.js"></script>
 <script src="/assets/js/components/navbar.js"></script>
 
 <!-- Views -->

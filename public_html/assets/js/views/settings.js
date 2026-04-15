@@ -872,6 +872,28 @@ const SettingsView = {
                 </div>
 
                 <hr class="my-4">
+                <h6 class="mb-3">Browser Notifications</h6>
+                <div class="mb-4" style="max-width:520px;">
+                    <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+                        <div>
+                            <div class="fw-semibold" id="profile-browser-notification-state">${this.browserNotificationStatusLabel(agent)}</div>
+                            <div class="form-text mt-1">When enabled, Andrea Helpdesk can show browser or OS notifications while the app is open for new tickets, customer replies, overdue tickets, and update alerts.</div>
+                        </div>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button class="btn btn-outline-primary btn-sm" id="btn-enable-browser-notifications">
+                                <i class="bi bi-bell me-1"></i>Enable
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" id="btn-disable-browser-notifications">
+                                <i class="bi bi-bell-slash me-1"></i>Disable
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" id="btn-test-browser-notifications">
+                                <i class="bi bi-send-check me-1"></i>Send Test
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4">
                 <h6 class="mb-3">Change Password</h6>
                 <form autocomplete="off" onsubmit="return false">
                 <input type="text" autocomplete="username" style="display:none;">
@@ -911,6 +933,9 @@ const SettingsView = {
 
     bindProfileSave() {
         $('#btn-save-profile').on('click', () => this.saveProfile());
+        $('#btn-enable-browser-notifications').on('click', () => this.enableBrowserNotifications());
+        $('#btn-disable-browser-notifications').on('click', () => this.disableBrowserNotifications());
+        $('#btn-test-browser-notifications').on('click', () => this.testBrowserNotifications());
         $('#btn-clear-cache').on('click', async () => {
             // Preserve auth tokens across the wipe
             const accessToken  = localStorage.getItem('andrea_access_token');
@@ -970,6 +995,75 @@ const SettingsView = {
             App.toast(e.message, 'error');
         } finally {
             btn.prop('disabled', false).html('<i class="bi bi-save me-1"></i>Save Profile');
+        }
+    },
+
+    browserNotificationStatusLabel(agent = this.currentAgent || {}) {
+        if (!('Notification' in window)) {
+            return 'This browser does not support notifications';
+        }
+
+        const enabled = !!agent.browser_notifications_enabled;
+        if (Notification.permission === 'denied') {
+            return enabled
+                ? 'Blocked by browser settings'
+                : 'Permission blocked in this browser';
+        }
+        if (Notification.permission === 'granted' && enabled) {
+            return 'Enabled for this account';
+        }
+        if (Notification.permission === 'granted') {
+            return 'Permission granted, but disabled for this account';
+        }
+        return enabled ? 'Waiting for browser permission' : 'Not enabled';
+    },
+
+    refreshBrowserNotificationUi() {
+        const supported = 'Notification' in window;
+        const permission = supported ? Notification.permission : 'unsupported';
+        $('#profile-browser-notification-state').text(this.browserNotificationStatusLabel());
+        const enabled = !!(this.currentAgent && this.currentAgent.browser_notifications_enabled);
+        $('#btn-enable-browser-notifications').prop('disabled', !supported || (enabled && permission === 'granted'));
+        $('#btn-disable-browser-notifications').prop('disabled', !supported || !enabled);
+        $('#btn-test-browser-notifications').prop('disabled', !supported || !(enabled && permission === 'granted'));
+    },
+
+    async enableBrowserNotifications() {
+        const btn = $('#btn-enable-browser-notifications').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Enabling…');
+        try {
+            const updated = await Notifications.enableBrowserNotifications();
+            this.currentAgent = { ...this.currentAgent, ...updated, browser_notifications_enabled: true };
+            SettingsView.currentAgent = this.currentAgent;
+            App.toast('Browser notifications enabled');
+        } catch (e) {
+            App.toast(e.message, 'error');
+        } finally {
+            btn.prop('disabled', false).html('<i class="bi bi-bell me-1"></i>Enable');
+            this.refreshBrowserNotificationUi();
+        }
+    },
+
+    async disableBrowserNotifications() {
+        const btn = $('#btn-disable-browser-notifications').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Disabling…');
+        try {
+            const updated = await Notifications.disableBrowserNotifications();
+            this.currentAgent = { ...this.currentAgent, ...updated, browser_notifications_enabled: false };
+            SettingsView.currentAgent = this.currentAgent;
+            App.toast('Browser notifications disabled');
+        } catch (e) {
+            App.toast(e.message, 'error');
+        } finally {
+            btn.prop('disabled', false).html('<i class="bi bi-bell-slash me-1"></i>Disable');
+            this.refreshBrowserNotificationUi();
+        }
+    },
+
+    testBrowserNotifications() {
+        try {
+            Notifications.sendTestBrowserNotification();
+            App.toast('Test notification sent', 'success');
+        } catch (e) {
+            App.toast(e.message, 'error');
         }
     },
 
@@ -1075,10 +1169,19 @@ const SettingsView = {
 };
 
 const MyProfileView = {
-    render() {
+    render(params) {
+        const section = params && params.section === 'notifications' ? 'notifications' : 'profile';
         return `
         <div class="container-fluid terminal-screen terminal-screen-settings p-4 terminal-compact">
             <h4 class="terminal-heading mb-3"><i class="bi bi-person-lines-fill me-2"></i>My Profile</h4>
+            <div class="terminal-profile-nav mb-3">
+                <a class="btn btn-sm ${section === 'profile' ? 'btn-primary' : 'btn-outline-secondary'}" href="#/my-profile">
+                    <i class="bi bi-person-lines-fill me-1"></i>Profile
+                </a>
+                <a class="btn btn-sm ${section === 'notifications' ? 'btn-primary' : 'btn-outline-secondary'}" href="#/my-profile/notifications">
+                    <i class="bi bi-bell me-1"></i>Notifications
+                </a>
+            </div>
             <div id="settings-content">
                 <div class="text-center py-5 text-muted">
                     <div class="spinner-border"></div><p class="mt-2">Loading…</p>
@@ -1087,7 +1190,7 @@ const MyProfileView = {
         </div>`;
     },
 
-    async init() {
+    async init(params) {
         try {
             const results = await Promise.all([
                 API.get('/auth/me'),
@@ -1096,11 +1199,122 @@ const MyProfileView = {
             SettingsView.currentAgent = (results[0].data && results[0].data.user) || {};
             SettingsView.publicSettings = results[1].data || {};
             SettingsView.settings = results[1].data || {};
-            $('#settings-content').html(SettingsView.renderProfilePanel());
-            SettingsView.bindProfileSave();
-            RichEditor.init('profile-signature', { value: (SettingsView.currentAgent || {}).signature || '' });
+            if (params && params.section === 'notifications') {
+                await this.renderNotificationsOverview();
+            } else {
+                $('#settings-content').html(SettingsView.renderProfilePanel());
+                SettingsView.bindProfileSave();
+                SettingsView.refreshBrowserNotificationUi();
+                RichEditor.init('profile-signature', { value: (SettingsView.currentAgent || {}).signature || '' });
+            }
         } catch (e) {
             $('#settings-content').html('<div class="alert alert-danger">' + App.escapeHtml(e.message) + '</div>');
+        }
+    },
+
+    async renderNotificationsOverview() {
+        $('#settings-content').html(`
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap mb-4">
+                        <div>
+                            <h6 class="mb-1">Active Notifications</h6>
+                            <div class="text-muted small">This page keeps active issues visible even after you mark them read from the bell menu.</div>
+                        </div>
+                        <button class="btn btn-outline-primary btn-sm" id="btn-subscribe-browser-notifications">
+                            <i class="bi bi-bell me-1"></i>Subscribe In Your Browser
+                        </button>
+                    </div>
+                    <div id="my-profile-notification-summary" class="terminal-notification-overview-summary mb-3"></div>
+                    <div id="my-profile-notification-list">
+                        <div class="text-center py-5 text-muted">
+                            <div class="spinner-border"></div><p class="mt-2">Loading…</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `);
+
+        this.bindNotificationOverviewActions();
+        await Notifications.markAllRead();
+        await this.loadNotificationsOverview();
+    },
+
+    bindNotificationOverviewActions() {
+        $('#settings-content')
+            .off('.profileNotifications')
+            .on('click.profileNotifications', '#btn-subscribe-browser-notifications', async () => {
+                const btn = $('#btn-subscribe-browser-notifications');
+                const original = btn.html();
+                btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Subscribing…');
+                try {
+                    const updated = await Notifications.enableBrowserNotifications();
+                    SettingsView.currentAgent = { ...SettingsView.currentAgent, ...updated, browser_notifications_enabled: true };
+                    App.toast('Browser notifications enabled');
+                } catch (e) {
+                    App.toast(e.message, 'error');
+                } finally {
+                    btn.prop('disabled', false).html(original);
+                }
+            })
+            .on('click.profileNotifications', '.profile-notification-link', async (e) => {
+                e.preventDefault();
+                const id = parseInt($(e.currentTarget).data('id'), 10) || 0;
+                const link = $(e.currentTarget).data('link') || '';
+                if (id) {
+                    await Notifications.markRead(id);
+                }
+                if (link) {
+                    App.navigate(link);
+                }
+            });
+    },
+
+    async loadNotificationsOverview() {
+        try {
+            const overview = await Notifications.fetchActiveOverview(150);
+            const items = overview.items || [];
+            const allRead = overview.unreadCount === 0;
+            $('#my-profile-notification-summary').html(`
+                <div class="terminal-notification-overview-chip">
+                    <strong>${App.escapeHtml(String(overview.activeCount))}</strong>
+                    <span>active</span>
+                </div>
+                <div class="terminal-notification-overview-chip">
+                    <strong>${App.escapeHtml(String(overview.unreadCount))}</strong>
+                    <span>unread</span>
+                </div>
+                ${allRead && overview.activeCount > 0 ? '<div class="terminal-notification-overview-chip attention"><strong>Attention</strong><span>All read, but active issues remain</span></div>' : ''}
+            `);
+
+            if (!items.length) {
+                $('#my-profile-notification-list').html('<div class="terminal-notification-empty">No active notifications right now.</div>');
+                return;
+            }
+
+            $('#my-profile-notification-list').html(items.map((item) => {
+                const state = item.read_at ? 'Read' : 'Unread';
+                const stateClass = item.read_at ? 'is-read' : 'is-unread';
+                return `
+                    <article class="terminal-notification-card ${stateClass}">
+                        <div class="terminal-notification-card-head">
+                            <div>
+                                <div class="terminal-notification-card-title">${App.escapeHtml(item.title || 'Notification')}</div>
+                                <div class="terminal-notification-card-meta">${App.escapeHtml(App.formatDate(item.created_at))}</div>
+                            </div>
+                            <span class="terminal-notification-card-state">${App.escapeHtml(state)}</span>
+                        </div>
+                        ${item.body ? `<div class="terminal-notification-card-body">${App.escapeHtml(item.body)}</div>` : ''}
+                        <div class="terminal-notification-card-actions">
+                            <a href="#" class="profile-notification-link" data-id="${item.id}" data-link="${App.escapeHtml(item.link || '')}">
+                                Open
+                            </a>
+                        </div>
+                    </article>
+                `;
+            }).join(''));
+        } catch (e) {
+            $('#my-profile-notification-list').html('<div class="alert alert-danger">' + App.escapeHtml(e.message) + '</div>');
         }
     }
 };

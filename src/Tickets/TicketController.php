@@ -9,6 +9,8 @@ use Andrea\Helpdesk\Core\Response;
 use Andrea\Helpdesk\Core\Exceptions\NotFoundException;
 use Andrea\Helpdesk\Core\Exceptions\HttpException;
 use Andrea\Helpdesk\Notifications\NotificationService;
+use Andrea\Helpdesk\Settings\SettingsService;
+use Andrea\Helpdesk\Agents\AgentRepository;
 
 class TicketController
 {
@@ -173,16 +175,40 @@ class TicketController
             $msg = $data['suppress_emails'] ? 'Email suppression enabled — no outbound emails will be sent for this ticket.' : 'Email suppression disabled — outbound emails resumed.';
             $replyService->createSystemReply($ticket['id'], $msg, $request->agent->id);
         }
+        if (isset($data['priority']) && $data['priority'] !== $ticket['priority']) {
+            $replyService->createSystemReply($ticket['id'], 'Priority changed to ' . $data['priority'] . '.', $request->agent->id);
+        }
+
+        $notifications = null;
 
         // If assignment changed, notify new agent
         if (isset($data['assigned_agent_id']) && $data['assigned_agent_id'] != $ticket['assigned_agent_id']) {
             $agent = $this->db->fetch("SELECT * FROM agents WHERE id = ?", [$data['assigned_agent_id']]);
             if ($agent) {
                 try {
-                    $notifications = new NotificationService();
+                    $notifications = $notifications ?: new NotificationService();
                     $notifications->onTicketAssigned($ticket, $agent);
                 } catch (\Throwable) {}
             }
+        }
+
+        if (
+            isset($data['priority'])
+            && $data['priority'] === 'overdue'
+            && $ticket['priority'] !== 'overdue'
+            && !in_array($ticket['status'], ['resolved', 'closed'], true)
+        ) {
+            try {
+                $notifications = $notifications ?: new NotificationService();
+                $recipientIds  = $this->resolveOverdueRecipients();
+                $updatedTicket = $this->repo->findById($ticket['id']) ?: $ticket;
+                $notifications->sendOverdueAlert(
+                    $updatedTicket,
+                    $recipientIds,
+                    'Ticket was manually marked overdue by ' . ($request->agent->name ?? 'an agent'),
+                    'manual:' . (int)$ticket['id'] . ':' . date('Y-m-d H:i:s')
+                );
+            } catch (\Throwable) {}
         }
 
         Response::success($this->repo->findById($ticket['id']), 'Ticket updated');
@@ -411,5 +437,21 @@ class TicketController
         $this->repo->removeTag($ticketId, (int)$params['tag_id']);
         $this->repo->touchAttention($ticketId);
         Response::success(null, 'Tag removed');
+    }
+
+    private function resolveOverdueRecipients(): array
+    {
+        $settings = SettingsService::getInstance()->getSlaConfig();
+        $agents   = new AgentRepository();
+        $activeIds = array_map('intval', array_column($agents->getActiveAgents(), 'id'));
+
+        if (($settings['notify_scope'] ?? 'all') === 'specific') {
+            return array_values(array_filter(
+                array_map('intval', (array)($settings['notify_agent_ids'] ?? [])),
+                fn(int $id): bool => in_array($id, $activeIds, true)
+            ));
+        }
+
+        return $activeIds;
     }
 }

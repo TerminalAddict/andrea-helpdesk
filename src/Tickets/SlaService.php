@@ -28,13 +28,13 @@ class SlaService
     public function run(): array
     {
         $config = $this->settings->getSlaConfig();
-        if (!$config['enabled']) {
-            return ['high_escalated' => 0, 'overdue_escalated' => 0];
-        }
-
         $recipientAgentIds = $this->resolveRecipientAgentIds($config);
+        $dueDateOverdueCount = $this->processDueDateOverdueTickets($recipientAgentIds);
+        if (!$config['enabled']) {
+            return ['high_escalated' => 0, 'overdue_escalated' => $dueDateOverdueCount];
+        }
         if (!$recipientAgentIds) {
-            return ['high_escalated' => 0, 'overdue_escalated' => 0];
+            return ['high_escalated' => 0, 'overdue_escalated' => $dueDateOverdueCount];
         }
         $highCutoff = date('Y-m-d H:i:s', strtotime('-' . $config['high_after_days'] . ' days'));
         $overdueCutoff = date(
@@ -100,7 +100,53 @@ class SlaService
             $overdueCount++;
         }
 
-        return ['high_escalated' => $highCount, 'overdue_escalated' => $overdueCount];
+        return ['high_escalated' => $highCount, 'overdue_escalated' => $overdueCount + $dueDateOverdueCount];
+    }
+
+    private function processDueDateOverdueTickets(array $recipientAgentIds): int
+    {
+        $tickets = $this->db->fetchAll(
+            "SELECT t.*,
+                    c.name AS customer_name,
+                    c.email AS customer_email,
+                    a.name AS agent_name
+             FROM tickets t
+             LEFT JOIN customers c ON c.id = t.customer_id
+             LEFT JOIN agents a ON a.id = t.assigned_agent_id
+             WHERE t.deleted_at IS NULL
+               AND t.status NOT IN ('resolved', 'closed')
+               AND t.priority != 'overdue'
+               AND t.due_at IS NOT NULL
+               AND (
+                    (t.due_all_day = 1 AND DATE(COALESCE(t.due_end, t.due_at)) < CURRENT_DATE())
+                    OR
+                    (t.due_all_day = 0 AND COALESCE(t.due_end, t.due_at) < NOW())
+               )
+             ORDER BY COALESCE(t.due_end, t.due_at) ASC"
+        );
+
+        $count = 0;
+        foreach ($tickets as $ticket) {
+            if (!$this->claimDueDateOverdue((int)$ticket['id'])) {
+                continue;
+            }
+
+            $updated = $this->ticketRepo->findById((int)$ticket['id']) ?? $ticket;
+            (new ReplyService())->createSystemReply(
+                (int)$ticket['id'],
+                'Priority changed to overdue because the due date has passed.',
+                null
+            );
+            $this->notifications->sendOverdueAlert(
+                $updated,
+                $recipientAgentIds,
+                'Due date has passed',
+                'due:' . (string)($ticket['due_end'] ?: $ticket['due_at'] ?: '')
+            );
+            $count++;
+        }
+
+        return $count;
     }
 
     private function claimHighEscalation(int $ticketId): bool
@@ -133,6 +179,27 @@ class SlaService
                AND deleted_at IS NULL
                AND status NOT IN ('resolved', 'closed')
                AND (sla_overdue_notified_at IS NULL OR sla_overdue_notified_at < last_attention_at)"
+        );
+        $stmt->execute([$ticketId]);
+        return $stmt->rowCount() > 0;
+    }
+
+    private function claimDueDateOverdue(int $ticketId): bool
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            "UPDATE tickets
+             SET priority = 'overdue',
+                 sla_overdue_notified_at = NOW()
+             WHERE id = ?
+               AND deleted_at IS NULL
+               AND status NOT IN ('resolved', 'closed')
+               AND priority != 'overdue'
+               AND due_at IS NOT NULL
+               AND (
+                    (due_all_day = 1 AND DATE(COALESCE(due_end, due_at)) < CURRENT_DATE())
+                    OR
+                    (due_all_day = 0 AND COALESCE(due_end, due_at) < NOW())
+               )"
         );
         $stmt->execute([$ticketId]);
         return $stmt->rowCount() > 0;

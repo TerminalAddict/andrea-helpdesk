@@ -125,6 +125,10 @@ class AgentController
             }
         }
 
+        if ($request->input('browser_notifications_enabled') !== null) {
+            $data['browser_notifications_enabled'] = (bool)$request->input('browser_notifications_enabled');
+        }
+
         // Password change — requires current password
         $newPassword = $request->input('new_password');
         if ($newPassword !== null && $newPassword !== '') {

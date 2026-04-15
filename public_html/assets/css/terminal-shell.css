@@ -375,6 +375,209 @@ html[data-theme='dark'] .terminal-theme-btn.active {
     justify-content: space-between;
 }
 
+.terminal-notification-toggle {
+    padding-inline: 0.72rem;
+}
+
+.terminal-notification-icon {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.terminal-notification-badge {
+    position: absolute;
+    top: -0.45rem;
+    right: -0.55rem;
+    min-width: 1.1rem;
+    padding-inline: 0.28rem;
+}
+
+.terminal-notification-badge.attention {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--terminal-warn) 88%, #ffffff), color-mix(in srgb, var(--terminal-danger) 28%, var(--terminal-warn)));
+    color: #102031;
+}
+
+.terminal-notification-menu {
+    min-width: 360px;
+    max-width: min(92vw, 420px);
+    padding: 0.45rem;
+    overflow-x: hidden;
+}
+
+.terminal-notification-menu-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.35rem 0.35rem 0.55rem;
+}
+
+.terminal-notification-menu-header strong {
+    display: block;
+    color: var(--terminal-text);
+    font-size: 0.95rem;
+}
+
+.terminal-notification-menu-body {
+    display: grid;
+    gap: 0.3rem;
+    max-height: min(70vh, 420px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 0.1rem;
+}
+
+.terminal-notification-item {
+    display: block;
+    padding: 0.7rem 0.78rem !important;
+    border: 1px solid color-mix(in srgb, var(--terminal-border) 75%, transparent);
+    background: color-mix(in srgb, var(--terminal-surface) 76%, transparent);
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.terminal-notification-item.unread {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--terminal-cyan) 14%, transparent), color-mix(in srgb, var(--terminal-surface-raised) 92%, transparent));
+    border-color: color-mix(in srgb, var(--terminal-cyan) 38%, transparent);
+}
+
+.terminal-notification-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.terminal-notification-title {
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--terminal-text);
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.terminal-notification-time {
+    flex-shrink: 0;
+    color: var(--terminal-text-muted);
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+.terminal-notification-body {
+    margin-top: 0.32rem;
+    color: var(--terminal-text-soft);
+    font-size: 0.84rem;
+    line-height: 1.45;
+    white-space: normal;
+}
+
+.terminal-notification-empty {
+    padding: 1rem 0.8rem;
+    color: var(--terminal-text-soft);
+    text-align: center;
+    font-size: 0.84rem;
+}
+
+.terminal-notification-empty-link {
+    padding: 0 0.8rem 0.9rem;
+    text-align: center;
+    font-size: 0.82rem;
+}
+
+.terminal-profile-nav {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.terminal-notification-overview-summary {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.terminal-notification-overview-chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.45rem;
+    padding: 0.55rem 0.8rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--terminal-border-strong) 70%, transparent);
+    background: color-mix(in srgb, var(--terminal-surface-raised) 92%, transparent);
+    color: var(--terminal-text-soft);
+    font-size: 0.82rem;
+}
+
+.terminal-notification-overview-chip strong {
+    color: var(--terminal-text);
+    font-size: 0.95rem;
+}
+
+.terminal-notification-overview-chip.attention {
+    border-color: color-mix(in srgb, var(--terminal-warn) 55%, transparent);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--terminal-warn) 18%, transparent), color-mix(in srgb, var(--terminal-surface-raised) 92%, transparent));
+}
+
+.terminal-notification-card {
+    border: 1px solid color-mix(in srgb, var(--terminal-border) 80%, transparent);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--terminal-surface-raised) 94%, transparent);
+    padding: 0.95rem 1rem;
+    margin-bottom: 0.8rem;
+}
+
+.terminal-notification-card.is-unread {
+    border-color: color-mix(in srgb, var(--terminal-cyan) 32%, transparent);
+    box-shadow: 0 10px 26px rgba(7, 18, 34, 0.08);
+}
+
+.terminal-notification-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.8rem;
+}
+
+.terminal-notification-card-title {
+    font-weight: 700;
+    color: var(--terminal-text);
+    line-height: 1.35;
+}
+
+.terminal-notification-card-meta {
+    margin-top: 0.18rem;
+    font-size: 0.78rem;
+    color: var(--terminal-text-muted);
+}
+
+.terminal-notification-card-state {
+    border-radius: 999px;
+    padding: 0.18rem 0.55rem;
+    font-size: 0.75rem;
+    border: 1px solid color-mix(in srgb, var(--terminal-border-strong) 62%, transparent);
+    color: var(--terminal-text-soft);
+    background: color-mix(in srgb, var(--terminal-bg-soft) 55%, transparent);
+    white-space: nowrap;
+}
+
+.terminal-notification-card-body {
+    margin-top: 0.7rem;
+    color: var(--terminal-text-soft);
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.terminal-notification-card-actions {
+    margin-top: 0.8rem;
+}
+
+.terminal-notification-card-actions a {
+    font-weight: 600;
+}
+
 .terminal-user-toggle-copy {
     display: grid;
     text-align: left;
@@ -1637,6 +1840,10 @@ html[data-theme='dark'] #app .btn-outline-success {
     .terminal-user-menu {
         width: 100%;
         min-width: 0;
+    }
+
+    .terminal-notification-menu {
+        max-width: 100%;
     }
 
     .terminal-nav .terminal-theme-toggle {

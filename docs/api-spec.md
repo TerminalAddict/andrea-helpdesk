@@ -891,10 +891,130 @@ Update the currently authenticated agent's own profile. Requires current passwor
 | `signature` | string | HTML email signature |
 | `page_size` | int | `10`, `20`, or `50` |
 | `theme` | string | `light` or `dark` |
+| `browser_notifications_enabled` | bool | Enable or disable browser notifications for this agent while the app is open |
 | `current_password` | string | Required if changing password |
 | `new_password` | string | Min 8 chars |
 
 **Response `200`** — updated agent object.
+
+---
+
+## Notification endpoints
+
+All notification endpoints require **`auth:agent`**. The silent update-check endpoint additionally requires **`role:admin`**.
+
+### `GET /api/notifications`
+
+Return the current agent's unread, still-active notification queue for the navbar bell menu.
+
+**Query params**
+
+| Param | Type | Required | Notes |
+|-------|------|----------|-------|
+| `limit` | int | no | Default `12`, max `50` |
+| `after_id` | int | no | When supplied, only notifications with `id > after_id` are returned, ordered ascending for polling |
+
+**Response `200`**
+
+```json
+{
+  "data": {
+    "items": [
+      {
+        "id": 44,
+        "type": "ticket_created",
+        "severity": "warning",
+        "title": "New ticket HD-2026-04-16-185",
+        "body": "Paul CCL · Cannot log in",
+        "link": "/tickets/185",
+        "data": {
+          "ticket_id": 185
+        },
+        "read_at": null,
+        "created_at": "2026-04-16 14:03:11"
+      }
+    ],
+    "unread_count": 3,
+    "active_count": 5
+  }
+}
+```
+
+### `GET /api/notifications/active`
+
+Return the current agent's active notification overview for `#/my-profile/notifications`. This includes both unread and read notifications that are still relevant based on current ticket/update state.
+
+**Query params**
+
+| Param | Type | Required | Notes |
+|-------|------|----------|-------|
+| `limit` | int | no | Default `100`, max `250` |
+
+**Response `200`**
+
+```json
+{
+  "data": {
+    "items": [
+      {
+        "id": 51,
+        "type": "ticket_overdue",
+        "severity": "danger",
+        "title": "Overdue: HD-2026-04-16-185",
+        "body": "Cannot log in · Due date has passed",
+        "link": "/tickets/185",
+        "data": {
+          "ticket_id": 185
+        },
+        "read_at": "2026-04-16 15:11:02",
+        "created_at": "2026-04-16 14:40:07"
+      }
+    ],
+    "unread_count": 0,
+    "active_count": 1
+  }
+}
+```
+
+### `POST /api/notifications/:id/read`
+
+Mark one notification as read for the current agent.
+
+**Response `200`**
+
+```json
+{
+  "data": {
+    "unread_count": 2,
+    "active_count": 5
+  }
+}
+```
+
+### `POST /api/notifications/read-all`
+
+Mark all notifications as read for the current agent.
+
+### `POST /api/notifications/check-updates`
+
+Run the silent background update check for the current admin. The server enforces a once-per-day limit per admin via `agents.last_update_check_at` and serialises concurrent checks for the same admin before fetching upstream version metadata.
+
+**Auth:** `role:admin`
+
+**Response `200`**
+
+```json
+{
+  "data": {
+    "checked": true,
+    "created": true,
+    "installed_version": "1.2.8",
+    "latest_version": "1.2.9"
+  }
+}
+```
+
+If the latest version is newer and no existing notification has already been recorded for that admin/version pair, an `update_available` in-app notification is created linking to `#/admin/settings/general`.
 
 ---
 

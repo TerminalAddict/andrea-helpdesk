@@ -114,6 +114,8 @@ The SLA section lets admins enable or disable escalation, choose how many days w
 
 Below the save button, a **Version &amp; Updates** card shows the currently installed version number (fetched from the server) and a **Check for Updates** button. Clicking the button asks the server to fetch `version.json` from the GitHub `main` branch and compare it to the installed version. The result is shown inline — either "You are running the latest version" or "Version X.Y.Z is available".
 
+Admins also get a silent background update check once per day while browsing the app. If a newer release is found, the navbar bell shows an unread notification that links directly back to this **Version &amp; Updates** card.
+
 When an update is available, an **Update Now** button appears alongside the GitHub link. Clicking it opens a modal that first runs **preflight checks** — PHP ZipArchive extension, HTTP download capability, write permissions on all key directories, temp directory writable, and at least 50 MB free disk space. Each failed check shows specific instructions on how to fix it. If all checks pass, a **Proceed with Update** button is enabled. Clicking that downloads the latest zip from GitHub, extracts it, copies the new files over the installation (preserving `.env`, `storage/`, and `vendor/`), runs the database schema update, applies any new migrations, and clears the opcode cache. A live log is shown in a terminal-style panel, and on success the user is prompted to reload the page.
 
 When IMAP Polling Mode is set to **Cron Job (recommended)**, a help box displays the exact crontab line to add, along with instructions for using `make cron-install-production` as a shortcut. The cron script uses a file lock so overlapping runs are safe. The same poller process also runs the SLA escalation scan, so cron/web-triggered polling doubles as the SLA scheduler.
@@ -171,5 +173,7 @@ The Tags screen is where agents with the `manage_tags` permission manage the glo
 Route: `#/my-profile`
 
 The My Profile screen is per-agent and controls personal preferences. **Email Signature** accepts HTML with `{{agent_name}}` as a placeholder — this is the agent's personal signature prepended to the global signature set by an admin. The read-only **Global Signature** preview shows what will be appended after the personal signature.
+
+Below the display preferences, a **Browser Notifications** section lets the agent enable or disable browser / OS notifications for this account and send a test notification. These alerts are used by the navbar notification center for new tickets, customer replies, overdue/SLA escalations, and update notices while the app is open.
 
 **Display Preferences** includes **Theme** (Light or Dark) and **Tickets per page** (controls row count in the ticket list and dashboard blocks). A **Change Password** section lets agents update their own login password.

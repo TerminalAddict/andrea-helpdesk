@@ -17,6 +17,7 @@ use Andrea\Helpdesk\Tickets\CalendarController;
 use Andrea\Helpdesk\IMAP\ImapAccountController;
 use Andrea\Helpdesk\Reports\ReportController;
 use Andrea\Helpdesk\KnowledgeBase\KbController;
+use Andrea\Helpdesk\Notifications\NotificationController;
 
 // Route format: [METHOD, /path, ControllerClass, 'method', ['middleware', ...]]
 return [
@@ -87,6 +88,11 @@ return [
 
     // ── Agents ───────────────────────────────────────────────────────────────
     ['PUT',  '/api/agent/profile',            AgentController::class, 'updateProfile', ['auth:agent']],
+    ['GET',  '/api/notifications',            NotificationController::class, 'index',         ['auth:agent']],
+    ['GET',  '/api/notifications/active',     NotificationController::class, 'active',        ['auth:agent']],
+    ['POST', '/api/notifications/read-all',   NotificationController::class, 'markAllRead',   ['auth:agent']],
+    ['POST', '/api/notifications/:id/read',   NotificationController::class, 'markRead',      ['auth:agent']],
+    ['POST', '/api/notifications/check-updates', NotificationController::class, 'checkUpdates', ['role:admin']],
     ['GET',  '/api/agents',                   AgentController::class, 'index',         ['auth:agent']],
     ['POST', '/api/agents',                   AgentController::class, 'store',         ['role:admin']],
     ['GET',  '/api/agents/:id',               AgentController::class, 'show',          ['auth:agent']],

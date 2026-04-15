@@ -3,6 +3,7 @@
  */
 const Navbar = {
     openCount: 0,
+    ticketPollTimer: null,
 
     getPrimaryRoutes() {
         const routes = [];
@@ -63,6 +64,28 @@ const Navbar = {
                             ${primaryRoutes.map((route) => this.renderRoute(route)).join('')}
                         </div>
                         <div class="terminal-nav-tools">
+                            ${isAgent ? `
+                                <div class="dropdown" id="notificationDropdown">
+                                    <button class="nav-link terminal-tool-toggle terminal-notification-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications">
+                                        <span class="terminal-notification-icon">
+                                            <i class="bi bi-bell"></i>
+                                            <span id="notification-badge" class="badge terminal-route-badge terminal-notification-badge" style="display:none"></span>
+                                        </span>
+                                    </button>
+                                    <div class="dropdown-menu dropdown-menu-end terminal-nav-menu terminal-notification-menu">
+                                        <div class="terminal-notification-menu-header">
+                                            <div>
+                                                <div class="terminal-menu-heading">Notifications</div>
+                                                <strong>Inbox</strong>
+                                            </div>
+                                            <a href="#" class="small text-decoration-none" id="notification-mark-all">Mark all read</a>
+                                        </div>
+                                        <div id="notification-menu-body" class="terminal-notification-menu-body">
+                                            <div class="terminal-notification-empty">Loading…</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ` : ''}
                             ${showAdmin ? `
                                 <div class="dropdown">
                                     <button class="nav-link dropdown-toggle terminal-tool-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -101,6 +124,7 @@ const Navbar = {
                                     </li>
                                     <li><hr class="dropdown-divider"></li>
                                     ${isAgent ? `<li><a class="dropdown-item terminal-menu-link" href="#/my-profile" data-route="/my-profile"><i class="bi bi-person-lines-fill me-2"></i>My Profile</a></li>` : ''}
+                                    ${isAgent ? `<li><a class="dropdown-item terminal-menu-link" href="#/my-profile/notifications" data-route="/my-profile/notifications"><i class="bi bi-bell me-2"></i>Notifications</a></li>` : ''}
                                     <li><a class="dropdown-item terminal-menu-link" href="#" id="nav-logout"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
                                 </ul>
                             </div>
@@ -116,6 +140,13 @@ const Navbar = {
         this.bindEvents();
         this.updateActiveItem();
         this.fetchOpenTicketCount();
+        if (this.ticketPollTimer) {
+            window.clearInterval(this.ticketPollTimer);
+        }
+        this.ticketPollTimer = window.setInterval(() => this.fetchOpenTicketCount(), 15000);
+        if (typeof Notifications !== 'undefined') {
+            Notifications.renderBadge();
+        }
     },
 
     async setThemePreference(theme) {

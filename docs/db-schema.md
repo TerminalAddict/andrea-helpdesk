@@ -18,13 +18,14 @@ Andrea Helpdesk uses MySQL (InnoDB, utf8mb4_unicode_ci throughout). All tables u
 10. [ticket_relations](#10-ticket_relations)
 11. [imap_accounts](#11-imap_accounts)
 12. [settings](#12-settings)
-13. [knowledge_base_categories](#13-knowledge_base_categories)
-14. [knowledge_base_articles](#14-knowledge_base_articles)
-15. [refresh_tokens](#15-refresh_tokens)
-16. [audit_log](#16-audit_log)
-17. [Default Settings Reference](#17-default-settings-reference)
-18. [Entity Relationship Summary](#18-entity-relationship-summary)
-19. [Indexes and Performance Notes](#19-indexes-and-performance-notes)
+13. [agent_notifications](#13-agent_notifications)
+14. [knowledge_base_categories](#14-knowledge_base_categories)
+15. [knowledge_base_articles](#15-knowledge_base_articles)
+16. [refresh_tokens](#16-refresh_tokens)
+17. [audit_log](#17-audit_log)
+18. [Default Settings Reference](#18-default-settings-reference)
+19. [Entity Relationship Summary](#19-entity-relationship-summary)
+20. [Indexes and Performance Notes](#20-indexes-and-performance-notes)
 
 ---
 
@@ -48,8 +49,10 @@ Stores staff members who log in to the helpdesk to manage tickets.
 | `signature` | TEXT | YES | NULL | Per-agent HTML email signature (appended to outbound replies, overrides global signature) |
 | `page_size` | TINYINT UNSIGNED | NO | 20 | Preferred rows per page for ticket lists and dashboard blocks (10 / 20 / 50) |
 | `theme` | VARCHAR(20) | NO | 'light' | UI theme preference: `light` or `dark` |
+| `browser_notifications_enabled` | TINYINT(1) | NO | 0 | Whether this agent wants browser notifications while the app is open |
 | `is_active` | TINYINT(1) | NO | 1 | Soft-disable without deleting; inactive agents cannot log in |
 | `last_login_at` | DATETIME | YES | NULL | Updated on successful login |
+| `last_update_check_at` | DATETIME | YES | NULL | Last successful silent background update check for this admin |
 | `created_at` | DATETIME | NO | CURRENT_TIMESTAMP | |
 | `updated_at` | DATETIME | NO | CURRENT_TIMESTAMP ON UPDATE | |
 
@@ -60,7 +63,8 @@ Stores staff members who log in to the helpdesk to manage tickets.
 **Notes:**
 - Passwords are hashed with `password_hash()` (bcrypt, PHP default cost). The column is wide enough for argon2 if upgraded.
 - `admin` role agents are not subject to any of the `can_*` permission checks anywhere in the middleware or service layer.
-- `signature` may contain arbitrary HTML. It is stored as-is and rendered in the compose UI; agents are trusted to supply valid HTML.
+- `signature` is sanitised server-side before storage and rendered in the compose UI.
+- `browser_notifications_enabled` controls whether the frontend should show browser / OS notifications for this agent while the app is open.
 
 ---
 
@@ -416,11 +420,40 @@ Runtime-configurable key/value store for application settings that don't require
 - Values with `type = 'json'` are stored as JSON strings.
 - Sensitive values (`smtp_password`, `imap_password`) are AES-256-CBC encrypted. `SettingsService` transparently encrypts on write and decrypts on read.
 - The INSERT in `schema.sql` uses `ON DUPLICATE KEY UPDATE label = VALUES(label)` so re-running the migration preserves customised values while updating label text.
-- See [Default Settings Reference](#17-default-settings-reference) for the full list of keys.
+- See [Default Settings Reference](#18-default-settings-reference) for the full list of keys.
 
 ---
 
-## 13. knowledge_base_categories
+## 13. agent_notifications
+
+Per-agent in-app notification inbox entries shown in the navbar bell menu.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | INT UNSIGNED | NO | AUTO_INCREMENT | Primary key |
+| `agent_id` | INT UNSIGNED | NO | | FK → agents.id |
+| `type` | VARCHAR(60) | NO | | Notification type, e.g. `ticket_created`, `customer_reply`, `ticket_overdue`, `update_available` |
+| `severity` | ENUM('info','success','warning','danger') | NO | `info` | UI severity styling |
+| `title` | VARCHAR(180) | NO | | Primary notification headline |
+| `body` | TEXT | YES | NULL | Optional secondary line shown in the bell menu / browser notification |
+| `link` | VARCHAR(255) | YES | NULL | Internal SPA route to open when clicked, e.g. `/tickets/123` |
+| `data_json` | TEXT | YES | NULL | Optional structured payload for future client use |
+| `dedupe_key` | VARCHAR(191) | YES | NULL | Optional per-agent dedupe key so recurring checks/events do not create duplicate unread notifications |
+| `read_at` | DATETIME | YES | NULL | Set when the agent opens or marks the notification read |
+| `created_at` | DATETIME | NO | CURRENT_TIMESTAMP | |
+
+**Indexes:** `idx_agent_notifications_agent_created` on `(agent_id, created_at)`, `idx_agent_notifications_agent_read` on `(agent_id, read_at)`
+
+**Unique keys:** `uq_agent_notifications_dedupe` on `(agent_id, dedupe_key)`
+
+**Notes:**
+- Rows are created for each recipient agent independently; there is no shared “notification master” table.
+- Silent admin update checks use `dedupe_key = update:<version>` so each admin sees at most one unread notification per released version.
+- Ticket/reply/SLA notifications use deep links so clicking the bell entry navigates directly to the affected ticket or settings screen.
+
+---
+
+## 14. knowledge_base_categories
 
 Top-level categories for grouping knowledge base articles.
 
@@ -436,7 +469,7 @@ Top-level categories for grouping knowledge base articles.
 
 ---
 
-## 14. knowledge_base_articles
+## 15. knowledge_base_articles
 
 Individual knowledge base articles.
 
@@ -474,7 +507,7 @@ Individual knowledge base articles.
 
 ---
 
-## 15. refresh_tokens
+## 16. refresh_tokens
 
 JWT refresh tokens used for session persistence and token rotation.
 
@@ -507,7 +540,7 @@ JWT refresh tokens used for session persistence and token rotation.
 
 ---
 
-## 16. audit_log
+## 17. audit_log
 
 Immutable log of significant actions performed in the system.
 
@@ -541,7 +574,7 @@ Immutable log of significant actions performed in the system.
 
 ---
 
-## 17. Default Settings Reference
+## 18. Default Settings Reference
 
 The following settings are seeded by `schema.sql`. Values shown are the defaults; all can be changed at runtime via the admin settings routes (for example `#/admin/settings/general`).
 
@@ -620,7 +653,7 @@ The following settings are seeded by `schema.sql`. Values shown are the defaults
 
 ---
 
-## 18. Entity Relationship Summary
+## 19. Entity Relationship Summary
 
 ```
 agents ──────────────────────────────────────────────────────────────────────────┐
@@ -653,12 +686,13 @@ audit_log (no FK constraints — append-only, references by value)
 
 ticket_number_sequences (standalone counter table, no FK)
 settings (standalone key/value store, no FK)
+agent_notifications ──► agents
 imap_accounts (standalone — tag_id references tags but no FK defined)
 ```
 
 ---
 
-## 19. Indexes and Performance Notes
+## 20. Indexes and Performance Notes
 
 ### Covering indexes for common queries
 

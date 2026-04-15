@@ -13,10 +13,6 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 | [docs/api-spec.md](docs/api-spec.md) | Full REST API reference — every endpoint, request/response shape, required headers, auth middleware, and error codes. Essential if you're building an integration, a mobile client, or working in the backend without reading the PHP source. |
 | [docs/db-schema.md](docs/db-schema.md) | Complete database schema — all tables, columns, indexes, foreign keys, and the default settings reference. Essential for understanding the data model, writing migrations, or debugging unexpected query behaviour. |
 | [docs/screenshots.md](docs/screenshots.md) | Annotated screenshots of every screen in the agent UI — useful for evaluating the product or understanding what each feature looks like before diving into the code. |
-| [docs/theme-lab.md](docs/theme-lab.md) | Instructions for generating and loading theme lab snapshot data used for design iterations in `/public_html/test/`. |
-
----
-
 ## Features
 
 ### Ticket Management
@@ -82,6 +78,9 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 
 ### Notifications
 - **Email notifications** — agents are notified of new tickets, customer replies, ticket assignments, and @mentions; customers and participants are notified of replies
+- **In-app notification center** — agents get a bell icon in the navbar for unread “right now” items; once a notification is marked read it drops out of the bell menu, while `/my-profile/notifications` keeps showing still-active issues until they are actually resolved
+- **Silent admin update checks** — once per day, each admin session silently checks for a newer release in the background and raises an in-app alert that links straight to **Settings → General → Version & Updates**; overlapping checks for the same admin are serialised server-side
+- **Browser notifications** — agents can opt in from **My Profile** or **My Profile → Notifications** to receive browser / OS notifications while the app is open for new tickets, customer replies, overdue/SLA alerts, and update notices
 - **Slack notifications** — optional webhook integration for new ticket alerts, assignments, and customer replies; configurable bot display name, icon image or emoji, and link preview behaviour
 - **Global email signature** — appended to all outbound agent emails
 
@@ -105,7 +104,8 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Date format** — configurable display format
 - **SLA policy** — enable/disable escalation, set the inactivity thresholds for **High** and **Overdue**, and choose whether reminder emails go to all active agents or only specific agents
 - **Slack appearance** — configurable bot display name, icon (image URL or emoji), and link preview toggle per Slack integration
-- **Version & update check** — the General tab shows the currently installed version and a **Check for Updates** button; the server fetches `version.json` from the GitHub `main` branch and reports whether an update is available; when an update is found, an **Update Now** button opens a preflight checklist (write permissions, PHP extensions, disk space) with fix instructions for any failures, then a one-click updater that downloads, extracts, copies files, and runs database migrations automatically
+- **Version & update check** — the General tab shows the currently installed version and a **Check for Updates** button; the server fetches `version.json` from `UPDATE_VERSION_URL` when set, otherwise from the public GitHub `main` branch, and reports whether an update is available; when an update is found, an **Update Now** button opens a preflight checklist (write permissions, PHP extensions, disk space) with fix instructions for any failures, then a one-click updater that downloads, extracts, copies files, and runs database migrations automatically
+- **Notification preferences** — `/my-profile` includes browser-notification controls so each agent can enable or disable browser / OS alerts independently
 
 Route structure:
 - `/admin/settings/general`
@@ -116,6 +116,7 @@ Route structure:
 - `/admin/settings/slack`
 - `/admin/tags`
 - `/my-profile`
+- `/my-profile/notifications`
 
 ### Security
 - **JWT authentication** — short-lived access tokens (15 min) + long-lived refresh tokens (30 days, hashed in DB)
@@ -191,7 +192,9 @@ composer install --no-dev --optimize-autoloader
 cp .env.example .env
 # Edit .env with your DB, JWT secret, storage path, and app URL
 # Optional hardening: set TRUST_PROXY_HEADERS=true only if the app is behind a trusted reverse proxy
-# Optional updater overrides: UPDATE_REPO_ZIP_URL and UPDATE_REPO_PREFIX if you self-host update packages
+# Optional updater overrides:
+#   UPDATE_VERSION_URL to self-host version metadata
+#   UPDATE_REPO_ZIP_URL and UPDATE_REPO_PREFIX to self-host update packages
 
 # 3. Configure Makefile deployment targets
 cp Makefile.local.example Makefile.local

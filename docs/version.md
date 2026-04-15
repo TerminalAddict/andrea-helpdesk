@@ -1,6 +1,6 @@
 # Version
 
-Current release: **1.2.8** (2026-04-16)
+Current release: **1.3.0** (2026-04-16)
 
 See [changelog.md](changelog.md) for full history.
 
@@ -8,9 +8,10 @@ See [changelog.md](changelog.md) for full history.
 
 - `version.json` in the repository root is the authoritative version file.
 - `GET /api/version` returns the installed version from that file.
-- The admin General settings route (`#/admin/settings/general`) shows the installed version and offers a **Check for Updates** button, which fetches `version.json` from the `main` branch on GitHub and compares.
+- The admin General settings route (`#/admin/settings/general`) shows the installed version and offers a **Check for Updates** button, which fetches `version.json` from `UPDATE_VERSION_URL` when set, otherwise from the public GitHub `main` branch, and compares.
+- Admin sessions also perform a silent background update check at most once per day via the notification center. Overlapping checks for the same admin are serialised server-side before fetching upstream metadata, and if a newer version is found, an in-app notification is created linking directly to `#/admin/settings/general`.
 - When an update is available, an **Update Now** button opens a preflight checklist followed by a one-click updater that downloads, extracts, copies files, and runs database migrations automatically.
-- The updater source can be overridden with `UPDATE_REPO_ZIP_URL` and `UPDATE_REPO_PREFIX` for self-hosted update packages; otherwise it defaults to the public GitHub `main` zip.
+- The version metadata source can be overridden with `UPDATE_VERSION_URL`. The updater package source can be overridden with `UPDATE_REPO_ZIP_URL` and `UPDATE_REPO_PREFIX`; otherwise it defaults to the public GitHub `main` metadata and zip.
 - When a new release is ready, update `version.json`, `docs/version.md`, and `docs/changelog.md`, then commit and push. All installed instances will detect the new version on their next check.
 - `make deploy` now runs `php bin/migrate.php` on the remote host after `composer install`, so numbered DB migrations are applied during normal rsync deployments as well as in-app updates.
 
