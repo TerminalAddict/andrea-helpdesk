@@ -238,6 +238,15 @@ const SettingsView = {
                                 <i class="bi bi-arrow-repeat me-1"></i>Check for Updates
                             </button>
                         </div>
+                        <div class="alert alert-secondary py-2 mt-3 mb-0">
+                            <div class="fw-semibold small mb-1"><i class="bi bi-info-circle me-1"></i>Shared Hosting And File Ownership</div>
+                            <div class="small text-muted mb-1">
+                                The in-app updater must be able to overwrite existing application files. On shared hosting this may not be possible if PHP cannot write to files owned by your hosting account.
+                            </div>
+                            <div class="small text-muted mb-0">
+                                If preflight reports overwrite or permission failures, use SFTP/rsync/file-manager deployment instead of the web updater. Avoid making the app tree world-writable.
+                            </div>
+                        </div>
                         <div id="update-result" class="mt-2"></div>
                     </div>
                 </div>`);

@@ -1679,7 +1679,7 @@ Fetch `version.json` from the GitHub `main` branch server-side (via cURL / `file
 
 ### `GET /api/update/preflight`
 
-Run prerequisite checks before attempting an in-app update. Returns a list of checks with pass/fail status and fix instructions for any failures.
+Run prerequisite checks before attempting an in-app update. Returns a list of checks with pass/fail status and fix instructions for any failures, including checks for overwriting existing files as well as writable directories.
 
 **Response `200`**
 

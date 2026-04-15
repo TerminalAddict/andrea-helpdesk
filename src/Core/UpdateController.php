@@ -63,6 +63,18 @@ class UpdateController
             );
         }
 
+        // Existing file overwrite checks
+        foreach (self::WRITE_PATHS as $rel => $label) {
+            $path = $rel === '' ? $root : $root . '/' . $rel;
+            [$ok, $detail, $fix] = $this->checkOverwriteability($path);
+            $checks[] = $this->check(
+                'Overwrite existing files: ' . $label,
+                $ok,
+                $detail,
+                $fix
+            );
+        }
+
         // Temp directory writable
         $tmp = sys_get_temp_dir();
         $ok  = is_writable($tmp);
@@ -209,15 +221,58 @@ class UpdateController
 
             $dest = $dst . DIRECTORY_SEPARATOR . $rel;
             if ($item->isDir()) {
-                if (!is_dir($dest)) mkdir($dest, 0755, true);
+                if (!is_dir($dest) && !mkdir($dest, 0755, true) && !is_dir($dest)) {
+                    throw new \RuntimeException('Failed to create directory during update: ' . $dest);
+                }
             } else {
                 $dir = dirname($dest);
-                if (!is_dir($dir)) mkdir($dir, 0755, true);
-                copy($item->getPathname(), $dest);
+                if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
+                    throw new \RuntimeException('Failed to create directory during update: ' . $dir);
+                }
+                if (!@copy($item->getPathname(), $dest)) {
+                    $error = error_get_last();
+                    $message = $error['message'] ?? 'unknown error';
+                    throw new \RuntimeException("Failed to overwrite file during update: {$dest} ({$message})");
+                }
                 $count++;
             }
         }
         return $count;
+    }
+
+    private function checkOverwriteability(string $path): array
+    {
+        if (!is_dir($path)) {
+            return [false, 'Directory missing', "Create the directory and ensure the web server can traverse and write within it: {$path}"];
+        }
+
+        $sample = [];
+        $iter = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($path, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::SELF_FIRST
+        );
+
+        foreach ($iter as $item) {
+            if (!$item->isFile()) {
+                continue;
+            }
+            $sample[] = $item->getPathname();
+            if (count($sample) >= 8) {
+                break;
+            }
+        }
+
+        foreach ($sample as $file) {
+            if (!is_writable($file)) {
+                return [
+                    false,
+                    'Existing file not writable: ' . $file,
+                    'The updater must be able to overwrite existing files. Prefer granting group write to the web server group on the app tree, for example: chgrp -R www-data ' . escapeshellarg(dirname(__DIR__, 2)) . ' && find ' . escapeshellarg(dirname(__DIR__, 2)) . " -type d -exec chmod 775 {} \\; && find " . escapeshellarg(dirname(__DIR__, 2)) . " -type f -exec chmod 664 {} \\;. If ownership cannot change, at minimum ensure the web server user/group has write permission on the files it must replace."
+                ];
+            }
+        }
+
+        return [true, empty($sample) ? 'No existing files yet' : 'Sample existing files are writable', ''];
     }
 
     private function removeDir(string $dir): void

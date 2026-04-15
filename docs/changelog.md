@@ -8,6 +8,17 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
+## [1.3.4] — 2026-04-15
+
+### Fixed
+- In-app updater preflight now checks overwriteability of existing files, and the updater aborts immediately on copy failures instead of silently partial-updating the install
+
+### Docs
+- Added shared-hosting and file-ownership guidance to the Version & Updates documentation and settings UI
+
+
+---
+
 ## [1.3.3] — 2026-04-15
 
 ### Fixed
