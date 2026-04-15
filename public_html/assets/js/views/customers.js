@@ -7,9 +7,9 @@ const CustomersView = {
 
     render() {
         return `
-        <div class="container-fluid p-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h4 class="mb-0"><i class="bi bi-people me-2"></i>Customers</h4>
+        <div class="container-fluid terminal-screen terminal-screen-customers p-4">
+            <div class="terminal-screen-header d-flex justify-content-between align-items-center mb-3">
+                <h4 class="terminal-heading mb-0"><i class="bi bi-people me-2"></i>Customers</h4>
                 <div class="d-flex gap-2">
                     <button class="btn btn-outline-secondary btn-sm" id="btn-import-csv">
                         <i class="bi bi-upload me-1"></i>Import CSV

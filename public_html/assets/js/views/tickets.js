@@ -7,8 +7,8 @@ const TicketsView = {
 
     render() {
         return `
-        <div class="container-fluid p-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="container-fluid terminal-screen terminal-screen-tickets p-4">
+            <div class="terminal-screen-header d-flex justify-content-between align-items-center mb-3">
                 <h4 class="mb-0"><i class="bi bi-ticket-perforated me-2"></i>Tickets</h4>
                 <a href="#/tickets/new" class="btn btn-primary btn-sm">
                     <i class="bi bi-plus-lg me-1"></i>New Ticket
@@ -16,7 +16,7 @@ const TicketsView = {
             </div>
 
             <!-- Filters -->
-            <div class="card border-0 shadow-sm mb-3">
+            <div class="card border-0 shadow-sm terminal-control-card mb-3">
                 <div class="card-body py-2">
                     <div class="row g-2 align-items-end">
                         <div class="col-md-2">
@@ -64,7 +64,7 @@ const TicketsView = {
             </div>
 
             <!-- Results -->
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm terminal-table-card">
                 <div class="card-body p-0">
                     <div id="tickets-table-wrap">
                         <div class="text-center py-5 text-muted">

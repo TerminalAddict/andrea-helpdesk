@@ -7,5 +7,7 @@ composer.lock
 .DS_Store
 Thumbs.db
 /public_html/assets/js/vendor/
+/public_html/test/
+/public_html/tst/
 CLAUDE.md
 Makefile.local

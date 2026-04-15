@@ -6,9 +6,9 @@ const AgentsView = {
 
     render() {
         return `
-        <div class="container-fluid p-4">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h4 class="mb-0"><i class="bi bi-people-fill me-2"></i>Agents</h4>
+        <div class="container-fluid terminal-screen terminal-screen-agents p-4">
+            <div class="terminal-screen-header d-flex justify-content-between align-items-center mb-4">
+                <h4 class="terminal-heading mb-0"><i class="bi bi-people-fill me-2"></i>Agents</h4>
                 <button class="btn btn-primary btn-sm" id="btn-new-agent">
                     <i class="bi bi-plus-lg me-1"></i>Add Agent
                 </button>

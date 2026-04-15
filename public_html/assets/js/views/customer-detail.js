@@ -7,7 +7,7 @@ const CustomerDetailView = {
 
     render() {
         return `
-        <div class="container-fluid p-4" id="cust-detail-wrap">
+        <div class="container-fluid terminal-screen terminal-screen-customer p-4" id="cust-detail-wrap">
             <div class="text-center py-5 text-muted">
                 <div class="spinner-border"></div><p class="mt-2">Loading…</p>
             </div>
@@ -34,7 +34,7 @@ const CustomerDetailView = {
         const canEdit = API.can('can_edit_customers') || API.isAdmin();
 
         const html = `
-        <div class="container-fluid p-4" id="cust-detail-wrap">
+        <div class="container-fluid terminal-screen terminal-screen-customer p-4" id="cust-detail-wrap">
             <nav aria-label="breadcrumb" class="mb-3">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="#/customers">Customers</a></li>

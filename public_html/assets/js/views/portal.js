@@ -5,8 +5,8 @@
 const PortalLoginView = {
     render() {
         return `
-        <div class="container py-5" style="max-width:480px;">
-            <div class="card border-0 shadow-sm text-center p-4">
+        <div class="container terminal-portal-shell py-5" style="max-width:480px;">
+            <div class="card terminal-portal-card border-0 shadow-sm text-center p-4">
                 <div class="spinner-border mx-auto mb-3" id="portal-login-spinner"></div>
                 <p class="text-muted mb-0" id="portal-login-msg">Verifying your login link…</p>
             </div>
@@ -45,8 +45,8 @@ const PortalLoginView = {
 const PortalSetPasswordView = {
     render() {
         return `
-        <div class="container py-5" style="max-width:480px;">
-            <div class="card border-0 shadow-sm p-4">
+        <div class="container terminal-portal-shell py-5" style="max-width:480px;">
+            <div class="card terminal-portal-card border-0 shadow-sm p-4">
                 <h5 class="fw-bold mb-1"><i class="bi bi-shield-lock me-2"></i>Complete Your Profile</h5>
                 <p class="text-muted small mb-4">Set a password so you can log in and reply to support tickets in future.</p>
                 <div id="set-pw-error" class="alert alert-danger d-none"></div>
@@ -111,8 +111,8 @@ const PortalSetPasswordView = {
 const PortalView = {
     render() {
         return `
-        <div class="container py-4" style="max-width:900px;">
-            <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="container terminal-portal-shell terminal-screen-portal py-4" style="max-width:900px;">
+            <div class="terminal-screen-header d-flex justify-content-between align-items-center mb-4">
                 <h4 class="mb-0"><i class="bi bi-ticket me-2"></i>My Support Tickets</h4>
                 <a href="#" id="portal-new-ticket" class="btn btn-primary btn-sm">
                     <i class="bi bi-plus-lg me-1"></i>New Ticket
@@ -390,7 +390,7 @@ const PortalTicketView = {
 
     render() {
         return `
-        <div class="container py-4" style="max-width:800px;" id="portal-ticket-wrap">
+        <div class="container terminal-portal-shell terminal-screen-portal-ticket py-4" style="max-width:800px;" id="portal-ticket-wrap">
             <div class="text-center py-5 text-muted">
                 <div class="spinner-border"></div>
             </div>
@@ -410,7 +410,7 @@ const PortalTicketView = {
     renderFull() {
         const t = this.ticket;
         const html = `
-        <div class="container py-4" style="max-width:800px;" id="portal-ticket-wrap">
+        <div class="container terminal-portal-shell terminal-screen-portal-ticket py-4" style="max-width:800px;" id="portal-ticket-wrap">
             <nav aria-label="breadcrumb" class="mb-3">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="#/portal">My Tickets</a></li>

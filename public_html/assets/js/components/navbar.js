@@ -8,6 +8,8 @@ const Navbar = {
         const user    = API.currentUser;
         const isAdmin = API.isAdmin();
         const isAgent = API.isAgent();
+        const currentTheme = isAgent ? ((API.currentUser && API.currentUser.theme) || 'light') : 'light';
+        const themeBtnClass = (theme) => `terminal-theme-btn${currentTheme === theme ? ' active' : ''}`;
 
         if (!user) return '';
 
@@ -63,9 +65,9 @@ const Navbar = {
         `;
 
         return `
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+        <nav class="navbar navbar-expand-lg navbar-dark sticky-top terminal-nav">
             <div class="container-fluid">
-                <a class="navbar-brand fw-bold pe-3" href="#/">
+                <a class="navbar-brand fw-bold pe-3 terminal-brand" href="#/">
                     <img src="${App.escapeHtml(App.settings.logo_url || '/Andrea-Helpdesk.png')}" alt="${App.escapeHtml(App.appName)}" style="max-height:32px;max-width:120px;object-fit:contain;" class="me-2">${App.escapeHtml(App.appName)}
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
@@ -77,12 +79,21 @@ const Navbar = {
                     </ul>
                     <ul class="navbar-nav">
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                                <i class="bi bi-person-circle me-1"></i>${App.escapeHtml(user.name || user.email)}
-                            </a>
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle me-1"></i>${App.escapeHtml(user.name || user.email)}
+                        </a>
                             <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark">
                                 <li><span class="dropdown-item-text small" style="color:${API.isAdmin() ? '#a78bfa' : '#6ea8fe'};">${App.escapeHtml(user.email || '')}</span></li>
                                 <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <p class="dropdown-item-text terminal-theme-label mb-1 px-2">Theme</p>
+                                    <div class="px-2 pb-2">
+                                        <div class="terminal-theme-toggle">
+                                            <button type="button" class="${themeBtnClass('light')}" data-theme-choice="light" aria-label="Switch to light theme">☀ Light</button>
+                                            <button type="button" class="${themeBtnClass('dark')}" data-theme-choice="dark" aria-label="Switch to dark theme">◐ Dark</button>
+                                        </div>
+                                    </div>
+                                </li>
                                 <li><a class="dropdown-item" href="#" id="nav-logout"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
                             </ul>
                         </li>
@@ -97,6 +108,24 @@ const Navbar = {
         this.bindEvents();
         this.updateActiveItem();
         this.fetchOpenTicketCount();
+    },
+
+    async setThemePreference(theme) {
+        const next = theme === 'dark' ? 'dark' : 'light';
+        App.applyTheme(next);
+        if (API.currentUser) {
+            API.currentUser.theme = next;
+        }
+        $('#navbar-container .terminal-theme-btn').removeClass('active');
+        $('#navbar-container .terminal-theme-btn[data-theme-choice="' + next + '"]').addClass('active');
+
+        if (!API.isAgent()) return;
+        try {
+            await API.put('/agent/profile', { theme: next });
+        } catch (e) {
+            // Non-blocking preview mode still updates local theme.
+            App.toast('Theme updated locally only. Save from profile to persist.', 'warning');
+        }
     },
 
     bindEvents() {
@@ -116,6 +145,12 @@ const Navbar = {
             const nav = document.getElementById('mainNav');
             const bsCollapse = bootstrap.Collapse.getInstance(nav);
             if (bsCollapse) bsCollapse.hide();
+        });
+
+        $('#navbar-container').on('click', '.terminal-theme-btn', (e) => {
+            e.preventDefault();
+            const theme = $(e.currentTarget).data('theme-choice');
+            this.setThemePreference(theme);
         });
     },
 

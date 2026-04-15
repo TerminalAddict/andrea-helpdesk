@@ -11,8 +11,8 @@ const CalendarView = {
 
     render() {
         return `
-        <div class="container-fluid py-3">
-            <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+        <div class="container-fluid terminal-screen terminal-screen-calendar py-3">
+            <div class="terminal-screen-header d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                 <h4 class="mb-0"><i class="bi bi-calendar3 me-2"></i>Calendar</h4>
                 <button class="btn btn-outline-success btn-sm" id="cal-subscribe-btn">
                     <i class="bi bi-calendar-plus me-1"></i>Subscribe

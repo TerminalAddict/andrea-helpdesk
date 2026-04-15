@@ -29,8 +29,8 @@ const SettingsView = {
         const profileOpt = `<option value="profile">My Profile</option>`;
 
         return `
-        <div class="container-fluid p-4" style="max-width:900px;">
-            <h4 class="mb-4"><i class="bi bi-sliders me-2"></i>Settings</h4>
+        <div class="container-fluid terminal-screen terminal-screen-settings p-4 terminal-compact">
+            <h4 class="terminal-heading mb-4"><i class="bi bi-sliders me-2"></i>Settings</h4>
 
             <ul class="nav nav-tabs mb-4 d-none d-md-flex" id="settings-tabs">
                 ${adminTabs}

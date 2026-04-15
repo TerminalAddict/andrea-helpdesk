@@ -6,8 +6,8 @@ const ReportsView = {
         const today = new Date().toISOString().slice(0, 10);
         const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
         return `
-        <div class="container-fluid p-4">
-            <h4 class="mb-4"><i class="bi bi-bar-chart me-2"></i>Reports</h4>
+        <div class="container-fluid terminal-screen terminal-screen-reports p-4">
+            <h4 class="terminal-heading mb-4"><i class="bi bi-bar-chart me-2"></i>Reports</h4>
 
             <!-- Date range filter -->
             <div class="card border-0 shadow-sm mb-4">

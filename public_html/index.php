@@ -34,12 +34,13 @@ try {
     <link rel="stylesheet" href="/assets/vendor/bootstrap-icons/bootstrap-icons.min.css">
     <link rel="stylesheet" href="/assets/vendor/quill/quill.snow.css">
     <link rel="stylesheet" href="/assets/css/app.css">
+    <link rel="stylesheet" href="/assets/css/terminal-shell.css">
 </head>
 <body>
 
 <div id="navbar-container"></div>
 
-<div id="app-wrapper">
+<div id="app-wrapper" class="terminal-shell-wrap">
     <div id="loading-screen">
         <div class="text-center">
             <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;">

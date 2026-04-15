@@ -10,7 +10,7 @@ const TicketDetailView = {
     render(params) {
         this._params = params;
         return `
-        <div class="container-fluid p-4" id="ticket-detail-wrap">
+        <div class="container-fluid terminal-screen terminal-screen-ticket p-4" id="ticket-detail-wrap">
             <div class="text-center py-5 text-muted">
                 <div class="spinner-border"></div><p class="mt-2">Loading ticket...</p>
             </div>
@@ -42,9 +42,9 @@ const TicketDetailView = {
         const isOverduePriority = t.priority === 'overdue';
 
         const html = `
-        <div class="container-fluid p-4" id="ticket-detail-wrap">
+        <div class="container-fluid terminal-screen terminal-screen-ticket p-4" id="ticket-detail-wrap">
             <!-- Breadcrumb + actions -->
-            <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+            <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2 terminal-ticket-header">
                 <div>
                     <nav aria-label="breadcrumb">
                         <ol class="breadcrumb mb-1">
@@ -83,7 +83,7 @@ const TicketDetailView = {
                 </div>
             </div>
 
-            <div class="row g-3">
+            <div class="row g-3 terminal-ticket-grid">
                 <!-- LEFT: Thread + Reply -->
                 <div class="col-lg-8">
                     <!-- Thread -->
@@ -146,7 +146,7 @@ const TicketDetailView = {
                 <!-- RIGHT: Sidebar -->
                 <div class="col-lg-4">
                     <!-- Ticket Info -->
-                    <div class="card border-0 shadow-sm mb-3">
+                    <div class="card border-0 shadow-sm mb-3 terminal-ticket-card">
                         <div class="card-header bg-white fw-semibold py-2">
                             <i class="bi bi-info-circle me-2"></i>Ticket Info
                         </div>
@@ -207,7 +207,7 @@ const TicketDetailView = {
                     </div>
 
                     <!-- Due Date -->
-                    <div class="card border-0 shadow-sm mb-3">
+                    <div class="card border-0 shadow-sm mb-3 terminal-ticket-card">
                         <div class="card-header bg-white fw-semibold py-2 d-flex justify-content-between align-items-center">
                             <span><i class="bi bi-calendar-event me-2"></i>Due Date</span>
                             ${t.due_at

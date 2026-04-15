@@ -4,10 +4,10 @@
 const DashboardView = {
     render() {
         return `
-        <div class="container-fluid p-4">
-            <h4 class="mb-4"><i class="bi bi-speedometer2 me-2"></i>Dashboard</h4>
+        <div class="container-fluid terminal-screen terminal-screen-dashboard p-4">
+            <h4 class="terminal-heading mb-4"><i class="bi bi-speedometer2 me-2"></i>Dashboard</h4>
 
-            <div class="row g-3 mb-4" id="summary-cards">
+            <div class="row g-3 mb-4 terminal-stat-row" id="summary-cards">
                 ${[
                     {id:'new',     label:'New',              color:'text-info'},
                     {id:'waiting', label:'Waiting for Reply', color:'text-danger'},
@@ -25,7 +25,7 @@ const DashboardView = {
                 </div>`).join('')}
             </div>
 
-            <div class="mb-3">
+            <div class="mb-3 terminal-toolbar">
                 <div class="d-flex gap-2" id="dash-toolbar">
                     <div class="input-group input-group-lg shadow-sm flex-grow-1">
                         <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>

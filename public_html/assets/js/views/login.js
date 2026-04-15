@@ -4,8 +4,8 @@
 const LoginView = {
     render() {
         return `
-        <div class="min-vh-100 d-flex align-items-center justify-content-center bg-light">
-            <div class="card shadow-sm" style="width:420px; max-width:100%;">
+        <div class="terminal-login-shell min-vh-100 d-flex align-items-center justify-content-center">
+            <div class="card terminal-login-card shadow-sm">
                 <div class="card-body p-4">
                     <div class="text-center mb-4">
                         ${App.settings.logo_url

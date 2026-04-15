@@ -164,7 +164,8 @@ const App = {
 
         try {
             const html = (typeof view.render === 'function') ? view.render(params) : '<div></div>';
-            $('#app').html(html);
+            const shellHtml = `<section class="helpdesk-shell" data-view="${viewName}">${html}</section>`;
+            $('#app').html(shellHtml);
             if (typeof view.init === 'function') await view.init(params);
         } catch (e) {
             $('#app').html('<div class="container mt-5"><div class="alert alert-danger">Error loading page: ' + App.escapeHtml(e.message || 'Unknown error') + '</div></div>');

@@ -7,14 +7,14 @@ const TicketNewView = {
     render(params) {
         this._params = params || {};
         return `
-        <div class="container-fluid p-4" style="max-width:800px;">
+        <div class="container-fluid terminal-screen terminal-screen-ticket-new p-4 terminal-compact">
             <nav aria-label="breadcrumb" class="mb-3">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="#/tickets">Tickets</a></li>
                     <li class="breadcrumb-item active">New Ticket</li>
                 </ol>
             </nav>
-            <h5 class="fw-bold mb-4"><i class="bi bi-plus-circle me-2"></i>Create New Ticket</h5>
+            <h5 class="terminal-heading fw-bold mb-4"><i class="bi bi-plus-circle me-2"></i>Create New Ticket</h5>
 
             <div class="card border-0 shadow-sm">
                 <div class="card-body">

@@ -21,7 +21,7 @@ RSYNC_EXCLUDE = --exclude=/vendor --exclude=.env --exclude=storage --exclude=.gi
 CRON_ENTRY  = "* * * * * php $(REMOTE_PATH)/bin/imap-poll.php >> $(REMOTE_PATH)/storage/logs/imap.log 2>&1"
 
 .PHONY: help install install-dev db-migrate db-seed update fetch-assets \
-        deploy \
+        deploy deploy-with-snapshot snapshot \
         cron-install-local cron-install-production \
         logs-local logs-production storage-setup
 
@@ -77,7 +77,14 @@ deploy: ## Deploy to production server
 	ssh $(REMOTE_USER)@$(PROD_HOST) "cd $(REMOTE_PATH) && composer install --no-dev --optimize-autoloader"
 	ssh $(REMOTE_USER)@$(PROD_HOST) "cd $(REMOTE_PATH) && php bin/migrate.php"
 	ssh $(REMOTE_USER)@$(PROD_HOST) "mkdir -p $(REMOTE_PATH)/storage/attachments $(REMOTE_PATH)/storage/logs"
+	@$(MAKE) deploy-with-snapshot
 	@echo "Deployed to $(PROD_HOST)"
+
+deploy-with-snapshot: ## Deploy to production server and refresh theme-lab snapshot
+	ssh $(REMOTE_USER)@$(PROD_HOST) "cd $(REMOTE_PATH) && php bin/export-theme-snapshot.php"
+
+snapshot: ## Generate theme-lab snapshot on production server
+	ssh $(REMOTE_USER)@$(PROD_HOST) "cd $(REMOTE_PATH) && php bin/export-theme-snapshot.php"
 
 cron-install-local: ## Install IMAP poll crontab on local server
 	ssh $(REMOTE_USER)@$(LOCAL_HOST) "(crontab -l 2>/dev/null | grep -v imap-poll; echo $(CRON_ENTRY)) | crontab -"
