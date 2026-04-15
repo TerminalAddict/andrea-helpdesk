@@ -42,7 +42,7 @@ const DashboardView = {
             </div>
 
             <div class="row g-3">
-                <div class="col-lg-4">
+                <div class="col-lg-6">
                     <div class="card border-0 shadow-sm">
                         <div class="card-header bg-white fw-semibold">
                             <i class="bi bi-exclamation-octagon me-2 text-danger"></i>Overdue Tickets
@@ -54,7 +54,7 @@ const DashboardView = {
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-4">
+                <div class="col-lg-6">
                     <div class="card border-0 shadow-sm">
                         <div class="card-header bg-white fw-semibold">
                             <i class="bi bi-person-check me-2"></i>My Assigned Tickets
@@ -66,7 +66,10 @@ const DashboardView = {
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-4">
+            </div>
+
+            <div class="row g-3 mt-1">
+                <div class="col-12">
                     <div class="card border-0 shadow-sm">
                         <div class="card-header bg-white fw-semibold">
                             <i class="bi bi-clock-history me-2"></i>Recently Updated

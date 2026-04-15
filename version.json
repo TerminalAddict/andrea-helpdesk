@@ -1,5 +1,5 @@
 {
-    "version": "1.2.2",
+    "version": "1.2.3",
     "released": "2026-04-16",
-    "description": "Refine the terminal theme, harden modal behavior, and polish dashboard and settings spacing"
+    "description": "Refine dashboard layout and continue polishing terminal theme interactions"
 }

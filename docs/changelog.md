@@ -4,6 +4,13 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
+## [1.2.3] — 2026-04-16
+
+### Fixed
+- Moved the dashboard `Recently Updated` widget onto its own row beneath `Overdue Tickets` and `My Assigned Tickets` so the table has enough horizontal space
+
+---
+
 ## [1.2.2] — 2026-04-16
 
 ### Fixed
