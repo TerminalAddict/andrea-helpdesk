@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <defs>
+    <linearGradient id="pageBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f5f7fb"/>
+      <stop offset="100%" stop-color="#edf2f7"/>
+    </linearGradient>
+    <linearGradient id="navBg" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#182130"/>
+      <stop offset="100%" stop-color="#141b28"/>
+    </linearGradient>
+    <linearGradient id="cardGlow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#eaf7fb"/>
+      <stop offset="100%" stop-color="#f7f8fc"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#9fb3c8" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+  <rect width="1440" height="900" fill="url(#pageBg)"/>
+  
+    
+    <rect x="78" y="36" width="1284" height="44" rx="16" fill="#d8e4f8"/>
+    <rect x="78" y="80" width="1284" height="784" rx="20" fill="#ffffff" filter="url(#shadow)"/>
+    <circle cx="112" cy="58" r="7" fill="#f66"/>
+    <circle cx="136" cy="58" r="7" fill="#f7c948"/>
+    <circle cx="160" cy="58" r="7" fill="#50c878"/>
+    <rect x="230" y="46" width="440" height="24" rx="12" fill="#eef3fb"/>
+    <text x="250" y="63" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#52627a">FTP Upload Layout — Andrea Helpdesk</text>
+  
+    <rect x="108" y="120" width="570" height="700" rx="22" fill="#ffffff" stroke="#d8e2ee" filter="url(#shadow)"/>
+    <rect x="762" y="120" width="570" height="700" rx="22" fill="#ffffff" stroke="#d8e2ee" filter="url(#shadow)"/>
+    <text x="136" y="164" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="#263445">Local Upload Source</text>
+    <text x="790" y="164" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="#263445">Shared Hosting Destination</text>
+    <rect x="136" y="190" width="514" height="48" rx="12" fill="#f4f7fb"/>
+    <rect x="790" y="190" width="514" height="48" rx="12" fill="#f4f7fb"/>
+    <text x="156" y="220" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#617085">Upload the full project plus vendor/</text>
+    <text x="810" y="220" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#617085">Point the domain to public_html/ and keep storage outside it</text>
+    <text x="144" y="282" font-family="Menlo, Consolas, monospace" font-size="20" fill="#1f2c3b">/Users/admin/Downloads/andrea-helpdesk</text><text x="144" y="324" font-family="Menlo, Consolas, monospace" font-size="20" fill="#4e5f74">├── bin</text><text x="144" y="366" font-family="Menlo, Consolas, monospace" font-size="20" fill="#4e5f74">├── config</text><text x="144" y="408" font-family="Menlo, Consolas, monospace" font-size="20" fill="#4e5f74">├── database</text><text x="144" y="450" font-family="Menlo, Consolas, monospace" font-size="20" fill="#4e5f74">├── docs</text><text x="144" y="492" font-family="Menlo, Consolas, monospace" font-size="20" fill="#4e5f74">├── public_html</text><text x="144" y="534" font-family="Menlo, Consolas, monospace" font-size="20" fill="#4e5f74">├── src</text><text x="144" y="576" font-family="Menlo, Consolas, monospace" font-size="20" fill="#4e5f74">└── vendor</text>
+    <text x="798" y="282" font-family="Menlo, Consolas, monospace" font-size="20" fill="#1f2c3b">/home/example/support.example.com</text><text x="798" y="324" font-family="Menlo, Consolas, monospace" font-size="20" fill="#157347">├── public_html  ← document root</text><text x="798" y="366" font-family="Menlo, Consolas, monospace" font-size="20" fill="#4e5f74">│   ├── index.php</text><text x="798" y="408" font-family="Menlo, Consolas, monospace" font-size="20" fill="#4e5f74">│   ├── api.php</text><text x="798" y="450" font-family="Menlo, Consolas, monospace" font-size="20" fill="#4e5f74">│   ├── attachment.php</text><text x="798" y="492" font-family="Menlo, Consolas, monospace" font-size="20" fill="#4e5f74">│   └── assets</text><text x="798" y="534" font-family="Menlo, Consolas, monospace" font-size="20" fill="#4e5f74">├── src</text><text x="798" y="576" font-family="Menlo, Consolas, monospace" font-size="20" fill="#4e5f74">├── database</text><text x="798" y="618" font-family="Menlo, Consolas, monospace" font-size="20" fill="#4e5f74">├── vendor</text><text x="798" y="660" font-family="Menlo, Consolas, monospace" font-size="20" fill="#4e5f74">└── ../andrea-helpdesk-storage</text>
+    <path d="M700 360 C735 360, 740 360, 770 360" fill="none" stroke="#2563eb" stroke-width="8" stroke-linecap="round"/>
+    <polygon points="760,344 798,360 760,376" fill="#2563eb"/>
+    <path d="M700 520 C735 520, 740 520, 770 520" fill="none" stroke="#8bc53f" stroke-width="8" stroke-linecap="round"/>
+    <polygon points="760,504 798,520 760,536" fill="#8bc53f"/>
+    <rect x="448" y="650" width="540" height="118" rx="20" fill="#eef6ff" stroke="#d2e4ff"/>
+    <text x="478" y="688" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" fill="#23457b">FTP / Shared Hosting Notes</text>
+    <text x="478" y="720" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#50637a">1. Upload vendor/ if Composer is not available on the server.</text>
+    <text x="478" y="748" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#50637a">2. Create a writable storage path outside public_html before running /install/.</text>
+  
+</svg>

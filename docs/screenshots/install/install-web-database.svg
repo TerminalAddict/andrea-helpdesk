@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <defs>
+    <linearGradient id="pageBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f5f7fb"/>
+      <stop offset="100%" stop-color="#edf2f7"/>
+    </linearGradient>
+    <linearGradient id="navBg" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#182130"/>
+      <stop offset="100%" stop-color="#141b28"/>
+    </linearGradient>
+    <linearGradient id="cardGlow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#eaf7fb"/>
+      <stop offset="100%" stop-color="#f7f8fc"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#9fb3c8" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+  <rect width="1440" height="900" fill="url(#pageBg)"/>
+  
+    
+    <rect x="78" y="36" width="1284" height="44" rx="16" fill="#d8e4f8"/>
+    <rect x="78" y="80" width="1284" height="784" rx="20" fill="#ffffff" filter="url(#shadow)"/>
+    <circle cx="112" cy="58" r="7" fill="#f66"/>
+    <circle cx="136" cy="58" r="7" fill="#f7c948"/>
+    <circle cx="160" cy="58" r="7" fill="#50c878"/>
+    <rect x="230" y="46" width="440" height="24" rx="12" fill="#eef3fb"/>
+    <text x="250" y="63" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#52627a">Andrea Helpdesk Installer</text>
+  
+    
+    <g transform="translate(0,0)">
+      <circle cx="720" cy="228" r="28" fill="#e7f2ff"/>
+      <text x="720" y="239" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="34" fill="#2563eb">◔</text>
+      <text x="720" y="292" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700" fill="#243244">Andrea Helpdesk</text>
+      <text x="720" y="323" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#7b8898">Installation Wizard</text>
+      <rect x="360" y="348" width="720" height="420" rx="24" fill="url(#cardGlow)" stroke="#d9e3f0"/>
+    </g>
+  
+    <circle cx="430" cy="392" r="17" fill="#16a34a"/><text x="430" y="397" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#ffffff">✓</text><text x="430" y="432" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#7b8898">Requirements</text><rect x="447" y="391" width="94" height="2" fill="#16a34a"/><circle cx="558" cy="392" r="17" fill="#2563eb"/><text x="558" y="397" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#ffffff">2</text><text x="558" y="432" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#2563eb">Database</text><rect x="575" y="391" width="94" height="2" fill="#d9dee8"/><circle cx="686" cy="392" r="17" fill="#d9dee8"/><text x="686" y="397" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#697789">3</text><text x="686" y="432" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#7b8898">Settings</text><rect x="703" y="391" width="94" height="2" fill="#d9dee8"/><circle cx="814" cy="392" r="17" fill="#d9dee8"/><text x="814" y="397" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#697789">4</text><text x="814" y="432" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#7b8898">Install</text><rect x="831" y="391" width="94" height="2" fill="#d9dee8"/><circle cx="942" cy="392" r="17" fill="#d9dee8"/><text x="942" y="397" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#697789">5</text><text x="942" y="432" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#7b8898">Done</text>
+    <text x="432" y="460" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" fill="#243244">Database Connection</text>
+    
+    <text x="436" y="500" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#314155">Host</text>
+    <rect x="436" y="512" width="394" height="42" rx="10" fill="#ffffff" stroke="#d8e2ee"/>
+    <text x="450" y="539" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#52627a">localhost</text>
+    
+  
+    
+    <text x="846" y="500" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#314155">Port</text>
+    <rect x="846" y="512" width="158" height="42" rx="10" fill="#ffffff" stroke="#d8e2ee"/>
+    <text x="860" y="539" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#52627a">3306</text>
+    
+  
+    
+    <text x="436" y="592" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#314155">Database Name</text>
+    <rect x="436" y="604" width="568" height="42" rx="10" fill="#ffffff" stroke="#d8e2ee"/>
+    <text x="450" y="631" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#52627a">helpdesk</text>
+    
+  
+    
+    <text x="436" y="684" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#314155">Username</text>
+    <rect x="436" y="696" width="274" height="42" rx="10" fill="#ffffff" stroke="#d8e2ee"/>
+    <text x="450" y="723" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#52627a">helpdesk_user</text>
+    
+  
+    
+    <text x="730" y="684" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#314155">Password</text>
+    <rect x="730" y="696" width="274" height="42" rx="10" fill="#ffffff" stroke="#d8e2ee"/>
+    <text x="744" y="723" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#52627a">••••••••••••</text>
+    
+  
+    
+    <rect x="436" y="748" width="568" height="46" rx="12" fill="#2563eb"/>
+    <text x="720" y="777" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" fill="#fff">Test &amp; Continue</text>
+  
+  
+</svg>

@@ -10,6 +10,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 
 | Document | Why it matters |
 |---|---|
+| [docs/INSTALL.md](docs/INSTALL.md) | End-to-end installation guide for VPS/SSH installs, FTP/shared-hosting installs, and the `/install/` browser wizard, including install mock screenshots and post-install checks. |
 | [docs/api-spec.md](docs/api-spec.md) | Full REST API reference — every endpoint, request/response shape, required headers, auth middleware, and error codes. Essential if you're building an integration, a mobile client, or working in the backend without reading the PHP source. |
 | [docs/db-schema.md](docs/db-schema.md) | Complete database schema — all tables, columns, indexes, foreign keys, and the default settings reference. Essential for understanding the data model, writing migrations, or debugging unexpected query behaviour. |
 | [docs/screenshots.md](docs/screenshots.md) | Annotated screenshots of every screen in the agent UI — useful for evaluating the product or understanding what each feature looks like before diving into the code. |
@@ -162,59 +163,13 @@ Route structure:
 ---
 
 ## Installation
+See [docs/INSTALL.md](docs/INSTALL.md) for the full installation guide, including:
 
-### Option A — Web Installer (FTP / shared hosting)
-
-No SSH or command line required.
-
-1. **Upload files** — FTP the entire repository to your web root (e.g. `public_html/` or `httpdocs/`). The `public_html/` subdirectory should become your document root.
-2. **Upload Composer dependencies** — run `composer install --no-dev --optimize-autoloader` locally, then FTP the generated `vendor/` directory to the server alongside `public_html/`.
-3. **Create a storage directory** — create a folder *outside* the web root (e.g. `../helpdesk-storage/`) and ensure it is writable by the web server. The installer will create the required subdirectories.
-4. **Run the installer** — visit `https://yourdomain.com/install/` in your browser. The wizard will:
-   - Check PHP version and required extensions
-   - Test your database connection
-   - Write `.env`, create the database schema, seed the admin account, and download frontend assets
-5. **Log in** at `https://yourdomain.com/` with the admin credentials you set during installation.
-
-> **Note:** IMAP email polling requires a cron job (`php /path/to/bin/imap-poll.php`). Many shared hosts provide a cron manager in their control panel. Without cron, new emails won't be imported automatically — agents can still create tickets and reply via the UI.
-
-> **Security:** Delete or password-protect the `public_html/install/` directory after installation. The installer writes an `install.lock` file to prevent re-running, but removing the directory is best practice.
-
----
-
-### Option B — Command Line (SSH / VPS)
-
-```bash
-# 1. Clone and install dependencies
-composer install --no-dev --optimize-autoloader
-
-# 2. Configure environment
-cp .env.example .env
-# Edit .env with your DB, JWT secret, storage path, and app URL
-# Optional hardening: set TRUST_PROXY_HEADERS=true only if the app is behind a trusted reverse proxy
-# Optional updater overrides:
-#   UPDATE_VERSION_URL to self-host version metadata
-#   UPDATE_REPO_ZIP_URL and UPDATE_REPO_PREFIX to self-host update packages
-
-# 3. Configure Makefile deployment targets
-cp Makefile.local.example Makefile.local
-# Edit Makefile.local — set LOCAL_HOST, PROD_HOST, REMOTE_USER, REMOTE_PATH
-# Makefile.local is gitignored and never committed
-
-# 4. Run migrations and seed the admin account
-make db-migrate
-make db-seed
-
-# 5. Download frontend vendor assets
-make fetch-assets
-
-# 6. Install the IMAP polling cron
-make cron-install-production
-```
-
-Then log in at your configured `APP_URL` with the `ADMIN_EMAIL` / `ADMIN_PASSWORD` from `.env`.
-
-SMTP, IMAP accounts, SLA policy, branding, and all other runtime settings are configured through the admin settings routes — no config file editing required after initial setup. Agent-specific preferences live under `/my-profile`.
+- command-line install on a VPS or dedicated server
+- FTP / shared-hosting upload flow
+- the `/install/` browser wizard
+- install mock screenshots
+- shared-hosting notes and post-install checklist
 
 ---
 
