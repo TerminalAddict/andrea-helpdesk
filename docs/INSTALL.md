@@ -11,6 +11,19 @@ If you just want the fastest path:
 - use **Command Line Install** if you have SSH and Composer
 - use **FTP + Web Installer** if you are on shared hosting
 
+Bootstrap installer:
+
+```bash
+wget -qO - https://www.andreahelpdesk.com/installer/ | bash
+```
+
+The CLI installer will:
+
+- check for `git`, `php`, `composer`, and `make`
+- support either a local install or a remote SSH-driven deployment install
+- write `.env`
+- run migrations, seed the admin user, fetch assets, and install cron
+
 ---
 
 ## Requirements
@@ -46,6 +59,14 @@ Directory layout requirements:
 ### 1. Command Line Install
 
 Use this when you have shell access and can run Composer on the server.
+
+If you want the guided Bash installer, use:
+
+```bash
+wget -qO - https://www.andreahelpdesk.com/installer/ | bash
+```
+
+The installer will stop if the document root cannot point to `public_html/`. In that situation, use the FTP / SFTP flow instead.
 
 #### Step 1: Place the application on the server
 

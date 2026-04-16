@@ -6,6 +6,12 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ## [Unreleased]
 
+### Added
+- Added `bin/install-cli.sh`, an interactive Bash installer for local installs and SSH-driven remote installs, including prerequisite checks, `.env` generation, migrations, admin seeding, asset fetch, cron setup, and final verification
+
+### Docs
+- Updated `docs/INSTALL.md` to document the new CLI bootstrap installer command and its `public_html/` document-root requirement
+
 ---
 
 ## [1.3.4] — 2026-04-15
