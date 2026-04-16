@@ -8,8 +8,8 @@ This guide covers the three supported install paths for Andrea Helpdesk:
 
 If you just want the fastest path:
 
-- use **Command Line Install** if you have SSH and Composer
-- use **FTP + Web Installer** if you are on shared hosting
+- use **Command Line Install** if you have shell access and can point the site document root at `public_html/`
+- use **FTP + Web Installer** if you are on shared hosting or cannot point the document root at `public_html/`
 
 Bootstrap installer:
 
@@ -17,12 +17,25 @@ Bootstrap installer:
 wget -qO - https://www.andreahelpdesk.com/installer/ | bash
 ```
 
-The CLI installer will:
+The CLI installer is interactive. It reads answers from your terminal even when the script itself is piped into `bash`.
 
-- check for `git`, `php`, `composer`, and `make`
-- support either a local install or a remote SSH-driven deployment install
-- write `.env`
-- run migrations, seed the admin user, fetch assets, and install cron
+What the CLI installer does:
+
+1. prints the installer source and asks for confirmation before doing any work
+2. asks whether this is a **local** install or a **remote** SSH-driven install
+3. checks prerequisites such as:
+   - `git`
+   - `php`
+   - `composer`
+   - `make`
+   - required PHP extensions
+4. asks for the repository URL and ref to install
+5. asks for the site document root and stops if it cannot be `public_html/`
+6. asks for application, database, storage, and admin details
+7. validates database access before writing `.env`
+8. writes `.env`
+9. installs dependencies, runs migrations, seeds the initial admin, fetches frontend assets, and installs the cron job
+10. performs final verification of the install and prints next steps
 
 ---
 
@@ -58,7 +71,11 @@ Directory layout requirements:
 
 ### 1. Command Line Install
 
-Use this when you have shell access and can run Composer on the server.
+Use this when:
+
+- you have shell access
+- you can run Composer
+- your web server can point the site document root at `public_html/`
 
 If you want the guided Bash installer, use:
 
@@ -67,6 +84,83 @@ wget -qO - https://www.andreahelpdesk.com/installer/ | bash
 ```
 
 The installer will stop if the document root cannot point to `public_html/`. In that situation, use the FTP / SFTP flow instead.
+
+#### What The CLI Installer Supports
+
+The Bash installer supports two modes.
+
+##### Local Mode
+
+Use local mode when the application will run on the same machine where you launch the installer.
+
+In local mode, the installer:
+
+- clones the repository locally
+- writes `.env` locally
+- runs Composer locally
+- runs `make db-migrate`
+- runs `make db-seed`
+- runs `make fetch-assets`
+- runs `make cron-install-local`
+- verifies the local install and probes `APP_URL`
+
+##### Remote Mode
+
+Use remote mode when you want to deploy to another server over SSH.
+
+In remote mode, the installer:
+
+- checks SSH access first
+- collects `REMOTE_USER`, `PROD_HOST`, and `REMOTE_PATH`
+- generates `Makefile.local`
+- clones the repository locally into a working directory
+- writes `.env` locally and copies it to the remote host
+- deploys the code with `make deploy`
+- runs remote `make db-migrate`
+- runs remote `make db-seed`
+- runs `make cron-install-production`
+- verifies the remote application layout, database state, and `APP_URL`
+
+Remote mode currently expects SSH key-based or agent-backed access.
+
+#### What The CLI Installer Checks Before Installing
+
+Before it writes configuration or runs setup commands, the CLI installer checks:
+
+- required commands
+- PHP version
+- required PHP extensions
+- write access to the local working path
+- SSH access in remote mode
+- document root layout
+- database connectivity
+- storage-path validity
+
+It also explicitly stops if:
+
+- the install directory is not empty
+- the document root does not point to `public_html/`
+- the database cannot be reached
+- the storage path is inside the document root
+
+#### CLI Install Walkthrough
+
+The interactive CLI flow is:
+
+1. confirm the installer should continue
+2. choose `local` or `remote`
+3. enter repository URL and ref
+4. enter install path or remote path details
+5. enter the document root
+6. enter `APP_URL`, timezone, and JWT secret
+7. enter database settings
+8. enter `STORAGE_PATH`
+9. enter the initial admin account details
+10. let the installer validate and execute the setup steps
+
+#### Manual Command-Line Install
+
+If you do not want the guided Bash installer, you can still install manually.
 
 #### Step 1: Place the application on the server
 
@@ -140,7 +234,21 @@ php bin/seed.php
 
 `php bin/seed.php` creates the initial admin agent using the `ADMIN_*` values from `.env`.
 
-#### Step 6: Point the web root to `public_html/`
+#### Step 6: Fetch frontend assets
+
+```bash
+make fetch-assets
+```
+
+This downloads the self-hosted frontend assets used by the app:
+
+- Bootstrap
+- Bootstrap Icons
+- jQuery
+- DOMPurify
+- Quill
+
+#### Step 7: Point the web root to `public_html/`
 
 Your vhost or site config should serve:
 
@@ -150,7 +258,13 @@ Your vhost or site config should serve:
 
 not the project root.
 
-#### Step 7: Log in
+If your environment cannot point the document root there, stop and use the FTP / SFTP workflow instead:
+
+```text
+https://docs.andreahelpdesk.com/install/#2-ftp--sftp-install
+```
+
+#### Step 8: Log in
 
 Open:
 
@@ -160,7 +274,7 @@ https://your-domain.example/
 
 and sign in with the admin email and password you set in `.env`.
 
-#### Step 8: Add cron for IMAP polling and SLA checks
+#### Step 9: Add cron for IMAP polling and SLA checks
 
 Recommended cron:
 
@@ -173,6 +287,20 @@ This handles:
 - inbound email polling
 - SLA escalation checks
 - log trimming
+
+#### What The CLI Installer Verifies At The End
+
+After the install steps finish, the CLI installer performs a final verification pass. It checks:
+
+- `.env` exists
+- Composer dependencies exist
+- frontend assets exist
+- storage directories and log files exist
+- the database schema exists
+- the admin agent record exists
+- `APP_URL` responds over HTTP
+
+If the HTTP check fails but the filesystem and database checks pass, the installer reports that the application is probably installed correctly but the web server or document-root configuration still needs attention.
 
 ---
 
