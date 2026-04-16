@@ -134,7 +134,8 @@ run_step_capture() {
 confirm() {
     local prompt=$1
     local answer
-    read -r -u "$TTY_FD" -p "${prompt} [y/N]: " answer
+    printf '%s [y/N]: ' "$prompt" >&"$TTY_FD"
+    read -r -u "$TTY_FD" answer
     answer=${answer:-N}
     [[ "$answer" =~ ^[Yy]([Ee][Ss])?$ ]]
 }
@@ -145,10 +146,12 @@ prompt_value() {
     local default=${3-}
     local value
     if [[ -n "$default" ]]; then
-        read -r -u "$TTY_FD" -p "${prompt} [${default}]: " value
+        printf '%s [%s]: ' "$prompt" "$default" >&"$TTY_FD"
+        read -r -u "$TTY_FD" value
         value=${value:-$default}
     else
-        read -r -u "$TTY_FD" -p "${prompt}: " value
+        printf '%s: ' "$prompt" >&"$TTY_FD"
+        read -r -u "$TTY_FD" value
     fi
     printf -v "$var_name" '%s' "$value"
 }
@@ -157,7 +160,8 @@ prompt_secret() {
     local var_name=$1
     local prompt=$2
     local value
-    read -r -s -u "$TTY_FD" -p "${prompt}: " value
+    printf '%s: ' "$prompt" >&"$TTY_FD"
+    read -r -s -u "$TTY_FD" value
     printf '\n' >&"$TTY_FD"
     printf -v "$var_name" '%s' "$value"
 }
@@ -175,7 +179,8 @@ prompt_choice() {
             printf '  %d. %s\n' "$i" "$option" >&"$TTY_FD"
             i=$((i + 1))
         done
-        read -r -u "$TTY_FD" -p "Choose an option [1-${#options[@]}]: " answer
+        printf 'Choose an option [1-%s]: ' "${#options[@]}" >&"$TTY_FD"
+        read -r -u "$TTY_FD" answer
         if [[ "$answer" =~ ^[0-9]+$ ]] && (( answer >= 1 && answer <= ${#options[@]} )); then
             printf -v "$var_name" '%s' "${options[$((answer - 1))]}"
             return 0
