@@ -1,179 +1,270 @@
 # Screenshots
 
-A visual tour of Andrea Helpdesk. All screens are from the agent UI.
+This document maps the current screenshot set in [`docs/screenshots/`](screenshots) to the screens they represent.
+
+The screenshot library now covers:
+- agent login and agent workspace screens
+- customer login and customer portal flows
+- the expanded admin settings areas and modals
+- light and dark mode examples
+
+Unless noted otherwise, screenshots are from the light theme.
 
 ---
 
-## Dashboard
+## Login
 
-![Dashboard](screenshots/Dashboard.png)
+### Agent Login
 
-The dashboard is the first screen agents see after login. It shows five live counters at the top — **New Tickets**, **Waiting for Reply**, **Pending Tickets**, **Replied Tickets**, and **Overdue Tickets** — giving an at-a-glance health check of the queue.
+![Agent Login](screenshots/agent%20login.png)
 
-Below the counters, the dashboard is split into three ticket lists: **Overdue Tickets**, **My Assigned Tickets** (tickets assigned to the current agent), and **Recently Updated** (across all agents). The overdue list is sorted by oldest `last_attention_at` first so the stalest tickets rise to the top. A search box at the top searches tickets and knowledge base articles simultaneously.
+Filename: `agent login.png`
 
----
+The shared login page with the **Agent Login** tab selected. It shows the Andrea Helpdesk brand panel, email/password fields, the **Remember me** toggle, and the split entry point between the staff helpdesk and the customer portal.
 
-## Tickets
+### Customer Login
 
-![Tickets](screenshots/Tickets.png)
+![Customer Login](screenshots/customer%20login.png)
 
-The main ticket list shows all tickets the agent has access to. Columns include ticket number, subject/customer name, status badge, priority badge, tags, comment count, assigned agent, and created/updated timestamps. Tickets whose priority is **Overdue** are highlighted with a stronger red treatment so the assignee stands out immediately.
+Filename: `customer login.png`
 
-The filter bar at the top supports filtering by **status** (Active, New, Open, Waiting for Reply, Replied, Pending, Resolved, Closed), **priority**, **assigned agent**, and **tag**, as well as free-text search. The active ticket count is shown above the table. The navbar badge next to "Tickets" shows the count of active (non-resolved, non-closed) tickets at all times.
-
----
-
-## Ticket Detail
-
-![Ticket Detail](screenshots/Ticket_Detail.png)
-
-The ticket detail view shows the full conversation thread for a ticket. Each message displays the sender name, timestamp, and a **Customer** or **Agent** badge. Private internal notes are visually distinguished so they are never confused with customer-visible replies.
-
-System events — such as the email suppression audit trail visible here — appear inline in the thread as grey italicised entries, recording who made the change and when.
-
-The reply composer is **collapsed by default**. Clicking the **Reply** or **Internal Note** button auto-expands it; a chevron toggle button in the composer header collapses it again. The composer includes an attachment button, a signature toggle checkbox, and a "Keep status" selector. The **To:** address is shown in the header when collapsed so the recipient is always visible.
-
-The reply and internal note composer supports **@mention** — typing `@` opens a live-filtered dropdown of agents. Use arrow keys or click to select; the mention is inserted as a styled chip. Mentioned agents receive an email notification linking to the ticket. Works in both regular replies and internal notes.
-
-Customer names in reply/message headers are clickable links that navigate directly to the customer's profile page.
-
-The **Ticket Info** sidebar on the right shows status, priority, assigned agent, channel, created/updated timestamps, and the **Suppress emails** toggle. When suppression is active, all outbound customer emails for this ticket are silenced — the toggle is recorded as a system event each time it changes. If the ticket priority is **Overdue**, the sidebar also shows a prominent red overdue callout naming the assigned agent (or showing that the ticket is unassigned). The sidebar also shows the linked customer, tags (with a dropdown to select from the global tag list — only tags not already applied are shown; the dropdown is hidden when all tags are applied), attachments, CC participants, and related/parent tickets.
+The same shared login page with the **Customer Portal** tab selected, documenting the customer-facing entry route and the matching portal sign-in form.
 
 ---
 
-## New Ticket
+## Dashboard And Core Agent Views
 
-![New Ticket](screenshots/New_Ticket.png)
+### Dashboard
 
-Agents can create tickets manually using the New Ticket form. The **Customer Email** field is a live search — typing searches existing customers by name or email and pre-fills the **Customer Name** field. If no match is found, a new customer record is created on submission.
+![Dashboard](screenshots/dashboard.png)
 
-Other fields include **Subject**, **Priority** (Normal by default), **Channel** (Web by default), **Assign To**, **CC / Participants** (free-text or search, press Enter to add each address), **Message**, and **Attachments**.
+Filename: `dashboard.png`
 
----
+The main agent dashboard in light mode. It shows the live ticket counters, global search, and the ticket summary widgets that agents use for queue triage.
 
-## Customers
+### Dashboard (Dark Mode)
 
-![Customers](screenshots/Customers.png)
+![Dashboard Dark Mode](screenshots/dashboard%20dark%20mode.png)
 
-The customer list shows all customer records with their name, email, phone, total ticket count, and the date they were first seen. A live search box filters by name or email. Clicking any row opens the customer detail view.
+Filename: `dashboard dark mode.png`
 
-Two action buttons sit in the top-right: **New Customer** opens a modal to create a single customer record; **Import CSV** opens the bulk import modal. The import modal includes a **Download Template CSV** button that downloads a pre-filled example file. After import, the modal reports how many customers were created and lists any skipped rows with their reason (duplicate email, invalid email, or missing required fields).
+The dashboard in dark mode, included to document the alternate profile theme and the darker card/table treatment.
 
----
+### Tickets
 
-## Customer Detail
+![Tickets](screenshots/tickets.png)
 
-![Customer Detail](screenshots/Customer_Detail.png)
+Filename: `tickets.png`
 
-The customer detail view is split into two panels. The left panel shows the customer's name, email, phone, company, and the date they became a customer. Below that, a **Portal Access** section lets agents send a magic-link portal invitation email or manually set a portal password for the customer.
+The main ticket list with filters, search, priority/status badges, tags, assignment, and pagination.
 
-The right panel lists the customer's tickets (ticket number, subject, status, priority, last updated) and a chronological feed of all replies this customer has posted across every ticket — useful for understanding their history at a glance. A **+ New Ticket** button opens the new ticket form pre-filled with this customer.
+### Ticket Detail
 
----
+![Ticket Detail](screenshots/ticket%20details.png)
 
-## Reports
+Filename: `ticket details.png`
 
-![Reports](screenshots/Reports.png)
+The ticket conversation view with the thread, ticket metadata, tags, participants, attachments, related records, and the ticket actions sidebar.
 
-The reports screen provides a date-range report (From / To with a **Run Report** button). The default range is from the **first day of the current month** through today. The summary row mirrors the dashboard labels — **New**, **Waiting for Reply**, **Pending**, **Replied**, and **Overdue** — but counts only tickets that had activity inside the selected range. A sixth card shows how many tickets are in scope overall.
+### Ticket Detail Reply / Internal Note
 
-Below the summary, the **Avg. Time to Close** card measures tickets whose `closed_at` falls inside the selected range. The two tables underneath break activity down further: **Ticket Activity (Daily)** shows created tickets, customer replies, agent replies, internal notes, system events, and total activity per day; **Agent Activity** shows each agent's assigned, created, replied, noted, resolved, and closed counts for the period. Access to reports is controlled by the `view_reports` permission flag.
+![Ticket Detail Reply Or Internal Note](screenshots/ticket%20details%20reply%20or%20internal%20note.png)
 
----
+Filename: `ticket details reply or internal note.png`
 
-## Knowledge Base
+The same ticket detail screen with the reply composer expanded, showing the reply/internal-note workflow, attachments area, and send controls.
 
-![Knowledge Base](screenshots/Knowledge_Base.png)
+### Calendar
 
-The knowledge base is an internal article library. Articles are searchable by title and filterable by category. Each article row shows its title, last-updated timestamp, and edit/delete action buttons.
+![Calendar](screenshots/calendar.png)
 
-A **Categories** button opens a modal for managing article categories. The **+ New Article** button opens the article editor. Access to managing the knowledge base is controlled by the `manage_kb` permission flag.
+Filename: `calendar.png`
 
----
+The ticket calendar view, showing due-date scheduling on a month grid with colour-coded priority legends and the subscribe link for calendar feeds.
 
-## Admin — Agents
+### Customers
 
-![Admin Agents](screenshots/Admin_Agents.png)
+![Customers](screenshots/customers.png)
 
-The agents admin screen lists all agent accounts with their role badge (**admin** in red, **agent** in blue), their currently granted permission tags, active/inactive status, and Edit / Deactivate action buttons. Admins can add new agents with the **+ Add Agent** button.
+Filename: `customers.png`
 
-Permission tags visible per agent include: `close_tickets`, `delete_tickets`, `edit_customers`, `view_reports`, `manage_kb`, and `manage_tags`. Admin agents bypass all permission checks. Non-admin agents only have access to the actions corresponding to their granted permissions.
+The customer list screen with search, customer metadata, and the table of all known customers.
 
----
+### Customer Details
 
-## Admin Settings — General
+![Customer Details](screenshots/customer%20details.png)
 
-![Settings General](screenshots/Settings_General.png)
+Filename: `customer details.png`
 
-Route: `#/admin/settings/general`
+The customer profile screen, including the customer record fields, portal-access actions, ticket history, and the chronological reply/activity stream.
 
-The General settings section covers system-wide options: **Application Name**, **Application URL** (used in outbound email links), **Timezone**, **Date Format** (PHP `date()` format string), **Ticket Number Prefix**, **IMAP Polling Mode**, and the SLA controls used for inactivity-based escalation.
+### Knowledge Base
 
-The SLA section lets admins enable or disable escalation, choose how many days without attention should raise a ticket to **High**, choose the additional number of days before it becomes **Overdue**, and decide whether reminder emails go to **all active agents** or only **specific agents**.
+![Knowledge Base](screenshots/knowledgebase.png)
 
-Below the save button, a **Version &amp; Updates** card shows the currently installed version number (fetched from the server) and a **Check for Updates** button. Clicking the button asks the server to fetch `version.json` from the GitHub `main` branch and compare it to the installed version. The card also warns that shared-hosting installs may need manual SFTP/file-manager deployment if PHP cannot overwrite account-owned files. The result is shown inline — either "You are running the latest version" or "Version X.Y.Z is available".
+Filename: `knowledgebase.png`
 
-Admins also get a silent background update check once per day while browsing the app. If a newer release is found, the navbar bell shows an unread notification that links directly back to this **Version &amp; Updates** card.
+The knowledge base article list with search, category filtering, and article-management actions.
 
-When an update is available, an **Update Now** button appears alongside the GitHub link. Clicking it opens a modal that first runs **preflight checks** — PHP ZipArchive extension, HTTP download capability, write permissions on all key directories, overwriteability of existing files inside those directories, temp directory writable, and at least 50 MB free disk space. Each failed check shows specific instructions on how to fix it. If all checks pass, a **Proceed with Update** button is enabled. Clicking that downloads the latest zip from GitHub, extracts it, copies the new files over the installation (preserving `.env`, `storage/`, and `vendor/`), runs the database schema update, applies any new migrations, and clears the opcode cache. A live log is shown in a terminal-style panel, and on success the user is prompted to reload the page.
+### Knowledge Base Detail
 
-When IMAP Polling Mode is set to **Cron Job (recommended)**, a help box displays the exact crontab line to add, along with instructions for using `make cron-install-production` as a shortcut. The cron script uses a file lock so overlapping runs are safe. The same poller process also runs the SLA escalation scan, so cron/web-triggered polling doubles as the SLA scheduler.
+![Knowledge Base Detail](screenshots/knowledgebase%20detail.png)
 
----
+Filename: `knowledgebase detail.png`
 
-## Admin Settings — Branding
-
-![Settings Branding](screenshots/Settings_Branding.png)
-
-Route: `#/admin/settings/branding`
-
-The Branding settings section controls the visual identity of the helpdesk. **Logo URL** sets a custom logo displayed in the navbar. **Favicon URL** accepts `.ico`, `.png`, or `.svg` and is applied immediately to all browser tabs. **Primary Colour** is a hex value used for button and accent colours throughout the UI. **Support Email (displayed)** sets the contact address shown to customers in the portal and outbound emails.
+An individual knowledge base article/editing screen, documenting the article body area and category/content workflow.
 
 ---
 
-## Admin Settings — Email / SMTP
+## Customer Portal
 
-![Settings Email SMTP](screenshots/Settings_Email_SMTP.png)
+### Customer Portal Ticket List
 
-Route: `#/admin/settings/email`
+![Customer Portal](screenshots/customer%20portal.png)
 
-The Email / SMTP settings section configures outbound mail. Fields include **SMTP Host**, **SMTP Port** (defaults to 587), **Encryption** (TLS/STARTTLS), **SMTP Username**, **SMTP Password** (leave blank to keep the current value — stored encrypted at rest), **From Email**, **From Name**, **Reply-To Email** (replies to this address create or update tickets), and **Email Signature** (supports the `{{agent_name}}` placeholder).
+Filename: `customer portal.png`
 
-Two checkboxes control agent notification emails: **Notify agents on new ticket** and **Notify agents on new customer reply**. A **Test SMTP** button sends a test email using the saved configuration to verify delivery.
+The customer portal home screen showing the customer's own tickets, status filtering, and the customer-side **New Ticket** entry point.
+
+### Customer Portal New Ticket
+
+![Customer Portal New Ticket](screenshots/customer%20portal%20new%20ticket.png)
+
+Filename: `customer portal new ticket.png`
+
+The customer-facing new-ticket form used to submit a support request directly from the portal.
+
+### Customer Portal Reply
+
+![Customer Portal Reply](screenshots/customer%20portal%20reply.png)
+
+Filename: `customer portal reply.png`
+
+The customer ticket detail / reply screen showing the portal conversation thread and customer reply workflow.
 
 ---
 
-## Admin Settings — Slack
+## Admin
 
-![Settings Slack](screenshots/Settings_Slack.png)
+### Admin Reports
 
-Route: `#/admin/settings/slack`
+![Admin Reports](screenshots/admin%20reports.png)
 
-The Slack settings section configures the incoming webhook integration. The **Webhook URL** field accepts a Slack incoming webhook URL. **Channel** sets the target channel (e.g. `#helpdesk`). Individual notification events can be toggled: **Notify on new tickets**, **Notify on ticket assignment**, **Notify on new customer reply**, and **Show link previews** (controls whether Slack unfurls ticket URLs into rich preview cards).
+Filename: `admin reports.png`
 
-The **Bot display name** and **Bot icon** fields customise how messages appear in Slack — the icon can be set as an image URL or an emoji code, with a quick-pick emoji palette provided.
+The reports screen with the current activity-based reporting layout, including date filters, summary cards, close-time metrics, and agent/activity tables.
+
+### Admin Agents
+
+![Admin Agents](screenshots/admin%20agents.png)
+
+Filename: `admin agents.png`
+
+The agents administration list, showing roles, status, permissions, and the controls for editing or deactivating agents.
+
+### Admin Agents Edit Modal
+
+![Admin Agents Edit](screenshots/admin%20agents%20edit.png)
+
+Filename: `admin agents edit.png`
+
+The add/edit agent modal, documenting the modal-based agent-management flow and the permission toggle layout.
+
+### Admin Tags
+
+![Admin Tags](screenshots/admin%20tags.png)
+
+Filename: `admin tags.png`
+
+The dedicated tag-management screen used to maintain the global ticket tag list.
 
 ---
 
-## Admin — Tags
+## Admin Settings
 
-![Settings Tags](screenshots/Settings_Tags.png)
+The settings screenshots now cover each route-backed admin settings section rather than the older tab-only documentation.
 
-Route: `#/admin/tags`
+### General Settings
 
-The Tags screen is where agents with the `manage_tags` permission manage the global tag list. Existing tags can be renamed inline or deleted. New tags are created by typing a name and clicking **+ Add Tag**. Tags created here appear in the ticket list filter and the tag selector on individual tickets.
+![Admin Settings General](screenshots/admin%20settings.png)
+
+Filename: `admin settings.png`
+
+The upper portion of **General** settings, including application identity, timezone/date settings, ticket prefix, and IMAP polling mode.
+
+![Admin Settings General Lower](screenshots/admin%20settings%202.png)
+
+Filename: `admin settings 2.png`
+
+The lower portion of **General** settings, showing cron setup help, SLA escalation controls, and the **Version & Updates** panel with the shared-hosting/file-ownership guidance.
+
+### Branding Settings
+
+![Admin Branding](screenshots/admin%20branding.png)
+
+Filename: `admin branding.png`
+
+The **Branding** settings page for logo, favicon, primary colour, and support-email presentation.
+
+### Email / SMTP Settings
+
+![Admin Email](screenshots/admin%20email.png)
+
+Filename: `admin email.png`
+
+The upper section of **Email / SMTP** settings, covering transport settings such as host, port, encryption, credentials, from-addresses, and reply-to routing.
+
+![Admin Email Lower](screenshots/admin%20email%202.png)
+
+Filename: `admin email 2.png`
+
+The lower section of **Email / SMTP** settings, showing the signature editor, notification toggles, save action, and the **Test SMTP** action.
+
+### Auto-Response Settings
+
+![Admin Auto Response](screenshots/admin%20auto%20reponse.png)
+
+Filename: `admin auto reponse.png`
+
+The **Auto-Response** settings page, documenting the automatic customer acknowledgement configuration.
+
+### IMAP Polling Settings
+
+![Admin IMAP Polling](screenshots/admin%20imap%20polling.png)
+
+Filename: `admin imap polling.png`
+
+The IMAP account list and polling configuration screen used to manage inbound mailbox polling.
+
+![Admin IMAP Polling Edit](screenshots/admin%20imap%20pollling%20edit.png)
+
+Filename: `admin imap pollling edit.png`
+
+The IMAP add/edit modal for mailbox credentials, host, folder, and polling settings.
+
+### Slack Settings
+
+![Admin Slack](screenshots/admin%20slack.png)
+
+Filename: `admin slack.png`
+
+The Slack integration settings page for webhook destination, posting behaviour, and Slack-side notification options.
 
 ---
 
 ## My Profile
 
-![Settings My Profile](screenshots/Settings_My_Profile.png)
+### My Profile
 
-Route: `#/my-profile`
+![My Profile](screenshots/my%20profile.png)
 
-The My Profile screen is per-agent and controls personal preferences. **Email Signature** accepts HTML with `{{agent_name}}` as a placeholder — this is the agent's personal signature prepended to the global signature set by an admin. The read-only **Global Signature** preview shows what will be appended after the personal signature.
+Filename: `my profile.png`
 
-Below the display preferences, a **Browser Notifications** section lets the agent enable or disable browser / OS notifications for this account and send a test notification. These alerts are used by the navbar notification center for new tickets, customer replies, overdue/SLA escalations, and update notices while the app is open.
+The per-agent profile page, showing personal signature editing, global signature preview, display preferences, browser-notification controls, and the new profile-level navigation that includes the notifications overview.
 
-**Display Preferences** includes **Theme** (Light or Dark) and **Tickets per page** (controls row count in the ticket list and dashboard blocks). A **Change Password** section lets agents update their own login password.
+---
+
+## Notes
+
+- The older screenshot filenames such as `Dashboard.png`, `Tickets.png`, and `Settings_General.png` have been replaced by the current lower-case, space-separated set in `docs/screenshots/`.
+- This document intentionally follows the actual on-disk filenames so it stays aligned with the current screenshot pack.
