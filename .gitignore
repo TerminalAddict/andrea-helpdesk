@@ -11,3 +11,4 @@ Thumbs.db
 /public_html/tst/
 CLAUDE.md
 Makefile.local
+install-cli.log
