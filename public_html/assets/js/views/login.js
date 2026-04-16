@@ -2,7 +2,8 @@
  * Login View - Agent and Customer portal login
  */
 const LoginView = {
-    render() {
+    render(params) {
+        const activeSection = params?.section === 'portal' ? 'customer' : 'agent';
         return `
         <div class="terminal-login-shell min-vh-100 d-flex align-items-center justify-content-center">
             <div class="card terminal-login-card shadow-sm">
@@ -16,15 +17,15 @@ const LoginView = {
 
                     <ul class="nav nav-tabs mb-3" id="loginTabs">
                         <li class="nav-item">
-                            <button class="nav-link active" data-tab="agent">Agent Login</button>
+                            <button class="nav-link ${activeSection === 'agent' ? 'active' : ''}" data-tab="agent">Agent Login</button>
                         </li>
                         <li class="nav-item">
-                            <button class="nav-link" data-tab="customer">Customer Portal</button>
+                            <button class="nav-link ${activeSection === 'customer' ? 'active' : ''}" data-tab="customer">Customer Portal</button>
                         </li>
                     </ul>
 
                     <!-- Agent Login -->
-                    <div id="tab-agent">
+                    <div id="tab-agent" ${activeSection === 'agent' ? '' : 'style="display:none;"'}>
                         <div id="agent-error" class="alert alert-danger d-none"></div>
                         <form id="agent-login-form">
                             <div class="mb-3">
@@ -47,7 +48,7 @@ const LoginView = {
                     </div>
 
                     <!-- Customer Portal -->
-                    <div id="tab-customer" style="display:none;">
+                    <div id="tab-customer" ${activeSection === 'customer' ? '' : 'style="display:none;"'}>
                         <div id="customer-error" class="alert alert-danger d-none"></div>
                         <div id="customer-success" class="alert alert-success d-none"></div>
                         <form id="customer-login-form">
@@ -76,7 +77,8 @@ const LoginView = {
         </div>`;
     },
 
-    init() {
+    init(params) {
+        const activeSection = params?.section === 'portal' ? 'customer' : 'agent';
         // Tab switching
         $('[data-tab]').on('click', function() {
             const tab = $(this).data('tab');
@@ -84,6 +86,7 @@ const LoginView = {
             $(this).addClass('active');
             $('#tab-agent, #tab-customer').hide();
             $('#tab-' + tab).show();
+            App.navigate(tab === 'customer' ? '/login/portal' : '/login/agent');
         });
 
         // Pre-fill email if previously remembered
@@ -165,11 +168,17 @@ const LoginView = {
         });
 
         // Check for magic link token in URL
-        const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
-        const token  = params.get('token');
-        const email  = params.get('email');
+        const query = new URLSearchParams(window.location.hash.split('?')[1] || '');
+        const token  = query.get('token');
+        const email  = query.get('email');
         if (token && email) {
             this.verifyMagicLink(token, email);
+        }
+
+        if (activeSection === 'customer') {
+            $('#customer-email').trigger('focus');
+        } else {
+            $('#agent-email').trigger('focus');
         }
     },
 

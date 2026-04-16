@@ -106,6 +106,7 @@ const CustomerDetailView = {
                         </div>
                     </div>
 
+                    ${canEdit ? `
                     <div class="card border-0 shadow-sm">
                         <div class="card-header bg-white fw-semibold py-2">
                             <i class="bi bi-shield-lock me-2"></i>Portal Access
@@ -132,7 +133,7 @@ const CustomerDetailView = {
                                 <i class="bi bi-key me-1"></i>Set Password
                             </button>
                         </div>
-                    </div>
+                    </div>` : ''}
                 </div>
 
                 <div class="col-lg-8">

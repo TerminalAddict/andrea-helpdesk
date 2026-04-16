@@ -67,6 +67,7 @@ class SettingsService
     {
         return [
             'global_signature'            => $this->repo->get('global_signature', ''),
+            'include_portal_link_in_customer_emails' => (bool)$this->repo->get('include_portal_link_in_customer_emails', false),
             'auto_response_enabled'       => (bool)$this->repo->get('auto_response_enabled', true),
             'auto_response_subject'       => $this->repo->get('auto_response_subject', 'Re: {{subject}} [{{ticket_number}}]'),
             'auto_response_body'          => $this->repo->get('auto_response_body', ''),

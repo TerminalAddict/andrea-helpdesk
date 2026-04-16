@@ -83,8 +83,8 @@ return [
     ['DELETE', '/api/customers/:id',                CustomerController::class, 'destroy',     ['role:admin']],
     ['GET',    '/api/customers/:id/tickets',        CustomerController::class, 'tickets',     ['auth:agent']],
     ['GET',    '/api/customers/:id/replies',        CustomerController::class, 'replies',     ['auth:agent']],
-    ['POST',   '/api/customers/:id/portal-invite',   CustomerController::class, 'portalInvite', ['role:admin']],
-    ['POST',   '/api/customers/:id/set-password',   CustomerController::class, 'setPassword',  ['role:admin']],
+    ['POST',   '/api/customers/:id/portal-invite',   CustomerController::class, 'portalInvite', ['auth:agent', 'permission:can_edit_customers']],
+    ['POST',   '/api/customers/:id/set-password',    CustomerController::class, 'setPassword',  ['auth:agent', 'permission:can_edit_customers']],
 
     // ── Agents ───────────────────────────────────────────────────────────────
     ['PUT',  '/api/agent/profile',            AgentController::class, 'updateProfile', ['auth:agent']],

@@ -99,7 +99,7 @@ const API = {
                 options.headers = this.getHeaders(isFormData);
                 res = await fetch(url, options);
             } else {
-                window.location.hash = '#/login';
+                window.location.hash = '#/login/agent';
                 throw new Error('Session expired. Please log in again.');
             }
         }

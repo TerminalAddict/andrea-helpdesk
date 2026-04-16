@@ -179,7 +179,7 @@ const Navbar = {
                 await API.post('/auth/logout', { refresh_token: refreshToken });
             } catch (e) {}
             API.clearTokens();
-            window.location.hash = '#/login';
+            window.location.hash = '#/login/agent';
             location.reload();
         });
 

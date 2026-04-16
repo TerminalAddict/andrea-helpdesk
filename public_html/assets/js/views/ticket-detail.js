@@ -7,6 +7,18 @@ const TicketDetailView = {
     allTags: [],
     pendingReplyFiles: [],
 
+    _bindModalCleanup(modalId) {
+        const modalEl = document.getElementById(modalId);
+        if (!modalEl || modalEl.dataset.andreaCleanupBound === '1') return;
+        modalEl.addEventListener('hidden.bs.modal', () => {
+            document.body.classList.remove('modal-open');
+            document.body.style.removeProperty('overflow');
+            document.body.style.removeProperty('padding-right');
+            document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        }, { once: false });
+        modalEl.dataset.andreaCleanupBound = '1';
+    },
+
     render(params) {
         this._params = params;
         return `
@@ -1034,12 +1046,15 @@ const TicketDetailView = {
             if (e.key === 'Enter') this.saveNewCustomerForTicket();
         });
 
-        const modal = new bootstrap.Modal(document.getElementById('editTicketModal'));
-        document.getElementById('editTicketModal').addEventListener('shown.bs.modal', () => {
+        App.clearModalArtifacts();
+        const modalEl = App.detachModal(document.getElementById('editTicketModal'));
+        this._bindModalCleanup('editTicketModal');
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modalEl.addEventListener('shown.bs.modal', () => {
             RichEditor.init('edit-ticket-body', { minHeight: '200px' });
             RichEditor.set('edit-ticket-body', editBodyHtml);
         }, { once: true });
-        document.getElementById('editTicketModal').addEventListener('hide.bs.modal', () => {
+        modalEl.addEventListener('hide.bs.modal', () => {
             if (document.activeElement) document.activeElement.blur();
             $(document).off('click.editcust');
         }, { once: true });
@@ -1081,7 +1096,10 @@ const TicketDetailView = {
         $('#cft-name').val(isEmail ? '' : prefillQuery);
         $('#cft-email').val(isEmail ? prefillQuery : '');
         $('#cft-phone, #cft-company').val('');
-        new bootstrap.Modal(document.getElementById('createCustomerFromTicketModal')).show();
+        App.clearModalArtifacts();
+        const modalEl = App.detachModal(document.getElementById('createCustomerFromTicketModal'));
+        this._bindModalCleanup('createCustomerFromTicketModal');
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
         setTimeout(() => (isEmail ? $('#cft-name') : $('#cft-email')).focus(), 300);
     },
 

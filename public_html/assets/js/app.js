@@ -8,6 +8,7 @@ const App = {
     routes: {
         '/':               'DashboardView',
         '/login':          'LoginView',
+        '/login/:section': 'LoginView',
         '/tickets':        'TicketsView',
         '/tickets/new':    'TicketNewView',
         '/tickets/:id':    'TicketDetailView',
@@ -49,7 +50,7 @@ const App = {
                 }
                 this.startImapWebPoller();
             } else {
-                window.location.hash = '#/login';
+                window.location.hash = '#/login/agent';
                 return;
             }
         }
@@ -113,6 +114,11 @@ const App = {
         const viewName = matched ? matched.viewName : null;
         const params   = matched ? matched.params : {};
 
+        if (hash === '/login' || hash.startsWith('/login?')) {
+            window.location.hash = '#/login/agent';
+            return;
+        }
+
         if (hash === '/admin/settings' || hash.startsWith('/admin/settings?')) {
             window.location.hash = '#/admin/settings/general';
             return;
@@ -122,7 +128,7 @@ const App = {
         const isPublic  = this.publicRoutes.some(p => hash.startsWith(p));
         const isPortal  = hash.startsWith('/portal');
         if (!isPublic && !API.isAuthenticated()) {
-            window.location.hash = isPortal ? '#/portal/login' : '#/login';
+            window.location.hash = isPortal ? '#/portal/login' : '#/login/agent';
             return;
         }
         // Redirect customer tokens away from agent routes (and agent tokens away from portal)

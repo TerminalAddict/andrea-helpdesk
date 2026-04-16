@@ -119,6 +119,7 @@ const SettingsView = {
                 { key: 'smtp_from_name',  label: 'From Name',       type: 'text',     value: s.smtp_from_name || '' },
                 { key: 'reply_to_address', label: 'Reply-To Email', type: 'email',    value: s.reply_to_address || '', hint: 'Replies to this address create/update tickets' },
                 { key: 'global_signature', label: 'Email Signature', type: 'textarea', value: s.global_signature || '', hint: 'Use {{agent_name}} as placeholder' },
+                { key: 'include_portal_link_in_customer_emails', label: 'Include a link to the customer portal in all email communications', type: 'checkbox', value: s.include_portal_link_in_customer_emails },
                 { key: 'notify_agent_on_new_ticket', label: 'Notify agents on new ticket', type: 'checkbox', value: s.notify_agent_on_new_ticket },
                 { key: 'notify_agent_on_new_reply',  label: 'Notify agents on new customer reply', type: 'checkbox', value: s.notify_agent_on_new_reply },
             ]);
@@ -1097,7 +1098,7 @@ const SettingsView = {
         const tabFields = {
             general:      ['company_name','app_url','timezone','date_format','ticket_prefix','imap_poll_mode','sla_enabled','sla_high_after_days','sla_overdue_after_days','sla_notify_scope'],
             branding:     ['logo_url','favicon_url','primary_color','support_email_display'],
-            email:        ['smtp_host','smtp_port','smtp_encryption','smtp_username','smtp_password','smtp_from_address','smtp_from_name','reply_to_address','global_signature','notify_agent_on_new_ticket','notify_agent_on_new_reply'],
+            email:        ['smtp_host','smtp_port','smtp_encryption','smtp_username','smtp_password','smtp_from_address','smtp_from_name','reply_to_address','global_signature','include_portal_link_in_customer_emails','notify_agent_on_new_ticket','notify_agent_on_new_reply'],
             autoresponse: ['auto_response_enabled','auto_response_subject','auto_response_body'],
             imap:         [],
             slack:        ['slack_enabled','slack_webhook_url','slack_channel','slack_on_new_ticket','slack_on_assign','slack_on_new_reply','slack_unfurl_links','slack_username','slack_icon_url','slack_icon_emoji'],
@@ -1234,9 +1235,7 @@ const MyProfileView = {
                             <h6 class="mb-1">Active Notifications</h6>
                             <div class="text-muted small">This page keeps active issues visible even after you mark them read from the bell menu.</div>
                         </div>
-                        <button class="btn btn-outline-primary btn-sm" id="btn-subscribe-browser-notifications">
-                            <i class="bi bi-bell me-1"></i>Subscribe In Your Browser
-                        </button>
+                        <div id="my-profile-browser-notification-controls" class="d-flex align-items-center gap-2 flex-wrap"></div>
                     </div>
                     <div id="my-profile-notification-summary" class="terminal-notification-overview-summary mb-3"></div>
                     <div id="my-profile-notification-list">
@@ -1249,8 +1248,92 @@ const MyProfileView = {
         `);
 
         this.bindNotificationOverviewActions();
+        this.renderBrowserNotificationOverviewControls();
         await Notifications.markAllRead();
         await this.loadNotificationsOverview();
+    },
+
+    browserNotificationOverviewState() {
+        const agent = SettingsView.currentAgent || {};
+        const supported = 'Notification' in window;
+        const permission = supported ? Notification.permission : 'unsupported';
+        const enabled = !!agent.browser_notifications_enabled;
+
+        if (!supported) {
+            return {
+                key: 'unsupported',
+                status: 'Not supported',
+                message: 'This browser does not support notifications.',
+            };
+        }
+
+        if (permission === 'denied') {
+            return {
+                key: 'blocked',
+                status: 'Blocked in browser',
+                message: 'Notifications are blocked for this site. Re-enable them in your browser or site settings to subscribe again.',
+            };
+        }
+
+        if (permission === 'granted' && enabled) {
+            return {
+                key: 'subscribed',
+                status: 'Subscribed',
+                message: 'Browser notifications are enabled for this account.',
+            };
+        }
+
+        if (permission === 'granted') {
+            return {
+                key: 'enable',
+                status: 'Permission granted',
+                message: 'This browser allows notifications, but they are not enabled for this account yet.',
+            };
+        }
+
+        return {
+            key: 'subscribe',
+            status: 'Not subscribed',
+            message: 'Allow notifications in this browser to receive in-app alerts while the helpdesk is open.',
+        };
+    },
+
+    renderBrowserNotificationOverviewControls() {
+        const state = this.browserNotificationOverviewState();
+        const $container = $('#my-profile-browser-notification-controls');
+        if (!$container.length) return;
+
+        let buttons = '';
+        if (state.key === 'subscribed') {
+            buttons = `
+                <button class="btn btn-outline-secondary btn-sm" id="btn-disable-browser-notifications-overview">
+                    <i class="bi bi-bell-slash me-1"></i>Disable
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" id="btn-test-browser-notifications-overview">
+                    <i class="bi bi-broadcast me-1"></i>Send Test
+                </button>
+            `;
+        } else if (state.key === 'enable') {
+            buttons = `
+                <button class="btn btn-outline-primary btn-sm" id="btn-enable-browser-notifications-overview">
+                    <i class="bi bi-bell me-1"></i>Enable Browser Notifications
+                </button>
+            `;
+        } else if (state.key === 'subscribe') {
+            buttons = `
+                <button class="btn btn-outline-primary btn-sm" id="btn-subscribe-browser-notifications">
+                    <i class="bi bi-bell me-1"></i>Subscribe In Your Browser
+                </button>
+            `;
+        }
+
+        $container.html(`
+            <div class="text-end">
+                <div class="small fw-semibold">${App.escapeHtml(state.status)}</div>
+                <div class="text-muted small">${App.escapeHtml(state.message)}</div>
+            </div>
+            ${buttons}
+        `);
     },
 
     bindNotificationOverviewActions() {
@@ -1268,6 +1351,45 @@ const MyProfileView = {
                     App.toast(e.message, 'error');
                 } finally {
                     btn.prop('disabled', false).html(original);
+                    this.renderBrowserNotificationOverviewControls();
+                }
+            })
+            .on('click.profileNotifications', '#btn-enable-browser-notifications-overview', async () => {
+                const btn = $('#btn-enable-browser-notifications-overview');
+                const original = btn.html();
+                btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Enabling…');
+                try {
+                    const updated = await Notifications.enableBrowserNotifications();
+                    SettingsView.currentAgent = { ...SettingsView.currentAgent, ...updated, browser_notifications_enabled: true };
+                    App.toast('Browser notifications enabled');
+                } catch (e) {
+                    App.toast(e.message, 'error');
+                } finally {
+                    btn.prop('disabled', false).html(original);
+                    this.renderBrowserNotificationOverviewControls();
+                }
+            })
+            .on('click.profileNotifications', '#btn-disable-browser-notifications-overview', async () => {
+                const btn = $('#btn-disable-browser-notifications-overview');
+                const original = btn.html();
+                btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Disabling…');
+                try {
+                    const updated = await Notifications.disableBrowserNotifications();
+                    SettingsView.currentAgent = { ...SettingsView.currentAgent, ...updated, browser_notifications_enabled: false };
+                    App.toast('Browser notifications disabled');
+                } catch (e) {
+                    App.toast(e.message, 'error');
+                } finally {
+                    btn.prop('disabled', false).html(original);
+                    this.renderBrowserNotificationOverviewControls();
+                }
+            })
+            .on('click.profileNotifications', '#btn-test-browser-notifications-overview', () => {
+                try {
+                    Notifications.sendTestBrowserNotification();
+                    App.toast('Test notification sent', 'success');
+                } catch (e) {
+                    App.toast(e.message, 'error');
                 }
             })
             .on('click.profileNotifications', '.profile-notification-link', async (e) => {

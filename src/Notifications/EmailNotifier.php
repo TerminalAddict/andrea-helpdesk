@@ -84,9 +84,10 @@ class EmailNotifier
             }
 
             $body = $includeSignature ? $this->applySignature($reply['body_html'], $agent) : $reply['body_html'];
+            [$body, $altBody] = $this->applyCustomerPortalLink($body, strip_tags($body));
             $mailer->isHTML(true);
             $mailer->Body    = $body;
-            $mailer->AltBody = strip_tags($body);
+            $mailer->AltBody = $altBody;
 
             // Attach files
             if (!empty($attachmentIds)) {
@@ -197,14 +198,19 @@ class EmailNotifier
             $mailer->addAddress($customer['email'], $customer['name'] ?? '');
             $mailer->Subject = "Your support portal access - {$company}";
             $mailer->isHTML(true);
-            $mailer->Body = "
+            $body = "
                 <p>Hello " . htmlspecialchars($customer['name'] ?? 'Customer') . ",</p>
                 <p>You have been invited to access the {$company} support portal.</p>
                 <p><a href='{$magicLink}'>Click here to log in</a></p>
                 <p>This link will expire in 1 hour.</p>
                 <p>{$this->settings->getEmailConfig()['global_signature']}</p>
             ";
-            $mailer->AltBody = "Your portal login link: {$magicLink}";
+            [$body, $altBody] = $this->applyCustomerPortalLink(
+                $body,
+                "Your portal login link: {$magicLink}"
+            );
+            $mailer->Body = $body;
+            $mailer->AltBody = $altBody;
             $mailer->send();
             return true;
         } catch (\Throwable $e) {
@@ -221,8 +227,9 @@ class EmailNotifier
             $mailer->addAddress($to, $toName);
             $mailer->Subject = $subject;
             $mailer->isHTML(true);
-            $mailer->Body    = $body;
-            $mailer->AltBody = strip_tags($body);
+            [$htmlBody, $altBody] = $this->applyCustomerPortalLink($body, strip_tags($body));
+            $mailer->Body    = $htmlBody;
+            $mailer->AltBody = $altBody;
             foreach ($headers as $name => $value) {
                 // Setting Message-ID via addCustomHeader would duplicate PHPMailer's own header
                 if (strcasecmp($name, 'Message-ID') === 0) {
@@ -284,6 +291,24 @@ class EmailNotifier
         }
 
         return $body . $signature;
+    }
+
+    private function applyCustomerPortalLink(string $htmlBody, string $altBody): array
+    {
+        $emailConfig = $this->settings->getEmailConfig();
+        if (empty($emailConfig['include_portal_link_in_customer_emails'])) {
+            return [$htmlBody, $altBody];
+        }
+
+        $appUrl = rtrim((string)($this->settings->get('app_url') ?: getenv('APP_URL') ?: ''), '/');
+        if ($appUrl === '') {
+            return [$htmlBody, $altBody];
+        }
+
+        $portalUrl = $appUrl . '/#/login/portal';
+        $htmlBody .= '<br><br><p><strong>Customer Portal:</strong> <a href="' . htmlspecialchars($portalUrl, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '">' . htmlspecialchars($portalUrl, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</a></p>';
+        $altBody .= "\n\nCustomer Portal: {$portalUrl}";
+        return [$htmlBody, $altBody];
     }
 
     private function generateMessageId(string $ticketNumber): string
