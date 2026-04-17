@@ -2,7 +2,7 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-SCRIPT_VERSION="1.0.5"
+SCRIPT_VERSION="1.0.6"
 SCRIPT_CWD="${PWD}"
 DEFAULT_REPO_URL="https://github.com/TerminalAddict/andrea-helpdesk.git"
 DEFAULT_REPO_REF="main"
@@ -599,17 +599,22 @@ collect_admin_details() {
     local confirm_password
     prompt_value ADMIN_NAME "ADMIN_NAME"
     prompt_value ADMIN_EMAIL "ADMIN_EMAIL"
-    prompt_secret ADMIN_PASSWORD "ADMIN_PASSWORD"
-    prompt_secret confirm_password "Confirm ADMIN_PASSWORD"
-    if [[ "$ADMIN_PASSWORD" != "$confirm_password" ]]; then
-        die "$EXIT_ENV" "Admin passwords do not match."
-    fi
-    if [[ ${#ADMIN_PASSWORD} -lt 8 ]]; then
-        die "$EXIT_ENV" "Admin password must be at least 8 characters long."
-    fi
     if ! printf '%s' "$ADMIN_EMAIL" | grep -Eq '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$'; then
         die "$EXIT_ENV" "ADMIN_EMAIL does not look like a valid email address."
     fi
+    while true; do
+        prompt_secret ADMIN_PASSWORD "ADMIN_PASSWORD"
+        prompt_secret confirm_password "Confirm ADMIN_PASSWORD"
+        if [[ "$ADMIN_PASSWORD" != "$confirm_password" ]]; then
+            log_warn "Admin passwords do not match. Please try again."
+            continue
+        fi
+        if [[ ${#ADMIN_PASSWORD} -lt 8 ]]; then
+            log_warn "Admin password must be at least 8 characters long. Please try again."
+            continue
+        fi
+        break
+    done
     MASKED_ADMIN_PASSWORD=$(mask_value "$ADMIN_PASSWORD")
 }
 
