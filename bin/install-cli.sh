@@ -2,7 +2,7 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-SCRIPT_VERSION="1.0.10"
+SCRIPT_VERSION="1.1.0"
 SCRIPT_CWD="${PWD}"
 DEFAULT_REPO_URL="https://github.com/TerminalAddict/andrea-helpdesk.git"
 DEFAULT_REPO_REF="main"
@@ -1104,11 +1104,71 @@ write_env_file() {
         log_warn "Existing .env was backed up."
     fi
     write_env_contents > "$env_path"
-    chmod 600 "$env_path" || true
+    chmod 640 "$env_path" || true
     log_ok "Wrote ${env_path}"
     if [[ "$INSTALL_MODE" == "remote" ]]; then
         copy_file_remote "$env_path" "${REMOTE_PATH}/.env" || die "$EXIT_ENV" "Failed to copy .env to remote host."
         log_ok "Copied .env to ${REMOTE_TARGET}:${REMOTE_PATH}/.env"
+    fi
+}
+
+try_env_group_access_local() {
+    local env_path=$1
+    local group=""
+    for candidate in www-data apache nginx; do
+        if getent group "$candidate" >/dev/null 2>&1; then
+            if id -nG | tr ' ' '\n' | grep -qx "$candidate"; then
+                group="$candidate"
+                break
+            fi
+        fi
+    done
+    if [[ -n "$group" ]]; then
+        if chgrp "$group" "$env_path" >> "$INSTALL_LOG" 2>&1; then
+            chmod 640 "$env_path" >> "$INSTALL_LOG" 2>&1 || true
+            log_ok "Applied web-server-readable permissions to .env using group '${group}'."
+            return 0
+        fi
+    fi
+    return 1
+}
+
+try_env_group_access_remote() {
+    local env_path=$1
+    local remote_script='
+group=""
+for candidate in www-data apache nginx; do
+  if getent group "$candidate" >/dev/null 2>&1; then
+    if id -nG | tr " " "\n" | grep -qx "$candidate"; then
+      group="$candidate"
+      break
+    fi
+  fi
+done
+if [ -n "$group" ]; then
+  chgrp "$group" '"$(shell_quote_sh "$env_path")"' &&
+  chmod 640 '"$(shell_quote_sh "$env_path")"'
+fi
+'
+    ssh "$REMOTE_TARGET" "$remote_script" >> "$INSTALL_LOG" 2>&1
+}
+
+fix_env_permissions() {
+    LAST_STEP="setting .env permissions"
+    local env_path="$WORK_DIR/.env"
+    if [[ "$INSTALL_MODE" == "local" ]]; then
+        if ! try_env_group_access_local "$env_path"; then
+            chmod 640 "$env_path" >> "$INSTALL_LOG" 2>&1 || true
+            log_warn "Applied chmod 640 to .env. If the web server still cannot read it, adjust the file group so Apache/PHP can read .env."
+        fi
+    else
+        local remote_env="${REMOTE_PATH}/.env"
+        if ! try_env_group_access_remote "$remote_env"; then
+            ssh "$REMOTE_TARGET" "chmod 640 $(shell_quote_sh "$remote_env")" >> "$INSTALL_LOG" 2>&1 || true
+            log_warn "Applied chmod 640 to the remote .env. If the web server still cannot read it, adjust the file group on ${REMOTE_TARGET} so Apache/PHP can read .env."
+        else
+            log_ok "Applied remote web-server-readable permissions to .env."
+        fi
     fi
 }
 
@@ -1459,6 +1519,7 @@ main() {
     collect_admin_details
     validate_before_env_write
     write_env_file
+    fix_env_permissions
 
     run_composer_install
     run_fetch_assets
