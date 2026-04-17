@@ -2,7 +2,7 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-SCRIPT_VERSION="1.0.3"
+SCRIPT_VERSION="1.0.4"
 DEFAULT_REPO_URL="https://github.com/TerminalAddict/andrea-helpdesk.git"
 DEFAULT_REPO_REF="main"
 DOCS_INSTALL_URL="https://docs.andreahelpdesk.com/install/"
@@ -626,38 +626,38 @@ validate_storage_path() {
 test_db_connection_local() {
     php <<PHP
 <?php
-$host = '$(php_single_quote "$DB_HOST")';
-$port = '$(php_single_quote "$DB_PORT")';
-$db   = '$(php_single_quote "$DB_DATABASE")';
-$user = '$(php_single_quote "$DB_USERNAME")';
-$pass = '$(php_single_quote "$DB_PASSWORD")';
-if ($db === '' || $user === '') {
+\$host = '$(php_single_quote "$DB_HOST")';
+\$port = '$(php_single_quote "$DB_PORT")';
+\$db   = '$(php_single_quote "$DB_DATABASE")';
+\$user = '$(php_single_quote "$DB_USERNAME")';
+\$pass = '$(php_single_quote "$DB_PASSWORD")';
+if (\$db === '' || \$user === '') {
     fwrite(STDERR, "Database name and username are required.\n");
     exit(2);
 }
 try {
-    new PDO('mysql:host=' . $host . ';port=' . $port . ';dbname=' . $db . ';charset=utf8mb4', $user, $pass, [
+    new PDO('mysql:host=' . \$host . ';port=' . \$port . ';dbname=' . \$db . ';charset=utf8mb4', \$user, \$pass, [
         PDO::ATTR_TIMEOUT => 5,
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
     ]);
     echo "Database connection successful.\n";
     exit(0);
-} catch (PDOException $e) {
-    $code = (string)$e->getCode();
-    $msg = $e->getMessage();
-    if ($code === '1045' || strpos($msg, 'Access denied') !== false) {
+} catch (PDOException \$e) {
+    \$code = (string)\$e->getCode();
+    \$msg = \$e->getMessage();
+    if (\$code === '1045' || strpos(\$msg, 'Access denied') !== false) {
         fwrite(STDERR, "Connection failed: access denied.\n");
         exit(3);
     }
-    if ($code === '1049' || strpos($msg, 'Unknown database') !== false) {
+    if (\$code === '1049' || strpos(\$msg, 'Unknown database') !== false) {
         fwrite(STDERR, "Connection failed: database does not exist.\n");
         exit(4);
     }
-    if ($code === '2002' || $code === '2003' || strpos($msg, 'Connection refused') !== false) {
+    if (\$code === '2002' || \$code === '2003' || strpos(\$msg, 'Connection refused') !== false) {
         fwrite(STDERR, "Connection failed: could not reach database host.\n");
         exit(5);
     }
-    fwrite(STDERR, "Connection failed: " . $msg . "\n");
+    fwrite(STDERR, "Connection failed: " . \$msg . "\n");
     exit(6);
 }
 PHP
@@ -666,38 +666,38 @@ PHP
 test_db_connection_remote() {
     ssh "$REMOTE_TARGET" "php" <<PHP
 <?php
-$host = '$(php_single_quote "$DB_HOST")';
-$port = '$(php_single_quote "$DB_PORT")';
-$db   = '$(php_single_quote "$DB_DATABASE")';
-$user = '$(php_single_quote "$DB_USERNAME")';
-$pass = '$(php_single_quote "$DB_PASSWORD")';
-if ($db === '' || $user === '') {
+\$host = '$(php_single_quote "$DB_HOST")';
+\$port = '$(php_single_quote "$DB_PORT")';
+\$db   = '$(php_single_quote "$DB_DATABASE")';
+\$user = '$(php_single_quote "$DB_USERNAME")';
+\$pass = '$(php_single_quote "$DB_PASSWORD")';
+if (\$db === '' || \$user === '') {
     fwrite(STDERR, "Database name and username are required.\n");
     exit(2);
 }
 try {
-    new PDO('mysql:host=' . $host . ';port=' . $port . ';dbname=' . $db . ';charset=utf8mb4', $user, $pass, [
+    new PDO('mysql:host=' . \$host . ';port=' . \$port . ';dbname=' . \$db . ';charset=utf8mb4', \$user, \$pass, [
         PDO::ATTR_TIMEOUT => 5,
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
     ]);
     echo "Database connection successful.\n";
     exit(0);
-} catch (PDOException $e) {
-    $code = (string)$e->getCode();
-    $msg = $e->getMessage();
-    if ($code === '1045' || strpos($msg, 'Access denied') !== false) {
+} catch (PDOException \$e) {
+    \$code = (string)\$e->getCode();
+    \$msg = \$e->getMessage();
+    if (\$code === '1045' || strpos(\$msg, 'Access denied') !== false) {
         fwrite(STDERR, "Connection failed: access denied.\n");
         exit(3);
     }
-    if ($code === '1049' || strpos($msg, 'Unknown database') !== false) {
+    if (\$code === '1049' || strpos(\$msg, 'Unknown database') !== false) {
         fwrite(STDERR, "Connection failed: database does not exist.\n");
         exit(4);
     }
-    if ($code === '2002' || $code === '2003' || strpos($msg, 'Connection refused') !== false) {
+    if (\$code === '2002' || \$code === '2003' || strpos(\$msg, 'Connection refused') !== false) {
         fwrite(STDERR, "Connection failed: could not reach database host.\n");
         exit(5);
     }
-    fwrite(STDERR, "Connection failed: " . $msg . "\n");
+    fwrite(STDERR, "Connection failed: " . \$msg . "\n");
     exit(6);
 }
 PHP
