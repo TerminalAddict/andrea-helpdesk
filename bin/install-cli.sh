@@ -2,7 +2,7 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-SCRIPT_VERSION="1.0.8"
+SCRIPT_VERSION="1.0.9"
 SCRIPT_CWD="${PWD}"
 DEFAULT_REPO_URL="https://github.com/TerminalAddict/andrea-helpdesk.git"
 DEFAULT_REPO_REF="main"
@@ -63,6 +63,57 @@ print_user_message() {
         cat >&"$TTY_FD"
     else
         cat >&2
+    fi
+}
+
+print_db_access_denied_help() {
+    print_user_message <<'EOF'
+
+Database access was denied.
+
+Important:
+- The installer uses the literal password you paste at the DB_PASSWORD prompt.
+- If you tested MySQL with a one-line command like:
+  mysql ... -pYOURPASSWORD
+  your shell may have changed that password before MySQL saw it.
+
+Common shell pitfall:
+- Characters like $, #, spaces, and backslashes can be interpreted by the shell.
+- For example, a password fragment like f$abc may be expanded by Bash instead of being passed literally.
+
+Safe ways to verify the password:
+1. Use MySQL prompt mode:
+   mysql -hHOST -uUSER -p DATABASE
+   then paste the password when prompted
+2. Or quote the password correctly in the shell command
+
+If the prompt-mode login works, paste that exact same literal password into the installer.
+
+EOF
+}
+
+warn_if_shell_sensitive_db_password() {
+    if [[ "$DB_PASSWORD" =~ [\$\#\!\`\ \\\"\'] ]]; then
+        print_user_message <<EOF
+
+DB_PASSWORD contains characters that are often interpreted by shells:
+- $, #, !, quotes, backticks, spaces, or backslashes
+
+That is fine for Andrea Helpdesk itself.
+
+But if you created the MySQL user from a shell command, your shell may have changed
+the password before MySQL stored it.
+
+Safe way to verify the password:
+- Run: mysql -h${DB_HOST} -u${DB_USERNAME} -p ${DB_DATABASE}
+- Then paste the password when prompted
+
+If that prompt-mode login works, use that exact same password here.
+
+EOF
+        if ! confirm "Continue with this DB password?"; then
+            die "$EXIT_DB" "Installer cancelled so you can verify the database password safely."
+        fi
     fi
 }
 
@@ -617,7 +668,8 @@ collect_database_details() {
     prompt_value DB_PORT "DB_PORT" "3306"
     prompt_value DB_DATABASE "DB_DATABASE"
     prompt_value DB_USERNAME "DB_USERNAME"
-    prompt_secret DB_PASSWORD "DB_PASSWORD (paste the literal password)"
+    prompt_secret DB_PASSWORD "DB_PASSWORD (paste the literal password exactly as stored by MySQL)"
+    warn_if_shell_sensitive_db_password
     MASKED_DB_PASSWORD=$(mask_value "$DB_PASSWORD")
 }
 
@@ -980,6 +1032,9 @@ validate_before_env_write() {
         check_write_parent "$STORAGE_PATH" || die "$EXIT_ENV" "Cannot create or write to STORAGE_PATH parent for ${STORAGE_PATH}"
         local output
         if ! output=$(test_db_connection_local 2>&1); then
+            if printf '%s' "$output" | grep -qi 'access denied'; then
+                print_db_access_denied_help
+            fi
             die "$EXIT_DB" "$output"
         fi
         log_ok "$output"
@@ -988,6 +1043,9 @@ validate_before_env_write() {
         ssh "$REMOTE_TARGET" "mkdir -p $(shell_quote_sh "$STORAGE_PATH")" >> "$INSTALL_LOG" 2>&1 || die "$EXIT_ENV" "Cannot create remote storage path ${STORAGE_PATH}"
         local output
         if ! output=$(test_db_connection_remote 2>&1); then
+            if printf '%s' "$output" | grep -qi 'access denied'; then
+                print_db_access_denied_help
+            fi
             die "$EXIT_DB" "$output"
         fi
         log_ok "$output"
