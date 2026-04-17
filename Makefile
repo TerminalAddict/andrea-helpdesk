@@ -21,6 +21,7 @@ RSYNC_EXCLUDE = --exclude=/vendor --exclude=.env --exclude=storage --exclude=.gi
 CRON_ENTRY  = "* * * * * php $(REMOTE_PATH)/bin/imap-poll.php >> $(REMOTE_PATH)/storage/logs/imap.log 2>&1"
 
 .PHONY: help install install-dev db-migrate db-seed update fetch-assets \
+        script \
         release \
         deploy \
         cron-install-local cron-install-production \
@@ -68,6 +69,16 @@ db-migrate: ## Run database migrations
 db-seed: ## Seed initial admin agent (reads ADMIN_* from .env)
 	php bin/seed.php
 
+script: ## Bump CLI installer patch version, commit, and push only bin/install-cli.sh if it changed
+	@if git diff --quiet -- bin/install-cli.sh && git diff --cached --quiet -- bin/install-cli.sh; then \
+		echo "No bin/install-cli.sh changes to release."; \
+	else \
+		NEW_VERSION=$$(php bin/script-release.php) && \
+		git add bin/install-cli.sh && \
+		git commit -m "Bump CLI installer version to $$NEW_VERSION" && \
+		git push; \
+	fi
+
 release: ## Bump patch version, require changelog notes, stage all changes, commit, and push current branch
 	@NEW_VERSION=$$(php bin/release.php) && \
 	git add -A && \
@@ -79,7 +90,7 @@ storage-setup: ## Create storage directory structure
 	touch storage/logs/app.log storage/logs/imap.log
 	@echo "Storage directories created."
 
-deploy: ## Deploy to production server
+deploy: script ## Release installer changes first, then deploy to production server
 	rsync $(RSYNC_OPTS) $(RSYNC_EXCLUDE) ./ $(REMOTE_USER)@$(PROD_HOST):$(REMOTE_PATH)/
 	ssh $(REMOTE_USER)@$(PROD_HOST) "cd $(REMOTE_PATH) && composer install --no-dev --optimize-autoloader"
 	ssh $(REMOTE_USER)@$(PROD_HOST) "cd $(REMOTE_PATH) && php bin/migrate.php"
@@ -87,8 +98,8 @@ deploy: ## Deploy to production server
 	@echo "Deployed to $(PROD_HOST)"
 
 cron-install-local: ## Install IMAP poll crontab on local server
-	ssh $(REMOTE_USER)@$(LOCAL_HOST) "(crontab -l 2>/dev/null | grep -v imap-poll; echo $(CRON_ENTRY)) | crontab -"
-	@echo "Cron installed on $(LOCAL_HOST)"
+	@(crontab -l 2>/dev/null | grep -v imap-poll; printf '%s\n' "* * * * * php $(REMOTE_PATH)/bin/imap-poll.php >> $(REMOTE_PATH)/storage/logs/imap.log 2>&1") | crontab -
+	@echo "Cron installed locally"
 
 cron-install-production: ## Install IMAP poll crontab on production server
 	ssh $(REMOTE_USER)@$(PROD_HOST) "(crontab -l 2>/dev/null | grep -v imap-poll; echo $(CRON_ENTRY)) | crontab -"
