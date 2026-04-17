@@ -2,7 +2,7 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-SCRIPT_VERSION="1.0.1"
+SCRIPT_VERSION="1.0.2"
 DEFAULT_REPO_URL="https://github.com/TerminalAddict/andrea-helpdesk.git"
 DEFAULT_REPO_REF="main"
 DOCS_INSTALL_URL="https://docs.andreahelpdesk.com/install/"
@@ -466,7 +466,25 @@ EOF
 ensure_target_directory_clear() {
     local dir=$1
     if [[ -e "$dir" && -n "$(find "$dir" -mindepth 1 -maxdepth 1 2>/dev/null | head -n 1 || true)" ]]; then
-        die "$EXIT_INSTALL" "Target directory '${dir}' already exists and is not empty. Choose an empty directory and rerun the installer."
+        cat >&"$TTY_FD" <<EOF
+
+The target directory already exists and is not empty:
+  ${dir}
+
+The installer can clear this directory before cloning Andrea Helpdesk into it.
+This will permanently remove the existing contents of that directory.
+
+EOF
+        if ! confirm "Clear the target directory before continuing?"; then
+            die "$EXIT_INSTALL" "Installer cancelled. Choose a different directory or clear '${dir}' manually and rerun."
+        fi
+        if ! confirm "Are you sure you want to permanently delete the existing contents of ${dir}?"; then
+            die "$EXIT_INSTALL" "Installer cancelled. No files were removed."
+        fi
+        LAST_STEP="clearing target directory ${dir}"
+        log_warn "Clearing existing contents of ${dir} before clone."
+        find "$dir" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} + >> "$INSTALL_LOG" 2>&1 || die "$EXIT_INSTALL" "Could not clear '${dir}'. Check permissions and rerun the installer."
+        log_ok "Cleared target directory: ${dir}"
     fi
 }
 

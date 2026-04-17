@@ -11,13 +11,46 @@ If you just want the fastest path:
 - use **Command Line Install** if you have shell access and can point the site document root at `public_html/`
 - use **FTP + Web Installer** if you are on shared hosting or cannot point the document root at `public_html/`
 
-Bootstrap installer:
+## Fastest VPS Path
+
+### Step 1: Create the database
+
+```bash
+mysql \
+  -u db_admin_uuser \
+  -p \
+  -e "
+    CREATE DATABASE \`andrea-helpdesk\`;
+    GRANT ALL PRIVILEGES
+      ON \`andrea-helpdesk\`.*
+      TO 'andrea-helpdesk-user'@'localhost'
+      IDENTIFIED BY 'andrea-helpdesk-pass';
+    FLUSH PRIVILEGES;
+  "
+```
+
+Do **not** use the example database names, usernames, or passwords shown above. Replace all of them with your own values.
+
+### Step 2: Run the installer
 
 ```bash
 wget -qO - https://www.andreahelpdesk.com/installer/ | bash
 ```
 
 The CLI installer is interactive. It reads answers from your terminal even when the script itself is piped into `bash`.
+
+If you prefer to download it first:
+
+```bash
+wget https://www.andreahelpdesk.com/installer/install-cli.sh
+bash install-cli.sh
+```
+
+If you want to read the installer before running it, open:
+
+```text
+https://www.andreahelpdesk.com/installer/
+```
 
 What the CLI installer does:
 
@@ -31,11 +64,12 @@ What the CLI installer does:
    - required PHP extensions
 4. asks for the repository URL and ref to install
 5. asks for the site document root and stops if it cannot be `public_html/`
-6. asks for application, database, storage, and admin details
-7. validates database access before writing `.env`
-8. writes `.env`
-9. installs dependencies, runs migrations, seeds the initial admin, fetches frontend assets, and installs the cron job
-10. performs final verification of the install and prints next steps
+6. if the chosen install directory already exists and is not empty, warns clearly and asks twice before clearing it
+7. asks for application, database, storage, and admin details
+8. validates database access before writing `.env`
+9. writes `.env`
+10. installs dependencies, runs migrations, seeds the initial admin, fetches frontend assets, and installs the cron job
+11. performs final verification of the install and prints next steps
 
 ---
 
@@ -77,10 +111,43 @@ Use this when:
 - you can run Composer
 - your web server can point the site document root at `public_html/`
 
+Before you run the installer, create a database and database user for Andrea Helpdesk.
+
+Example:
+
+```bash
+mysql \
+  -u db_admin_uuser \
+  -p \
+  -e "
+    CREATE DATABASE \`andrea-helpdesk\`;
+    GRANT ALL PRIVILEGES
+      ON \`andrea-helpdesk\`.*
+      TO 'andrea-helpdesk-user'@'localhost'
+      IDENTIFIED BY 'andrea-helpdesk-pass';
+    FLUSH PRIVILEGES;
+  "
+```
+
+Do **not** use the example database names, usernames, or passwords shown above. Replace all of them with your own values.
+
 If you want the guided Bash installer, use:
 
 ```bash
 wget -qO - https://www.andreahelpdesk.com/installer/ | bash
+```
+
+If you prefer downloading the script first:
+
+```bash
+wget https://www.andreahelpdesk.com/installer/install-cli.sh
+bash install-cli.sh
+```
+
+If you want to inspect the installer source in a browser first:
+
+```text
+https://www.andreahelpdesk.com/installer/
 ```
 
 The installer will stop if the document root cannot point to `public_html/`. In that situation, use the FTP / SFTP flow instead.
@@ -138,7 +205,7 @@ Before it writes configuration or runs setup commands, the CLI installer checks:
 
 It also explicitly stops if:
 
-- the install directory is not empty
+- the install directory is not empty and you choose not to let the installer clear it
 - the document root does not point to `public_html/`
 - the database cannot be reached
 - the storage path is inside the document root
