@@ -2,7 +2,7 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-SCRIPT_VERSION="1.0.7"
+SCRIPT_VERSION="1.0.8"
 SCRIPT_CWD="${PWD}"
 DEFAULT_REPO_URL="https://github.com/TerminalAddict/andrea-helpdesk.git"
 DEFAULT_REPO_REF="main"
@@ -617,7 +617,7 @@ collect_database_details() {
     prompt_value DB_PORT "DB_PORT" "3306"
     prompt_value DB_DATABASE "DB_DATABASE"
     prompt_value DB_USERNAME "DB_USERNAME"
-    prompt_secret DB_PASSWORD "DB_PASSWORD"
+    prompt_secret DB_PASSWORD "DB_PASSWORD (paste the literal password)"
     MASKED_DB_PASSWORD=$(mask_value "$DB_PASSWORD")
 }
 
@@ -667,116 +667,128 @@ validate_storage_path() {
 }
 
 test_db_connection_local() {
-    php <<PHP
+    DB_HOST="$DB_HOST" \
+    DB_PORT="$DB_PORT" \
+    DB_DATABASE="$DB_DATABASE" \
+    DB_USERNAME="$DB_USERNAME" \
+    DB_PASSWORD="$DB_PASSWORD" \
+    php <<'PHP'
 <?php
-\$host = '$(php_single_quote "$DB_HOST")';
-\$port = '$(php_single_quote "$DB_PORT")';
-\$db   = '$(php_single_quote "$DB_DATABASE")';
-\$user = '$(php_single_quote "$DB_USERNAME")';
-\$pass = '$(php_single_quote "$DB_PASSWORD")';
-if (\$db === '' || \$user === '') {
+$host = (string)getenv('DB_HOST');
+$port = (string)getenv('DB_PORT');
+$db   = (string)getenv('DB_DATABASE');
+$user = (string)getenv('DB_USERNAME');
+$pass = (string)getenv('DB_PASSWORD');
+if ($db === '' || $user === '') {
     fwrite(STDERR, "Database name and username are required.\n");
     exit(2);
 }
 try {
-    new PDO('mysql:host=' . \$host . ';port=' . \$port . ';dbname=' . \$db . ';charset=utf8mb4', \$user, \$pass, [
+    new PDO('mysql:host=' . $host . ';port=' . $port . ';dbname=' . $db . ';charset=utf8mb4', $user, $pass, [
         PDO::ATTR_TIMEOUT => 5,
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
     ]);
     echo "Database connection successful.\n";
     exit(0);
-} catch (PDOException \$e) {
-    \$code = (string)\$e->getCode();
-    \$msg = \$e->getMessage();
-    if (\$code === '1045' || strpos(\$msg, 'Access denied') !== false) {
+} catch (PDOException $e) {
+    $code = (string)$e->getCode();
+    $msg = $e->getMessage();
+    if ($code === '1045' || strpos($msg, 'Access denied') !== false) {
         fwrite(STDERR, "Connection failed: access denied.\n");
         exit(3);
     }
-    if (\$code === '1049' || strpos(\$msg, 'Unknown database') !== false) {
+    if ($code === '1049' || strpos($msg, 'Unknown database') !== false) {
         fwrite(STDERR, "Connection failed: database does not exist.\n");
         exit(4);
     }
-    if (\$code === '2002' || \$code === '2003' || strpos(\$msg, 'Connection refused') !== false) {
+    if ($code === '2002' || $code === '2003' || strpos($msg, 'Connection refused') !== false) {
         fwrite(STDERR, "Connection failed: could not reach database host.\n");
         exit(5);
     }
-    fwrite(STDERR, "Connection failed: " . \$msg . "\n");
+    fwrite(STDERR, "Connection failed: " . $msg . "\n");
     exit(6);
 }
 PHP
 }
 
 test_db_connection_remote() {
-    ssh "$REMOTE_TARGET" "php" <<PHP
+    ssh "$REMOTE_TARGET" \
+        "DB_HOST=$(shell_quote_sh "$DB_HOST") DB_PORT=$(shell_quote_sh "$DB_PORT") DB_DATABASE=$(shell_quote_sh "$DB_DATABASE") DB_USERNAME=$(shell_quote_sh "$DB_USERNAME") DB_PASSWORD=$(shell_quote_sh "$DB_PASSWORD") php" <<'PHP'
 <?php
-\$host = '$(php_single_quote "$DB_HOST")';
-\$port = '$(php_single_quote "$DB_PORT")';
-\$db   = '$(php_single_quote "$DB_DATABASE")';
-\$user = '$(php_single_quote "$DB_USERNAME")';
-\$pass = '$(php_single_quote "$DB_PASSWORD")';
-if (\$db === '' || \$user === '') {
+$host = (string)getenv('DB_HOST');
+$port = (string)getenv('DB_PORT');
+$db   = (string)getenv('DB_DATABASE');
+$user = (string)getenv('DB_USERNAME');
+$pass = (string)getenv('DB_PASSWORD');
+if ($db === '' || $user === '') {
     fwrite(STDERR, "Database name and username are required.\n");
     exit(2);
 }
 try {
-    new PDO('mysql:host=' . \$host . ';port=' . \$port . ';dbname=' . \$db . ';charset=utf8mb4', \$user, \$pass, [
+    new PDO('mysql:host=' . $host . ';port=' . $port . ';dbname=' . $db . ';charset=utf8mb4', $user, $pass, [
         PDO::ATTR_TIMEOUT => 5,
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
     ]);
     echo "Database connection successful.\n";
     exit(0);
-} catch (PDOException \$e) {
-    \$code = (string)\$e->getCode();
-    \$msg = \$e->getMessage();
-    if (\$code === '1045' || strpos(\$msg, 'Access denied') !== false) {
+} catch (PDOException $e) {
+    $code = (string)$e->getCode();
+    $msg = $e->getMessage();
+    if ($code === '1045' || strpos($msg, 'Access denied') !== false) {
         fwrite(STDERR, "Connection failed: access denied.\n");
         exit(3);
     }
-    if (\$code === '1049' || strpos(\$msg, 'Unknown database') !== false) {
+    if ($code === '1049' || strpos($msg, 'Unknown database') !== false) {
         fwrite(STDERR, "Connection failed: database does not exist.\n");
         exit(4);
     }
-    if (\$code === '2002' || \$code === '2003' || strpos(\$msg, 'Connection refused') !== false) {
+    if ($code === '2002' || $code === '2003' || strpos($msg, 'Connection refused') !== false) {
         fwrite(STDERR, "Connection failed: could not reach database host.\n");
         exit(5);
     }
-    fwrite(STDERR, "Connection failed: " . \$msg . "\n");
+    fwrite(STDERR, "Connection failed: " . $msg . "\n");
     exit(6);
 }
 PHP
 }
 
 list_database_tables_local() {
-    php <<PHP
+    DB_HOST="$DB_HOST" \
+    DB_PORT="$DB_PORT" \
+    DB_DATABASE="$DB_DATABASE" \
+    DB_USERNAME="$DB_USERNAME" \
+    DB_PASSWORD="$DB_PASSWORD" \
+    php <<'PHP'
 <?php
-\$host = '$(php_single_quote "$DB_HOST")';
-\$port = '$(php_single_quote "$DB_PORT")';
-\$db   = '$(php_single_quote "$DB_DATABASE")';
-\$user = '$(php_single_quote "$DB_USERNAME")';
-\$pass = '$(php_single_quote "$DB_PASSWORD")';
-\$pdo = new PDO('mysql:host=' . \$host . ';port=' . \$port . ';dbname=' . \$db . ';charset=utf8mb4', \$user, \$pass, [
+$host = (string)getenv('DB_HOST');
+$port = (string)getenv('DB_PORT');
+$db   = (string)getenv('DB_DATABASE');
+$user = (string)getenv('DB_USERNAME');
+$pass = (string)getenv('DB_PASSWORD');
+$pdo = new PDO('mysql:host=' . $host . ';port=' . $port . ';dbname=' . $db . ';charset=utf8mb4', $user, $pass, [
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
 ]);
-\$tables = \$pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN) ?: [];
-sort(\$tables);
-echo implode("\n", \$tables);
+$tables = $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN) ?: [];
+sort($tables);
+echo implode("\n", $tables);
 PHP
 }
 
 list_database_tables_remote() {
-    ssh "$REMOTE_TARGET" "php" <<PHP
+    ssh "$REMOTE_TARGET" \
+        "DB_HOST=$(shell_quote_sh "$DB_HOST") DB_PORT=$(shell_quote_sh "$DB_PORT") DB_DATABASE=$(shell_quote_sh "$DB_DATABASE") DB_USERNAME=$(shell_quote_sh "$DB_USERNAME") DB_PASSWORD=$(shell_quote_sh "$DB_PASSWORD") php" <<'PHP'
 <?php
-\$host = '$(php_single_quote "$DB_HOST")';
-\$port = '$(php_single_quote "$DB_PORT")';
-\$db   = '$(php_single_quote "$DB_DATABASE")';
-\$user = '$(php_single_quote "$DB_USERNAME")';
-\$pass = '$(php_single_quote "$DB_PASSWORD")';
-\$pdo = new PDO('mysql:host=' . \$host . ';port=' . \$port . ';dbname=' . \$db . ';charset=utf8mb4', \$user, \$pass, [
+$host = (string)getenv('DB_HOST');
+$port = (string)getenv('DB_PORT');
+$db   = (string)getenv('DB_DATABASE');
+$user = (string)getenv('DB_USERNAME');
+$pass = (string)getenv('DB_PASSWORD');
+$pdo = new PDO('mysql:host=' . $host . ';port=' . $port . ';dbname=' . $db . ';charset=utf8mb4', $user, $pass, [
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
 ]);
-\$tables = \$pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN) ?: [];
-sort(\$tables);
-echo implode("\n", \$tables);
+$tables = $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN) ?: [];
+sort($tables);
+echo implode("\n", $tables);
 PHP
 }
 
@@ -830,44 +842,50 @@ exit \$status" > "$backup_path" || die "$EXIT_DB" "Failed to create database bac
 }
 
 drop_all_tables_local() {
-    php <<PHP
+    DB_HOST="$DB_HOST" \
+    DB_PORT="$DB_PORT" \
+    DB_DATABASE="$DB_DATABASE" \
+    DB_USERNAME="$DB_USERNAME" \
+    DB_PASSWORD="$DB_PASSWORD" \
+    php <<'PHP'
 <?php
-\$host = '$(php_single_quote "$DB_HOST")';
-\$port = '$(php_single_quote "$DB_PORT")';
-\$db   = '$(php_single_quote "$DB_DATABASE")';
-\$user = '$(php_single_quote "$DB_USERNAME")';
-\$pass = '$(php_single_quote "$DB_PASSWORD")';
-\$pdo = new PDO('mysql:host=' . \$host . ';port=' . \$port . ';dbname=' . \$db . ';charset=utf8mb4', \$user, \$pass, [
+$host = (string)getenv('DB_HOST');
+$port = (string)getenv('DB_PORT');
+$db   = (string)getenv('DB_DATABASE');
+$user = (string)getenv('DB_USERNAME');
+$pass = (string)getenv('DB_PASSWORD');
+$pdo = new PDO('mysql:host=' . $host . ';port=' . $port . ';dbname=' . $db . ';charset=utf8mb4', $user, $pass, [
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
 ]);
-\$tables = \$pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN) ?: [];
-\$pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
-foreach (\$tables as \$table) {
-    \$quoted = '`' . str_replace('`', '``', (string)\$table) . '`';
-    \$pdo->exec('DROP TABLE IF EXISTS ' . \$quoted);
+$tables = $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN) ?: [];
+$pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
+foreach ($tables as $table) {
+    $quoted = '`' . str_replace('`', '``', (string)$table) . '`';
+    $pdo->exec('DROP TABLE IF EXISTS ' . $quoted);
 }
-\$pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
+$pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
 PHP
 }
 
 drop_all_tables_remote() {
-    ssh "$REMOTE_TARGET" "php" <<PHP
+    ssh "$REMOTE_TARGET" \
+        "DB_HOST=$(shell_quote_sh "$DB_HOST") DB_PORT=$(shell_quote_sh "$DB_PORT") DB_DATABASE=$(shell_quote_sh "$DB_DATABASE") DB_USERNAME=$(shell_quote_sh "$DB_USERNAME") DB_PASSWORD=$(shell_quote_sh "$DB_PASSWORD") php" <<'PHP'
 <?php
-\$host = '$(php_single_quote "$DB_HOST")';
-\$port = '$(php_single_quote "$DB_PORT")';
-\$db   = '$(php_single_quote "$DB_DATABASE")';
-\$user = '$(php_single_quote "$DB_USERNAME")';
-\$pass = '$(php_single_quote "$DB_PASSWORD")';
-\$pdo = new PDO('mysql:host=' . \$host . ';port=' . \$port . ';dbname=' . \$db . ';charset=utf8mb4', \$user, \$pass, [
+$host = (string)getenv('DB_HOST');
+$port = (string)getenv('DB_PORT');
+$db   = (string)getenv('DB_DATABASE');
+$user = (string)getenv('DB_USERNAME');
+$pass = (string)getenv('DB_PASSWORD');
+$pdo = new PDO('mysql:host=' . $host . ';port=' . $port . ';dbname=' . $db . ';charset=utf8mb4', $user, $pass, [
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
 ]);
-\$tables = \$pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN) ?: [];
-\$pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
-foreach (\$tables as \$table) {
-    \$quoted = '`' . str_replace('`', '``', (string)\$table) . '`';
-    \$pdo->exec('DROP TABLE IF EXISTS ' . \$quoted);
+$tables = $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN) ?: [];
+$pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
+foreach ($tables as $table) {
+    $quoted = '`' . str_replace('`', '``', (string)$table) . '`';
+    $pdo->exec('DROP TABLE IF EXISTS ' . $quoted);
 }
-\$pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
+$pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
 PHP
 }
 
