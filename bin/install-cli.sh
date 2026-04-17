@@ -108,10 +108,12 @@ run_step() {
     shift
     LAST_STEP="$message"
     log_info "$message"
-    {
-        printf '%s [STEP] %s\n' "$(timestamp)" "$message"
-        "$@"
-    } >> "$INSTALL_LOG" 2>&1
+    printf '%s [STEP] %s\n' "$(timestamp)" "$message" >> "$INSTALL_LOG"
+    if ! "$@" >> "$INSTALL_LOG" 2>&1; then
+        log_error "Failed: ${message}"
+        log_error "See ${INSTALL_LOG} for the full command output."
+        return 1
+    fi
     log_ok "$message"
 }
 
