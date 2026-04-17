@@ -2,7 +2,7 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-SCRIPT_VERSION="1.0.6"
+SCRIPT_VERSION="1.0.7"
 SCRIPT_CWD="${PWD}"
 DEFAULT_REPO_URL="https://github.com/TerminalAddict/andrea-helpdesk.git"
 DEFAULT_REPO_REF="main"
@@ -58,11 +58,33 @@ CRON_STATUS="not installed"
 TTY_FD=""
 DB_BACKUP_PATH=""
 
+print_user_message() {
+    if [[ -n "${TTY_FD:-}" ]]; then
+        cat >&"$TTY_FD"
+    else
+        cat >&2
+    fi
+}
+
 on_error() {
     local exit_code=$?
     if [[ $exit_code -ne 0 ]]; then
         log_error "The installer failed during: ${LAST_STEP}"
         log_error "See ${INSTALL_LOG} for the full transcript."
+        print_user_message <<EOF
+
+The installer could not continue.
+
+What happened:
+- The install failed during: ${LAST_STEP}
+
+What to do next:
+- Read the error shown above
+- Check the installer log for the full command output:
+  ${INSTALL_LOG}
+- Correct the problem and rerun the installer
+
+EOF
     fi
     exit "$exit_code"
 }
@@ -102,6 +124,20 @@ die() {
     local code=$1
     shift
     log_error "$*"
+    print_user_message <<EOF
+
+The installer cannot continue.
+
+Reason:
+- $*
+
+What to do next:
+- Fix the problem shown above
+- If you need more detail, check:
+  ${INSTALL_LOG}
+- Then rerun the installer
+
+EOF
     exit "$code"
 }
 
