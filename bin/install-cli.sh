@@ -2,7 +2,7 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-SCRIPT_VERSION="1.0.2"
+SCRIPT_VERSION="1.0.3"
 DEFAULT_REPO_URL="https://github.com/TerminalAddict/andrea-helpdesk.git"
 DEFAULT_REPO_REF="main"
 DOCS_INSTALL_URL="https://docs.andreahelpdesk.com/install/"
@@ -636,7 +636,7 @@ if ($db === '' || $user === '') {
     exit(2);
 }
 try {
-    new PDO("mysql:host={$host};port={$port};dbname={$db};charset=utf8mb4", $user, $pass, [
+    new PDO('mysql:host=' . $host . ';port=' . $port . ';dbname=' . $db . ';charset=utf8mb4', $user, $pass, [
         PDO::ATTR_TIMEOUT => 5,
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
     ]);
@@ -657,7 +657,7 @@ try {
         fwrite(STDERR, "Connection failed: could not reach database host.\n");
         exit(5);
     }
-    fwrite(STDERR, "Connection failed: {$msg}\n");
+    fwrite(STDERR, "Connection failed: " . $msg . "\n");
     exit(6);
 }
 PHP
@@ -676,7 +676,7 @@ if ($db === '' || $user === '') {
     exit(2);
 }
 try {
-    new PDO("mysql:host={$host};port={$port};dbname={$db};charset=utf8mb4", $user, $pass, [
+    new PDO('mysql:host=' . $host . ';port=' . $port . ';dbname=' . $db . ';charset=utf8mb4', $user, $pass, [
         PDO::ATTR_TIMEOUT => 5,
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
     ]);
@@ -697,7 +697,7 @@ try {
         fwrite(STDERR, "Connection failed: could not reach database host.\n");
         exit(5);
     }
-    fwrite(STDERR, "Connection failed: {$msg}\n");
+    fwrite(STDERR, "Connection failed: " . $msg . "\n");
     exit(6);
 }
 PHP
@@ -713,7 +713,7 @@ validate_before_env_write() {
         fi
         log_ok "$output"
     else
-        ssh "$REMOTE_TARGET" "mkdir -p $(shell_quote "$STORAGE_PATH")" >> "$INSTALL_LOG" 2>&1 || die "$EXIT_ENV" "Cannot create remote storage path ${STORAGE_PATH}"
+        ssh "$REMOTE_TARGET" "mkdir -p $(shell_quote_sh "$STORAGE_PATH")" >> "$INSTALL_LOG" 2>&1 || die "$EXIT_ENV" "Cannot create remote storage path ${STORAGE_PATH}"
         local output
         if ! output=$(test_db_connection_remote 2>&1); then
             die "$EXIT_DB" "$output"
@@ -1006,7 +1006,7 @@ Next steps:
 4. Test inbound email polling and outbound SMTP.
 
 Installer log:
-- ${WORK_DIR}/${INSTALL_LOG}
+- ${INSTALL_LOG}
 
 Docs:
 - ${DOCS_INSTALL_URL}
