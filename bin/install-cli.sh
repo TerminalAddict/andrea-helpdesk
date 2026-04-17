@@ -2,7 +2,7 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-SCRIPT_VERSION="1.0.9"
+SCRIPT_VERSION="1.0.10"
 SCRIPT_CWD="${PWD}"
 DEFAULT_REPO_URL="https://github.com/TerminalAddict/andrea-helpdesk.git"
 DEFAULT_REPO_REF="main"
@@ -1139,7 +1139,9 @@ run_fetch_assets() {
 
 run_cron_install() {
     if [[ "$INSTALL_MODE" == "local" ]]; then
-        if run_step_capture "Installing the local IMAP/SLA cron entry" make cron-install-local >/dev/null; then
+        local cron_entry
+        cron_entry="* * * * * php ${WORK_DIR}/bin/imap-poll.php >> ${STORAGE_PATH}/logs/imap.log 2>&1"
+        if run_step_capture "Installing the local IMAP/SLA cron entry" bash -lc "(crontab -l 2>/dev/null | grep -v imap-poll; printf '%s\n' '$cron_entry') | crontab -" >/dev/null; then
             CRON_STATUS="installed locally"
         else
             CRON_STATUS="manual setup required"
@@ -1225,19 +1227,25 @@ fix_storage_permissions() {
 }
 
 verify_db_state_local() {
-    APP_ROOT="$WORK_DIR" php <<'PHP'
+    DB_HOST="$DB_HOST" \
+    DB_PORT="$DB_PORT" \
+    DB_DATABASE="$DB_DATABASE" \
+    DB_USERNAME="$DB_USERNAME" \
+    DB_PASSWORD="$DB_PASSWORD" \
+    ADMIN_EMAIL="$ADMIN_EMAIL" \
+    php <<'PHP'
 <?php
-$root = getenv('APP_ROOT');
-$env = $root . '/.env';
-if (!file_exists($env)) {
-    fwrite(STDERR, ".env not found\n");
-    exit(1);
-}
-$vars = parse_ini_file($env, false, INI_SCANNER_RAW);
-$dsn = sprintf('mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4', $vars['DB_HOST'], $vars['DB_PORT'], $vars['DB_DATABASE']);
-$pdo = new PDO($dsn, $vars['DB_USERNAME'], trim($vars['DB_PASSWORD'], '"'), [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
-$schema = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = " . $pdo->quote($vars['DB_DATABASE']) . " AND table_name = 'agents'")->fetchColumn();
-$agent = (int)$pdo->query("SELECT COUNT(*) FROM agents WHERE email = " . $pdo->quote($vars['ADMIN_EMAIL']))->fetchColumn();
+$dsn = sprintf(
+    'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',
+    getenv('DB_HOST'),
+    getenv('DB_PORT'),
+    getenv('DB_DATABASE')
+);
+$pdo = new PDO($dsn, (string)getenv('DB_USERNAME'), (string)getenv('DB_PASSWORD'), [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+$dbName = (string)getenv('DB_DATABASE');
+$adminEmail = (string)getenv('ADMIN_EMAIL');
+$schema = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = " . $pdo->quote($dbName) . " AND table_name = 'agents'")->fetchColumn();
+$agent = (int)$pdo->query("SELECT COUNT(*) FROM agents WHERE email = " . $pdo->quote($adminEmail))->fetchColumn();
 if ($schema < 1 || $agent < 1) {
     fwrite(STDERR, "Database verification failed.\n");
     exit(2);
@@ -1247,19 +1255,20 @@ PHP
 }
 
 verify_db_state_remote() {
-    ssh "$REMOTE_TARGET" "APP_ROOT=$(shell_quote_sh "$REMOTE_PATH") php" <<'PHP'
+    ssh "$REMOTE_TARGET" \
+        "DB_HOST=$(shell_quote_sh "$DB_HOST") DB_PORT=$(shell_quote_sh "$DB_PORT") DB_DATABASE=$(shell_quote_sh "$DB_DATABASE") DB_USERNAME=$(shell_quote_sh "$DB_USERNAME") DB_PASSWORD=$(shell_quote_sh "$DB_PASSWORD") ADMIN_EMAIL=$(shell_quote_sh "$ADMIN_EMAIL") php" <<'PHP'
 <?php
-$root = getenv('APP_ROOT');
-$env = $root . '/.env';
-if (!file_exists($env)) {
-    fwrite(STDERR, ".env not found\n");
-    exit(1);
-}
-$vars = parse_ini_file($env, false, INI_SCANNER_RAW);
-$dsn = sprintf('mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4', $vars['DB_HOST'], $vars['DB_PORT'], $vars['DB_DATABASE']);
-$pdo = new PDO($dsn, $vars['DB_USERNAME'], trim($vars['DB_PASSWORD'], '"'), [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
-$schema = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = " . $pdo->quote($vars['DB_DATABASE']) . " AND table_name = 'agents'")->fetchColumn();
-$agent = (int)$pdo->query("SELECT COUNT(*) FROM agents WHERE email = " . $pdo->quote($vars['ADMIN_EMAIL']))->fetchColumn();
+$dsn = sprintf(
+    'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',
+    getenv('DB_HOST'),
+    getenv('DB_PORT'),
+    getenv('DB_DATABASE')
+);
+$pdo = new PDO($dsn, (string)getenv('DB_USERNAME'), (string)getenv('DB_PASSWORD'), [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+$dbName = (string)getenv('DB_DATABASE');
+$adminEmail = (string)getenv('ADMIN_EMAIL');
+$schema = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = " . $pdo->quote($dbName) . " AND table_name = 'agents'")->fetchColumn();
+$agent = (int)$pdo->query("SELECT COUNT(*) FROM agents WHERE email = " . $pdo->quote($adminEmail))->fetchColumn();
 if ($schema < 1 || $agent < 1) {
     fwrite(STDERR, "Database verification failed.\n");
     exit(2);
@@ -1317,6 +1326,10 @@ final_check() {
 }
 
 print_success_message() {
+    local backup_note=""
+    if [[ -n "$DB_BACKUP_PATH" ]]; then
+        backup_note=$'Database backup created before reinstall:\n- '"${DB_BACKUP_PATH}"$'\n'
+    fi
     cat <<EOF
 
 Andrea Helpdesk installation completed successfully.
@@ -1336,7 +1349,7 @@ Next steps:
 3. Configure branding, SMTP, IMAP, and SLA settings.
 4. Test inbound email polling and outbound SMTP.
 
-$(if [[ -n "${DB_BACKUP_PATH}" ]]; then printf 'Database backup created before reinstall:\n- %s\n\n' "${DB_BACKUP_PATH}"; fi)
+${backup_note}
 
 Installer log:
 - ${INSTALL_LOG}
