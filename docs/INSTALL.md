@@ -13,6 +13,11 @@ If you just want the fastest path:
 
 ## Fastest VPS Path
 
+If you want to watch the CLI install flow first:
+
+- <a href="./videos/andrea-helpdesk-installation-cli.mp4" target="_blank" rel="noopener noreferrer">Watch the local CLI installation video</a>
+- <a href="./videos/andrea-helpdesk-installation-cli-remote.mp4" target="_blank" rel="noopener noreferrer">Watch the remote CLI installation video</a>
+
 ### Step 1: Create the database
 
 ```bash
