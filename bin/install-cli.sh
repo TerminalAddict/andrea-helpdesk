@@ -2,7 +2,8 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-SCRIPT_VERSION="1.0.4"
+SCRIPT_VERSION="1.0.5"
+SCRIPT_CWD="${PWD}"
 DEFAULT_REPO_URL="https://github.com/TerminalAddict/andrea-helpdesk.git"
 DEFAULT_REPO_REF="main"
 DOCS_INSTALL_URL="https://docs.andreahelpdesk.com/install/"
@@ -55,6 +56,7 @@ MASKED_DB_PASSWORD="********"
 MASKED_ADMIN_PASSWORD="********"
 CRON_STATUS="not installed"
 TTY_FD=""
+DB_BACKUP_PATH=""
 
 on_error() {
     local exit_code=$?
@@ -703,6 +705,216 @@ try {
 PHP
 }
 
+list_database_tables_local() {
+    php <<PHP
+<?php
+\$host = '$(php_single_quote "$DB_HOST")';
+\$port = '$(php_single_quote "$DB_PORT")';
+\$db   = '$(php_single_quote "$DB_DATABASE")';
+\$user = '$(php_single_quote "$DB_USERNAME")';
+\$pass = '$(php_single_quote "$DB_PASSWORD")';
+\$pdo = new PDO('mysql:host=' . \$host . ';port=' . \$port . ';dbname=' . \$db . ';charset=utf8mb4', \$user, \$pass, [
+    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+]);
+\$tables = \$pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN) ?: [];
+sort(\$tables);
+echo implode("\n", \$tables);
+PHP
+}
+
+list_database_tables_remote() {
+    ssh "$REMOTE_TARGET" "php" <<PHP
+<?php
+\$host = '$(php_single_quote "$DB_HOST")';
+\$port = '$(php_single_quote "$DB_PORT")';
+\$db   = '$(php_single_quote "$DB_DATABASE")';
+\$user = '$(php_single_quote "$DB_USERNAME")';
+\$pass = '$(php_single_quote "$DB_PASSWORD")';
+\$pdo = new PDO('mysql:host=' . \$host . ';port=' . \$port . ';dbname=' . \$db . ';charset=utf8mb4', \$user, \$pass, [
+    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+]);
+\$tables = \$pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN) ?: [];
+sort(\$tables);
+echo implode("\n", \$tables);
+PHP
+}
+
+looks_like_andrea_database() {
+    local matches=0
+    local table
+    for table in "$@"; do
+        case "$table" in
+            agents|customers|tickets|replies|ticket_number_sequences|agent_notifications|knowledge_base_articles|imap_accounts)
+                matches=$((matches + 1))
+                ;;
+        esac
+    done
+    (( matches >= 2 ))
+}
+
+backup_database_local() {
+    local backup_path=$1
+    require_command mysqldump
+    local cnf
+    cnf=$(mktemp)
+    chmod 600 "$cnf"
+    cat > "$cnf" <<EOF
+[client]
+host=${DB_HOST}
+port=${DB_PORT}
+user=${DB_USERNAME}
+password=${DB_PASSWORD}
+EOF
+    if ! mysqldump --defaults-extra-file="$cnf" --single-transaction --routines --triggers --databases "$DB_DATABASE" > "$backup_path"; then
+        rm -f "$cnf"
+        die "$EXIT_DB" "Failed to create database backup at ${backup_path}"
+    fi
+    rm -f "$cnf"
+}
+
+backup_database_remote() {
+    local backup_path=$1
+    require_remote_command mysqldump
+    ssh "$REMOTE_TARGET" "tmp=\$(mktemp) && chmod 600 \"\$tmp\" && cat > \"\$tmp\" <<'EOF'
+[client]
+host=$(printf '%s' "$DB_HOST")
+port=$(printf '%s' "$DB_PORT")
+user=$(printf '%s' "$DB_USERNAME")
+password=$(printf '%s' "$DB_PASSWORD")
+EOF
+mysqldump --defaults-extra-file=\"\$tmp\" --single-transaction --routines --triggers --databases $(shell_quote_sh "$DB_DATABASE")
+status=\$?
+rm -f \"\$tmp\"
+exit \$status" > "$backup_path" || die "$EXIT_DB" "Failed to create database backup at ${backup_path}"
+}
+
+drop_all_tables_local() {
+    php <<PHP
+<?php
+\$host = '$(php_single_quote "$DB_HOST")';
+\$port = '$(php_single_quote "$DB_PORT")';
+\$db   = '$(php_single_quote "$DB_DATABASE")';
+\$user = '$(php_single_quote "$DB_USERNAME")';
+\$pass = '$(php_single_quote "$DB_PASSWORD")';
+\$pdo = new PDO('mysql:host=' . \$host . ';port=' . \$port . ';dbname=' . \$db . ';charset=utf8mb4', \$user, \$pass, [
+    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+]);
+\$tables = \$pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN) ?: [];
+\$pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
+foreach (\$tables as \$table) {
+    \$quoted = '`' . str_replace('`', '``', (string)\$table) . '`';
+    \$pdo->exec('DROP TABLE IF EXISTS ' . \$quoted);
+}
+\$pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
+PHP
+}
+
+drop_all_tables_remote() {
+    ssh "$REMOTE_TARGET" "php" <<PHP
+<?php
+\$host = '$(php_single_quote "$DB_HOST")';
+\$port = '$(php_single_quote "$DB_PORT")';
+\$db   = '$(php_single_quote "$DB_DATABASE")';
+\$user = '$(php_single_quote "$DB_USERNAME")';
+\$pass = '$(php_single_quote "$DB_PASSWORD")';
+\$pdo = new PDO('mysql:host=' . \$host . ';port=' . \$port . ';dbname=' . \$db . ';charset=utf8mb4', \$user, \$pass, [
+    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+]);
+\$tables = \$pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN) ?: [];
+\$pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
+foreach (\$tables as \$table) {
+    \$quoted = '`' . str_replace('`', '``', (string)\$table) . '`';
+    \$pdo->exec('DROP TABLE IF EXISTS ' . \$quoted);
+}
+\$pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
+PHP
+}
+
+handle_existing_database_state() {
+    local table_output=""
+    local -a tables=()
+    local preview=""
+    local safe_db_name
+    safe_db_name=$(printf '%s' "$DB_DATABASE" | tr -c 'A-Za-z0-9._-' '_')
+
+    if [[ "$INSTALL_MODE" == "local" ]]; then
+        table_output=$(list_database_tables_local)
+    else
+        table_output=$(list_database_tables_remote)
+    fi
+
+    if [[ -n "$table_output" ]]; then
+        mapfile -t tables <<< "$table_output"
+    fi
+
+    if (( ${#tables[@]} == 0 )); then
+        log_ok "Database '${DB_DATABASE}' is empty and ready for a fresh install."
+        return 0
+    fi
+
+    preview=$(printf '%s\n' "${tables[@]:0:12}" | paste -sd ', ' -)
+
+    if looks_like_andrea_database "${tables[@]}"; then
+        cat >&"$TTY_FD" <<EOF
+
+This looks like an existing Andrea Helpdesk database.
+
+Database: ${DB_DATABASE}
+Detected tables (${#tables[@]}):
+  ${preview}
+
+For an existing Andrea Helpdesk database, the normal path is:
+  use upgrade / deploy, not a fresh install
+
+If you want to start again, the installer can:
+  1. create a backup dump in the directory where you launched the installer
+  2. drop every table in this database
+  3. continue with a fresh install
+
+EOF
+        local choice
+        prompt_choice choice "How should the installer handle this database?" \
+            "Abort and use upgrade/deploy instead" \
+            "Back up and drop all tables, then continue with a fresh install"
+        if [[ "$choice" == "Abort and use upgrade/deploy instead" ]]; then
+            die "$EXIT_DB" "Existing Andrea Helpdesk database detected. Use upgrade/deploy instead of a fresh install."
+        fi
+        if ! confirm "Create a backup and permanently drop all tables in ${DB_DATABASE}?"; then
+            die "$EXIT_DB" "Installer cancelled. No database changes were made."
+        fi
+        if ! confirm "Are you absolutely sure you want to drop all tables in ${DB_DATABASE}?"; then
+            die "$EXIT_DB" "Installer cancelled. No database changes were made."
+        fi
+        DB_BACKUP_PATH="${SCRIPT_CWD}/andreahelpdesk-db-backup-${safe_db_name}-$(date +%Y%m%d%H%M%S).sql"
+        LAST_STEP="backing up existing database ${DB_DATABASE}"
+        log_warn "Creating safety backup at ${DB_BACKUP_PATH}"
+        if [[ "$INSTALL_MODE" == "local" ]]; then
+            backup_database_local "$DB_BACKUP_PATH"
+            drop_all_tables_local
+        else
+            backup_database_remote "$DB_BACKUP_PATH"
+            drop_all_tables_remote
+        fi
+        log_ok "Database backup created: ${DB_BACKUP_PATH}"
+        log_warn "Dropped all existing tables from ${DB_DATABASE}. The installer will now continue with a fresh install."
+        return 0
+    fi
+
+    cat >&"$TTY_FD" <<EOF
+
+The selected database is not empty, but it does not look like an Andrea Helpdesk database.
+
+Database: ${DB_DATABASE}
+Detected tables (${#tables[@]}):
+  ${preview}
+
+To avoid mixing Andrea Helpdesk with unrelated application tables, the installer requires
+an empty database for a fresh install.
+
+EOF
+    die "$EXIT_DB" "Use a new empty database, or clean the existing database manually before rerunning the installer."
+}
+
 validate_before_env_write() {
     validate_storage_path "$STORAGE_PATH"
     if [[ "$INSTALL_MODE" == "local" ]]; then
@@ -712,6 +924,7 @@ validate_before_env_write() {
             die "$EXIT_DB" "$output"
         fi
         log_ok "$output"
+        handle_existing_database_state
     else
         ssh "$REMOTE_TARGET" "mkdir -p $(shell_quote_sh "$STORAGE_PATH")" >> "$INSTALL_LOG" 2>&1 || die "$EXIT_ENV" "Cannot create remote storage path ${STORAGE_PATH}"
         local output
@@ -719,6 +932,7 @@ validate_before_env_write() {
             die "$EXIT_DB" "$output"
         fi
         log_ok "$output"
+        handle_existing_database_state
     fi
 }
 
@@ -1004,6 +1218,8 @@ Next steps:
    - Password: the ADMIN_PASSWORD you chose during installation
 3. Configure branding, SMTP, IMAP, and SLA settings.
 4. Test inbound email polling and outbound SMTP.
+
+$(if [[ -n "${DB_BACKUP_PATH}" ]]; then printf 'Database backup created before reinstall:\n- %s\n\n' "${DB_BACKUP_PATH}"; fi)
 
 Installer log:
 - ${INSTALL_LOG}
