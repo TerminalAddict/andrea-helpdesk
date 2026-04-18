@@ -22,6 +22,7 @@ class UpdateController
     private const EXCLUDE = [
         '.env', 'storage', 'vendor', '.git',
         'install.lock', 'Makefile.local',
+        'docs/videos',
     ];
 
     // ── Preflight ─────────────────────────────────────────────────────────────
@@ -122,13 +123,12 @@ class UpdateController
 
             // 1. Download zip
             $log[] = 'Downloading update from GitHub…';
-            $raw = $this->httpGet($this->repoZipUrl());
-            if ($raw === false || strlen($raw) < 1024) {
+            $zipPath = sys_get_temp_dir() . '/andrea-helpdesk-' . time() . '.zip';
+            $bytes = $this->downloadToFile($this->repoZipUrl(), $zipPath);
+            if ($bytes === false || $bytes < 1024) {
                 throw new \RuntimeException('Failed to download update package from GitHub.');
             }
-            $zipPath = sys_get_temp_dir() . '/andrea-helpdesk-' . time() . '.zip';
-            file_put_contents($zipPath, $raw);
-            $log[] = 'Downloaded ' . round(strlen($raw) / 1024) . ' KB.';
+            $log[] = 'Downloaded ' . round($bytes / 1024) . ' KB.';
 
             // 2. Extract
             $log[] = 'Extracting…';
@@ -216,8 +216,7 @@ class UpdateController
         );
         foreach ($iter as $item) {
             $rel      = substr($item->getPathname(), strlen($src) + 1);
-            $topLevel = explode(DIRECTORY_SEPARATOR, $rel)[0];
-            if (in_array($topLevel, $exclude, true)) continue;
+            if ($this->shouldExcludePath($rel, $exclude)) continue;
 
             $dest = $dst . DIRECTORY_SEPARATOR . $rel;
             if ($item->isDir()) {
@@ -238,6 +237,21 @@ class UpdateController
             }
         }
         return $count;
+    }
+
+    private function shouldExcludePath(string $rel, array $exclude): bool
+    {
+        $normalized = str_replace('\\', '/', ltrim($rel, '/'));
+        foreach ($exclude as $skip) {
+            $skip = str_replace('\\', '/', trim($skip, '/'));
+            if ($skip === '') {
+                continue;
+            }
+            if ($normalized === $skip || str_starts_with($normalized, $skip . '/')) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private function checkOverwriteability(string $path): array
@@ -412,5 +426,66 @@ class UpdateController
             'follow_location' => 1,
         ]]);
         return @file_get_contents($url, false, $ctx);
+    }
+
+    private function downloadToFile(string $url, string $dest): int|false
+    {
+        if (file_exists($dest)) {
+            @unlink($dest);
+        }
+
+        if (function_exists('curl_init')) {
+            $fp = fopen($dest, 'wb');
+            if (!$fp) {
+                return false;
+            }
+
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_FILE           => $fp,
+                CURLOPT_TIMEOUT        => 120,
+                CURLOPT_USERAGENT      => 'Andrea-Helpdesk-Updater/1.0',
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_FAILONERROR    => true,
+            ]);
+            $ok = curl_exec($ch);
+            $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            fclose($fp);
+
+            if ($ok === false || $status !== 200 || !file_exists($dest)) {
+                @unlink($dest);
+                return false;
+            }
+
+            $size = filesize($dest);
+            return $size === false ? false : $size;
+        }
+
+        $in = @fopen($url, 'rb', false, stream_context_create(['http' => [
+            'timeout'         => 120,
+            'header'          => "User-Agent: Andrea-Helpdesk-Updater/1.0\r\n",
+            'follow_location' => 1,
+        ]]));
+        if (!$in) {
+            return false;
+        }
+
+        $out = fopen($dest, 'wb');
+        if (!$out) {
+            fclose($in);
+            return false;
+        }
+
+        $bytes = stream_copy_to_stream($in, $out);
+        fclose($in);
+        fclose($out);
+
+        if ($bytes === false || $bytes < 1) {
+            @unlink($dest);
+            return false;
+        }
+
+        return $bytes;
     }
 }
