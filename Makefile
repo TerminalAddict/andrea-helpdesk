@@ -22,6 +22,7 @@ CRON_ENTRY  = "* * * * * php $(REMOTE_PATH)/bin/imap-poll.php >> $(REMOTE_PATH)/
 
 .PHONY: help install install-dev db-migrate db-seed update fetch-assets \
         script \
+        package \
         release \
         deploy \
         cron-install-local cron-install-production \
@@ -79,11 +80,15 @@ script: ## Bump CLI installer patch version, commit, and push only bin/install-c
 		git push; \
 	fi
 
-release: ## Bump patch version, require changelog notes, stage all changes, commit, and push current branch
+package: ## Build a clean release zip under build/ for FTP/browser installs
+	php bin/build-release-package.php
+
+release: ## Bump patch version, require changelog notes, commit, tag, and push current branch
 	@NEW_VERSION=$$(php bin/release.php) && \
 	git add -A && \
 	git commit -m "Bump version to $$NEW_VERSION" && \
-	git push
+	git tag "v$$NEW_VERSION" && \
+	git push origin HEAD --follow-tags
 
 storage-setup: ## Create storage directory structure
 	mkdir -p storage/attachments storage/logs

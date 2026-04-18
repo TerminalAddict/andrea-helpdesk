@@ -382,6 +382,14 @@ Use this when you do not have Composer or shell access on the hosting account.
 
 #### Step 1: Prepare the upload locally
 
+Preferred option:
+
+- <a href="https://github.com/TerminalAddict/andrea-helpdesk/releases" target="_blank" rel="noopener noreferrer">Download the latest packaged release from GitHub Releases</a>
+
+That package already includes production Composer dependencies and bundled frontend assets, so you can upload it directly by FTP / SFTP and continue with the browser installer.
+
+If you are uploading from your own local checkout instead of a packaged release:
+
 From your local checkout:
 
 ```bash
