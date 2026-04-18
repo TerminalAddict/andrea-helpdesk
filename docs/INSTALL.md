@@ -2,9 +2,9 @@
 
 This guide covers the three supported install paths for Andrea Helpdesk:
 
-- command-line install on a VPS or dedicated server
-- FTP / SFTP upload for shared hosting
-- browser-based setup through `/install/`
+- [command-line install on a VPS or dedicated server](#fastest-vps-path)
+- [FTP / SFTP upload for shared hosting](#2-ftp--sftp-install)
+- [browser-based setup through `/install/`](#3-browser-installer-walkthrough)
 
 If you just want the fastest path:
 
