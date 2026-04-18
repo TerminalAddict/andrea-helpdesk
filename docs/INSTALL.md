@@ -380,6 +380,8 @@ If the HTTP check fails but the filesystem and database checks pass, the install
 
 Use this when you do not have Composer or shell access on the hosting account.
 
+- <a href="./videos/andrea-helpdesk-installation-FTP.mp4" target="_blank" rel="noopener noreferrer">Watch the FTP / SFTP installation video</a>
+
 #### Step 1: Prepare the upload locally
 
 Preferred option:
