@@ -88,7 +88,8 @@ release: ## Bump patch version, require changelog notes, commit, tag, and push c
 	git add -A && \
 	git commit -m "Bump version to $$NEW_VERSION" && \
 	git tag "v$$NEW_VERSION" && \
-	git push origin HEAD --follow-tags
+	git push origin HEAD && \
+	git push origin "v$$NEW_VERSION"
 
 storage-setup: ## Create storage directory structure
 	mkdir -p storage/attachments storage/logs
