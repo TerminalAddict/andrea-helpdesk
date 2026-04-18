@@ -102,8 +102,9 @@ function getRequirements(): array
     $disabled = array_map('trim', explode(',', (string)ini_get('disable_functions')));
     $canExec  = function_exists('exec') && !in_array('exec', $disabled, true);
     $canDl    = function_exists('curl_init') || ini_get('allow_url_fopen');
+    $assets   = assetInstallStatus();
 
-    return [
+    $requirements = [
         ['PHP ≥ 8.1',                     version_compare(PHP_VERSION, '8.1.0', '>='), PHP_VERSION],
         ['ext-pdo_mysql',                 extension_loaded('pdo_mysql'),  ''],
         ['ext-imap',                      extension_loaded('imap'),        ''],
@@ -112,10 +113,21 @@ function getRequirements(): array
         ['curl or allow_url_fopen',       $canDl,   $canDl ? 'available' : 'not available — asset download will fail'],
         ['database/schema.sql exists',    file_exists(SCHEMA_FILE), ''],
         ['Project root writable',         is_writable(ROOT),        ROOT],
-        ['assets/vendor/ parent writable',is_writable(dirname(VENDOR_DIR)) || is_writable(ROOT . '/public_html'),
-                                          VENDOR_DIR],
-        ['exec() available (Composer)',   $canExec, $canExec ? 'yes' : 'no — upload vendor/ manually if needed'],
     ];
+
+    if ($assets['present']) {
+        $requirements[] = ['Frontend assets installed', true, 'already bundled in this upload'];
+    } else {
+        $requirements[] = [
+            'assets/vendor/ parent writable',
+            is_writable(dirname(VENDOR_DIR)) || is_writable(ROOT . '/public_html'),
+            'missing assets: ' . implode(', ', $assets['missing']),
+        ];
+    }
+
+    $requirements[] = ['exec() available (Composer)',   $canExec, $canExec ? 'yes' : 'no — upload vendor/ manually if needed'];
+
+    return $requirements;
 }
 
 function allPassed(array $reqs): bool
@@ -269,6 +281,37 @@ function splitSql(string $sql): array
     return explode(';', $sql);
 }
 
+function expectedAssetFiles(): array
+{
+    $v = VENDOR_DIR;
+    return [
+        "{$v}/bootstrap/bootstrap.min.css",
+        "{$v}/bootstrap/bootstrap.bundle.min.js",
+        "{$v}/bootstrap-icons/bootstrap-icons.min.css",
+        "{$v}/bootstrap-icons/fonts/bootstrap-icons.woff2",
+        "{$v}/bootstrap-icons/fonts/bootstrap-icons.woff",
+        "{$v}/jquery/jquery.min.js",
+        "{$v}/dompurify/purify.min.js",
+        "{$v}/quill/quill.min.js",
+        "{$v}/quill/quill.snow.css",
+    ];
+}
+
+function assetInstallStatus(): array
+{
+    $missing = [];
+    foreach (expectedAssetFiles() as $path) {
+        if (!is_file($path)) {
+            $missing[] = str_replace(VENDOR_DIR . '/', '', $path);
+        }
+    }
+
+    return [
+        'present' => $missing === [],
+        'missing' => $missing,
+    ];
+}
+
 function downloadAssets(): array
 {
     $results = [];
@@ -288,6 +331,10 @@ function downloadAssets(): array
          "{$v}/jquery/jquery.min.js"],
         ["https://cdn.jsdelivr.net/npm/dompurify@" . DOMPURIFY_VERSION . "/dist/purify.min.js",
          "{$v}/dompurify/purify.min.js"],
+        ["https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.min.js",
+         "{$v}/quill/quill.min.js"],
+        ["https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css",
+         "{$v}/quill/quill.snow.css"],
     ];
 
     foreach ($assets as [$url, $dest]) {
