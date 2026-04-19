@@ -1,0 +1,680 @@
+/**
+ * Andrea Helpdesk - Custom Styles
+ */
+
+:root {
+    --brand-color: #0d6efd;
+    --sidebar-width: 220px;
+}
+
+/* Smooth page transitions */
+#app {
+    min-height: calc(100vh - 56px);
+}
+
+/* Agent @mention chips */
+.mention {
+    display: inline-block;
+    background: #e8f0fe;
+    color: #1967d2;
+    border-radius: 3px;
+    padding: 0 3px;
+    font-weight: 500;
+    cursor: default;
+    white-space: nowrap;
+    user-select: all;
+}
+.mention-dropdown {
+    position: absolute;
+    z-index: 2000;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    min-width: 180px;
+    max-height: 220px;
+    overflow-y: auto;
+}
+.mention-item {
+    padding: 7px 14px;
+    cursor: pointer;
+    font-size: 0.875rem;
+}
+.mention-item:hover,
+.mention-item.active {
+    background: #f0f4ff;
+    color: #1967d2;
+}
+
+/* Reply thread */
+.reply-html {
+    overflow-wrap: break-word;
+    word-break: break-word;
+    overflow-x: hidden;
+}
+
+.reply-html img,
+.reply-html video,
+.reply-html iframe {
+    max-width: 100% !important;
+    height: auto;
+}
+
+/* Contain fixed-width HTML email tables */
+.reply-html table {
+    max-width: 100% !important;
+    width: auto !important;
+    table-layout: auto !important;
+}
+
+.reply-html td,
+.reply-html th {
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+.reply-html blockquote {
+    border-left: 3px solid #dee2e6;
+    padding-left: 1rem;
+    color: #6c757d;
+    margin: .75rem 0;
+}
+
+.reply-html pre {
+    background: #f8f9fa;
+    padding: .75rem;
+    border-radius: .375rem;
+    overflow-x: auto;
+}
+
+/* Ticket rows */
+.ticket-row:hover td {
+    background-color: #f8f9fa;
+}
+
+.ticket-child-row {
+    border-left: 3px solid #dee2e6;
+}
+
+.ticket-overdue-row td {
+    background: linear-gradient(90deg, rgba(220, 53, 69, 0.12), rgba(220, 53, 69, 0.02));
+}
+
+.ticket-overdue-row:hover td {
+    background: linear-gradient(90deg, rgba(220, 53, 69, 0.18), rgba(220, 53, 69, 0.05));
+}
+
+.ticket-overdue-agent {
+    color: #b42318 !important;
+    font-weight: 700;
+}
+
+.ticket-overdue-callout {
+    border: 1px solid rgba(220, 53, 69, 0.35);
+    background: #fff2f3;
+    color: #842029;
+    border-radius: .5rem;
+    padding: .5rem .75rem;
+    font-size: .8125rem;
+    line-height: 1.35;
+}
+
+/* Table truncation */
+.text-truncate-cell {
+    max-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Status / priority badges */
+.badge {
+    font-weight: 500;
+    letter-spacing: .02em;
+}
+
+/* Sticky header for ticket detail thread */
+#reply-card {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+}
+#reply-card.reply-collapsed .card-body,
+#reply-card.reply-collapsed .card-footer {
+    display: none !important;
+}
+
+/* Scroll to top button */
+#scroll-to-top {
+    position: fixed;
+    bottom: 5rem;
+    right: 1.5rem;
+    z-index: 1040;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    border: none;
+    background: #0d6efd;
+    color: #fff;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+#scroll-to-top.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+#scroll-to-top:hover {
+    background: #0b5ed7;
+}
+
+/* Toast container */
+#toast-container {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 1100;
+    min-width: 280px;
+}
+
+/* Navbar active link */
+.navbar .nav-link.active {
+    font-weight: 600;
+    color: #fff !important;
+}
+
+/* Loading screen */
+#loading-screen {
+    position: fixed;
+    inset: 0;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+/* Settings color input */
+.form-control-color {
+    width: 60px;
+    height: 38px;
+    padding: .25rem;
+}
+
+/* Knowledge base article body */
+.article-body h1, .article-body h2, .article-body h3 {
+    margin-top: 1.5rem;
+    margin-bottom: .75rem;
+}
+
+.article-body p {
+    margin-bottom: .75rem;
+    line-height: 1.7;
+}
+
+.article-body code {
+    background: #f8f9fa;
+    padding: .1em .35em;
+    border-radius: .2rem;
+    font-size: .875em;
+}
+
+.article-body pre code {
+    background: none;
+    padding: 0;
+}
+
+/* Portal bubble layout */
+.portal-bubble-agent {
+    background: #f8f9fa;
+    border-radius: .5rem;
+}
+
+.portal-bubble-customer {
+    background: #e8f0fe;
+    border-radius: .5rem;
+}
+
+/* ============================================================
+   Mobile Responsive
+   ============================================================ */
+@media (max-width: 767px) {
+    /* General padding */
+    .container-fluid.p-4 {
+        padding: 1rem !important;
+    }
+
+    /* Prevent horizontal scroll on the whole page */
+    body {
+        overflow-x: hidden;
+    }
+
+    /* Navbar: prevent brand text overflow */
+    .navbar-brand {
+        font-size: 0.95rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 55vw;
+    }
+
+    /* Dashboard stat cards */
+    #summary-cards .card-body {
+        padding: 0.75rem 0.5rem;
+    }
+    #summary-cards .fs-1 {
+        font-size: 2rem !important;
+    }
+    #summary-cards .card-body .text-muted {
+        font-size: 0.75rem;
+    }
+
+    /* Hide All Open Tickets filter dropdowns on mobile */
+    #dash-filter-tag,
+    #dash-filter-priority {
+        display: none !important;
+    }
+
+    /* Dashboard search bar + New Ticket button: stack vertically */
+    #dash-toolbar {
+        flex-direction: column;
+        align-items: stretch !important;
+    }
+    #dash-toolbar .input-group {
+        width: 100% !important;
+    }
+    #dash-toolbar .btn {
+        width: 100%;
+    }
+
+    /* Dashboard tables: make horizontally scrollable */
+    #my-tickets-table,
+    #recent-tickets-table,
+    #all-open-tickets-table {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Dashboard tables: show only Ticket + Subject on mobile */
+    #my-tickets-table th:nth-child(n+3),
+    #my-tickets-table td:nth-child(n+3),
+    #recent-tickets-table th:nth-child(n+3),
+    #recent-tickets-table td:nth-child(n+3),
+    #all-open-tickets-table th:nth-child(n+3),
+    #all-open-tickets-table td:nth-child(n+3) {
+        display: none;
+    }
+
+    /* Tickets list: show only Ticket # and Subject on mobile */
+    #tickets-table-wrap th:nth-child(n+3),
+    #tickets-table-wrap td:nth-child(n+3) {
+        display: none;
+    }
+
+    /* All other tables: hide less critical columns (7th onwards) */
+    .table th:nth-child(n+7),
+    .table td:nth-child(n+7) {
+        display: none;
+    }
+
+    /* Ticket number: prevent long strings breaking layout */
+    .font-monospace {
+        font-size: 0.7rem;
+        word-break: break-all;
+    }
+
+    /* Customers table: hide Phone, Tickets, Since columns */
+    #customers-table-wrap th:nth-child(n+3),
+    #customers-table-wrap td:nth-child(n+3) {
+        display: none;
+    }
+
+    /* Ticket/Reports filter bar: full-width inputs and buttons */
+    .card-body .row.g-2 > [class*="col-md"] {
+        width: 100% !important;
+    }
+    .card-body .row.g-2 .form-select,
+    .card-body .row.g-2 .form-control,
+    .card-body .row.g-2 .btn {
+        width: 100%;
+    }
+
+    /* Ticket detail: disable sticky reply card on mobile */
+    #reply-card {
+        position: relative !important;
+        bottom: auto !important;
+        z-index: auto !important;
+    }
+
+    /* Reply/Internal Note button group */
+    .btn-group.btn-group-sm {
+        width: 100%;
+        display: flex;
+    }
+    .btn-group.btn-group-sm .btn {
+        flex: 1;
+    }
+
+    /* Breadcrumb: long ticket numbers */
+    .breadcrumb {
+        font-size: 0.8rem;
+        flex-wrap: wrap;
+    }
+
+    /* Cron/code blocks: wrap long lines */
+    pre code {
+        word-break: break-all;
+        white-space: pre-wrap;
+    }
+
+    /* Agent permission badges */
+    .table td span.badge {
+        font-size: 0.65rem;
+        padding: 0.2em 0.4em;
+    }
+
+    /* Touch target sizing */
+    .btn:not(.btn-sm):not(.btn-xs) {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .btn.btn-sm {
+        min-height: 36px;
+    }
+}
+
+/* ============================================================
+   Dark Mode
+   ============================================================ */
+[data-theme="dark"] {
+    --bs-body-bg:           #1a1d21;
+    --bs-body-color:        #dee2e6;
+    --bs-border-color:      #373b3e;
+    --bs-card-bg:           #212529;
+    --bs-secondary-bg:      #2c3034;
+    --bs-tertiary-bg:       #343a40;
+    --bs-emphasis-color:    #f8f9fa;
+    color-scheme: dark;
+}
+
+[data-theme="dark"] body {
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+}
+
+[data-theme="dark"] .card {
+    background-color: var(--bs-card-bg);
+    border-color: var(--bs-border-color);
+}
+
+[data-theme="dark"] .card-header,
+[data-theme="dark"] .card-footer {
+    background-color: var(--bs-secondary-bg) !important;
+    border-color: var(--bs-border-color);
+}
+
+[data-theme="dark"] .card-body {
+    background-color: var(--bs-card-bg);
+}
+
+[data-theme="dark"] .bg-light {
+    background-color: var(--bs-secondary-bg) !important;
+}
+
+[data-theme="dark"] .bg-white {
+    background-color: var(--bs-card-bg) !important;
+}
+
+[data-theme="dark"] .table {
+    --bs-table-bg: var(--bs-card-bg);
+    --bs-table-striped-bg: var(--bs-secondary-bg);
+    --bs-table-hover-bg: var(--bs-tertiary-bg);
+    --bs-table-border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+}
+
+[data-theme="dark"] .table-light,
+[data-theme="dark"] .table > thead {
+    --bs-table-bg: var(--bs-secondary-bg);
+    --bs-table-color: var(--bs-body-color);
+    color: var(--bs-body-color);
+    background-color: var(--bs-secondary-bg);
+}
+
+[data-theme="dark"] .table > thead > tr > th,
+[data-theme="dark"] .table > thead > tr > td {
+    color: var(--bs-body-color);
+    background-color: var(--bs-secondary-bg);
+    border-color: var(--bs-border-color);
+}
+
+[data-theme="dark"] tr.ticket-child-row {
+    border-left-color: #495057 !important;
+}
+
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select {
+    background-color: var(--bs-tertiary-bg);
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+}
+
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] .form-select:focus {
+    background-color: var(--bs-tertiary-bg);
+    color: var(--bs-body-color);
+    border-color: #6ea8fe;
+    box-shadow: 0 0 0 0.25rem rgba(13,110,253,.25);
+}
+
+[data-theme="dark"] .form-control::placeholder {
+    color: #6c757d;
+}
+
+[data-theme="dark"] .input-group-text {
+    background-color: var(--bs-secondary-bg);
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+}
+
+[data-theme="dark"] .modal-content {
+    background-color: var(--bs-card-bg);
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+}
+
+[data-theme="dark"] .modal-header,
+[data-theme="dark"] .modal-footer {
+    border-color: var(--bs-border-color);
+}
+
+[data-theme="dark"] .dropdown-menu {
+    background-color: var(--bs-card-bg);
+    border-color: var(--bs-border-color);
+}
+
+[data-theme="dark"] .dropdown-item {
+    color: var(--bs-body-color);
+}
+
+[data-theme="dark"] .dropdown-item:hover,
+[data-theme="dark"] .dropdown-item:focus {
+    background-color: var(--bs-tertiary-bg);
+    color: var(--bs-emphasis-color);
+}
+
+[data-theme="dark"] .dropdown-divider {
+    border-color: var(--bs-border-color);
+}
+
+[data-theme="dark"] .text-muted {
+    color: #9da6b1 !important;
+}
+
+[data-theme="dark"] .border,
+[data-theme="dark"] .border-bottom,
+[data-theme="dark"] .border-top {
+    border-color: var(--bs-border-color) !important;
+}
+
+[data-theme="dark"] .ticket-row:hover td {
+    background-color: var(--bs-tertiary-bg);
+}
+
+[data-theme="dark"] #loading-screen {
+    background: var(--bs-body-bg);
+}
+
+[data-theme="dark"] .reply-html blockquote {
+    border-left-color: #495057;
+    color: #9da6b1;
+}
+
+[data-theme="dark"] .reply-html pre,
+[data-theme="dark"] .article-body code {
+    background: var(--bs-secondary-bg);
+}
+
+[data-theme="dark"] .portal-bubble-agent {
+    background: var(--bs-secondary-bg);
+}
+
+[data-theme="dark"] .portal-bubble-customer {
+    background: #1e3a5f;
+}
+
+[data-theme="dark"] .nav-tabs {
+    border-color: var(--bs-border-color);
+}
+
+[data-theme="dark"] .nav-tabs .nav-link {
+    color: #9da6b1;
+}
+
+[data-theme="dark"] .nav-tabs .nav-link.active {
+    background-color: var(--bs-card-bg);
+    border-color: var(--bs-border-color) var(--bs-border-color) var(--bs-card-bg);
+    color: var(--bs-body-color);
+}
+
+[data-theme="dark"] .alert-danger {
+    background-color: #2c1a1f;
+    border-color: #842029;
+    color: #ea868f;
+}
+
+[data-theme="dark"] .alert-success {
+    background-color: #0f2417;
+    border-color: #0f5132;
+    color: #75b798;
+}
+
+[data-theme="dark"] .alert-secondary {
+    background-color: var(--bs-secondary-bg);
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+}
+
+[data-theme="dark"] hr {
+    border-color: var(--bs-border-color);
+}
+
+[data-theme="dark"] .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+.dash-search-item.dash-search-active {
+    background-color: var(--bs-primary-bg-subtle, #cfe2ff);
+}
+
+.list-group-item.nt-suggestion-active {
+    background-color: var(--bs-primary-bg-subtle, #cfe2ff);
+}
+.dropdown-item.pt-suggestion-active {
+    background-color: var(--bs-primary-bg-subtle, #cfe2ff);
+}
+
+/* ============================================================
+   Rich Text Editor (Quill)
+   ============================================================ */
+.ql-editor {
+    min-height: 120px;
+    font-family: inherit;
+    font-size: .9rem;
+}
+
+/* Space between any Quill editor and the next form element */
+[id$="-quill"] {
+    margin-bottom: 0.75rem;
+}
+
+.ql-editor.ql-blank::before {
+    font-style: normal;
+    color: #6c757d;
+}
+
+/* Dark mode overrides */
+[data-theme="dark"] .ql-toolbar {
+    background: var(--bs-secondary-bg);
+    border-color: var(--bs-border-color);
+}
+
+[data-theme="dark"] .ql-toolbar .ql-stroke {
+    stroke: var(--bs-body-color);
+}
+
+[data-theme="dark"] .ql-toolbar .ql-fill {
+    fill: var(--bs-body-color);
+}
+
+[data-theme="dark"] .ql-toolbar .ql-picker-label,
+[data-theme="dark"] .ql-toolbar button {
+    color: var(--bs-body-color);
+}
+
+[data-theme="dark"] .ql-toolbar button:hover .ql-stroke,
+[data-theme="dark"] .ql-toolbar button.ql-active .ql-stroke {
+    stroke: #6ea8fe;
+}
+
+[data-theme="dark"] .ql-toolbar button:hover .ql-fill,
+[data-theme="dark"] .ql-toolbar button.ql-active .ql-fill {
+    fill: #6ea8fe;
+}
+
+[data-theme="dark"] .ql-container {
+    background: var(--bs-tertiary-bg);
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+}
+
+[data-theme="dark"] .ql-editor {
+    color: var(--bs-body-color);
+}
+
+[data-theme="dark"] .ql-editor.ql-blank::before {
+    color: #6c757d;
+}
+
+[data-theme="dark"] .ql-editor a {
+    color: #6ea8fe;
+}
+
+[data-theme="dark"] .ql-snow .ql-tooltip {
+    background-color: var(--bs-card-bg);
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+}
+
+[data-theme="dark"] .ql-snow .ql-tooltip input[type="text"] {
+    background-color: var(--bs-tertiary-bg);
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+}
