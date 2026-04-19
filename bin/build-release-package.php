@@ -27,6 +27,7 @@ $excludes = [
     '.git',
     '.github',
     'build',
+    'demo',
     'docs/videos',
     'storage/attachments',
     'storage/logs',
