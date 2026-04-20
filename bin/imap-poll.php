@@ -34,8 +34,35 @@ $tz = getenv('APP_TIMEZONE') ?: 'UTC';
 date_default_timezone_set($tz);
 
 // File lock to prevent overlapping runs
-$lockFile = sys_get_temp_dir() . '/andrea-helpdesk-imap.lock';
-$lock     = fopen($lockFile, 'w');
+$storagePath = rtrim(getenv('STORAGE_PATH') ?: (dirname(__DIR__) . '/storage'), '/');
+$lockDirCandidates = [
+    $storagePath . '/logs',
+    $storagePath,
+    sys_get_temp_dir(),
+];
+$lockFile = null;
+$lock = false;
+
+foreach ($lockDirCandidates as $dir) {
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0775, true);
+    }
+    if (!is_dir($dir) || !is_writable($dir)) {
+        continue;
+    }
+
+    $candidate = rtrim($dir, '/') . '/andrea-helpdesk-imap.lock';
+    $lock = @fopen($candidate, 'c');
+    if ($lock !== false) {
+        $lockFile = $candidate;
+        break;
+    }
+}
+
+if ($lock === false) {
+    fwrite(STDERR, '[' . date('Y-m-d H:i:s') . '] FATAL: Could not open a writable lock file. Checked: ' . implode(', ', $lockDirCandidates) . PHP_EOL);
+    exit(1);
+}
 
 if (!flock($lock, LOCK_EX | LOCK_NB)) {
     echo '[' . date('Y-m-d H:i:s') . '] Another instance is already running. Exiting.' . PHP_EOL;
@@ -62,7 +89,6 @@ function rotateLog(string $logFile, int $keepDays = 3): void
     file_put_contents($logFile, implode(PHP_EOL, $kept) . (count($kept) ? PHP_EOL : ''));
 }
 
-$storagePath = rtrim(getenv('STORAGE_PATH') ?: (dirname(__DIR__) . '/storage'), '/');
 rotateLog($storagePath . '/logs/imap.log');
 rotateLog($storagePath . '/logs/app.log');
 
@@ -121,6 +147,8 @@ try {
     echo '[' . date('Y-m-d H:i:s') . '] FATAL: ' . $e->getMessage() . PHP_EOL;
     exit(1);
 } finally {
-    flock($lock, LOCK_UN);
-    fclose($lock);
+    if (is_resource($lock)) {
+        flock($lock, LOCK_UN);
+        fclose($lock);
+    }
 }
