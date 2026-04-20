@@ -56,10 +56,10 @@ const Notifications = {
     bindEvents() {
         $('#navbar-container')
             .off('.notifications')
-            .on('show.bs.dropdown.notifications', '#notificationDropdown', () => {
+            .on('show.bs.dropdown.notifications', '[data-notification-dropdown]', () => {
                 this.refreshSummary({ silent: true });
             })
-            .on('click.notifications', '#notification-mark-all', async (e) => {
+            .on('click.notifications', '[data-notification-mark-all]', async (e) => {
                 e.preventDefault();
                 try {
                     const res = await API.post('/notifications/read-all', {});
@@ -164,18 +164,18 @@ const Notifications = {
 
     render() {
         this.renderBadge();
-        const $body = $('#notification-menu-body');
-        if (!$body.length) return;
+        const $bodies = $('[data-notification-menu-body]');
+        if (!$bodies.length) return;
 
         if (!this.items.length) {
             const extra = this.activeCount > 0
                 ? `<div class="terminal-notification-empty-link"><a href="#/my-profile/notifications">View ${App.escapeHtml(String(this.activeCount))} active notification${this.activeCount === 1 ? '' : 's'}</a></div>`
                 : '';
-            $body.html(`<div class="terminal-notification-empty">No unread notifications right now.</div>${extra}`);
+            $bodies.html(`<div class="terminal-notification-empty">No unread notifications right now.</div>${extra}`);
             return;
         }
 
-        $body.html(this.items.map(item => {
+        const html = this.items.map(item => {
             const unreadClass = item.read_at ? '' : ' unread';
             const body = item.body ? `<div class="terminal-notification-body">${App.escapeHtml(item.body)}</div>` : '';
             return `
@@ -187,19 +187,20 @@ const Notifications = {
                     ${body}
                 </a>
             `;
-        }).join(''));
+        }).join('');
+        $bodies.html(html);
     },
 
     renderBadge() {
-        const $badge = $('#notification-badge');
-        if (!$badge.length) return;
-        $badge.removeClass('attention');
+        const $badges = $('[data-notification-badge]');
+        if (!$badges.length) return;
+        $badges.removeClass('attention');
         if (this.unreadCount > 0) {
-            $badge.text(this.unreadCount > 99 ? '99+' : String(this.unreadCount)).show();
+            $badges.text(this.unreadCount > 99 ? '99+' : String(this.unreadCount)).show();
         } else if (this.activeCount > 0) {
-            $badge.text(this.activeCount > 99 ? '99+' : String(this.activeCount)).addClass('attention').show();
+            $badges.text(this.activeCount > 99 ? '99+' : String(this.activeCount)).addClass('attention').show();
         } else {
-            $badge.hide();
+            $badges.hide();
         }
     },
 

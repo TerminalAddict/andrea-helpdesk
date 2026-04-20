@@ -5,6 +5,36 @@ const Navbar = {
     openCount: 0,
     ticketPollTimer: null,
 
+    renderNotificationDropdown(extraClass = '') {
+        return `
+            <div class="dropdown ${extraClass}" data-notification-dropdown>
+                <button class="nav-link terminal-tool-toggle terminal-notification-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications">
+                    <span class="terminal-notification-icon">
+                        <i class="bi bi-bell"></i>
+                        <span class="badge terminal-route-badge terminal-notification-badge" data-notification-badge style="display:none"></span>
+                    </span>
+                </button>
+                <div class="dropdown-menu dropdown-menu-end terminal-nav-menu terminal-notification-menu">
+                    <div class="terminal-notification-menu-header">
+                        <div>
+                            <div class="terminal-menu-heading">Notifications</div>
+                            <strong>Inbox</strong>
+                        </div>
+                        <a href="#" class="small text-decoration-none" data-notification-mark-all>Mark all read</a>
+                    </div>
+                    <div class="terminal-notification-menu-body" data-notification-menu-body>
+                        <div class="terminal-notification-empty">Loading…</div>
+                    </div>
+                    <div class="terminal-notification-menu-footer">
+                        <a class="dropdown-item terminal-menu-link" href="#/my-profile/notifications" data-route="/my-profile/notifications">
+                            <i class="bi bi-layout-text-window-reverse me-2"></i>Alerts Panel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
     getPrimaryRoutes() {
         const routes = [];
         if (API.isAgent()) {
@@ -55,6 +85,11 @@ const Navbar = {
                         <strong>${App.escapeHtml(App.appName)}</strong>
                     </span>
                 </a>
+                ${isAgent ? `
+                    <div class="terminal-nav-mobile-actions d-lg-none ms-auto">
+                        ${this.renderNotificationDropdown('terminal-notification-mobile')}
+                    </div>
+                ` : ''}
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
                     <span class="navbar-toggler-icon"></span>
                 </button>
@@ -65,31 +100,7 @@ const Navbar = {
                         </div>
                         <div class="terminal-nav-tools">
                             ${isAgent ? `
-                                <div class="dropdown" id="notificationDropdown">
-                                    <button class="nav-link terminal-tool-toggle terminal-notification-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications">
-                                        <span class="terminal-notification-icon">
-                                            <i class="bi bi-bell"></i>
-                                            <span id="notification-badge" class="badge terminal-route-badge terminal-notification-badge" style="display:none"></span>
-                                        </span>
-                                    </button>
-                                    <div class="dropdown-menu dropdown-menu-end terminal-nav-menu terminal-notification-menu">
-                                        <div class="terminal-notification-menu-header">
-                                            <div>
-                                                <div class="terminal-menu-heading">Notifications</div>
-                                                <strong>Inbox</strong>
-                                            </div>
-                                            <a href="#" class="small text-decoration-none" id="notification-mark-all">Mark all read</a>
-                                        </div>
-                                        <div id="notification-menu-body" class="terminal-notification-menu-body">
-                                            <div class="terminal-notification-empty">Loading…</div>
-                                        </div>
-                                        <div class="terminal-notification-menu-footer">
-                                            <a class="dropdown-item terminal-menu-link" href="#/my-profile/notifications" data-route="/my-profile/notifications">
-                                                <i class="bi bi-layout-text-window-reverse me-2"></i>Alerts Panel
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
+                                ${this.renderNotificationDropdown('d-none d-lg-block')}
                             ` : ''}
                             ${showAdmin ? `
                                 <div class="dropdown">

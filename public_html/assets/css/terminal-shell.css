@@ -172,6 +172,12 @@ body::before {
     padding-bottom: .34rem;
     backdrop-filter: blur(18px);
     box-shadow: 0 18px 44px rgba(3, 8, 20, 0.25);
+    overflow: visible;
+}
+
+.terminal-nav .container-fluid,
+.terminal-nav .navbar-collapse {
+    overflow: visible;
 }
 
 .terminal-nav .navbar-brand {
@@ -180,6 +186,17 @@ body::before {
     gap: 0.65rem;
     color: #ecf2ff !important;
     margin-right: 1rem;
+}
+
+.terminal-nav-mobile-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-right: 0.35rem;
+}
+
+.terminal-nav-mobile-actions .dropdown {
+    width: auto;
 }
 
 .terminal-brand img {
@@ -1809,6 +1826,25 @@ html[data-theme='dark'] #app .btn-outline-success {
 }
 
 @media (max-width: 992px) {
+    .terminal-nav-mobile-actions .terminal-tool-toggle {
+        min-width: 42px;
+        padding-left: 0.7rem;
+        padding-right: 0.7rem;
+        justify-content: center;
+    }
+
+    .terminal-nav-mobile-actions .terminal-notification-mobile .terminal-notification-menu {
+        position: fixed !important;
+        width: min(420px, calc(100vw - 1rem));
+        min-width: min(420px, calc(100vw - 1rem));
+        max-width: min(420px, calc(100vw - 1rem));
+        left: auto !important;
+        right: 0.5rem !important;
+        top: 4rem !important;
+        transform: none !important;
+        bottom: auto !important;
+    }
+
     .terminal-nav .navbar-collapse {
         padding-top: 0.65rem;
     }
