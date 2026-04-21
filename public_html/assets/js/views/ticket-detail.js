@@ -65,6 +65,12 @@ const TicketDetailView = {
                         </ol>
                     </nav>
                     <h5 class="mb-0 fw-bold">${App.escapeHtml(t.subject)}</h5>
+                    ${t.email_delivery_failed_at ? `
+                    <div class="alert alert-warning py-2 px-3 mt-2 mb-0 small">
+                        <div class="fw-semibold"><i class="bi bi-exclamation-triangle-fill me-1"></i>Outbound email delivery failed</div>
+                        <div>${App.escapeHtml(t.email_delivery_failed_summary || 'A recent outbound email could not be delivered.')}</div>
+                        ${t.email_delivery_failed_recipient ? `<div class="text-muted">Recipient: ${App.escapeHtml(t.email_delivery_failed_recipient)}</div>` : ''}
+                    </div>` : ''}
                 </div>
                 <div class="d-flex gap-2 flex-wrap">
                     ${canClose ? `
@@ -728,7 +734,8 @@ const TicketDetailView = {
         $('#btn-send-reply').on('click', () => this.sendReply());
 
         // Due date
-        $(document).on('click', '#btn-edit-due, #btn-clear-due', (e) => {
+        $(document).off('.ticketDue');
+        $(document).on('click.ticketDue', '#btn-edit-due, #btn-clear-due', (e) => {
             e.preventDefault();
             if ($(e.currentTarget).is('#btn-clear-due')) {
                 this.saveDueDate(null, null, false);
@@ -737,17 +744,17 @@ const TicketDetailView = {
                 $('#due-date-form').show();
             }
         });
-        $(document).on('click', '#btn-cancel-due', (e) => {
+        $(document).on('click.ticketDue', '#btn-cancel-due', (e) => {
             e.preventDefault();
             $('#due-date-form').hide();
             $('#due-date-display').show();
         });
-        $(document).on('change', '#due-all-day', () => {
+        $(document).on('change.ticketDue', '#due-all-day', () => {
             const allDay = $('#due-all-day').is(':checked');
             const type   = allDay ? 'date' : 'datetime-local';
             $('#due-start, #due-end').attr('type', type).val('');
         });
-        $(document).on('click', '#btn-save-due', async (e) => {
+        $(document).on('click.ticketDue', '#btn-save-due', async (e) => {
             e.preventDefault();
             const allDay = $('#due-all-day').is(':checked');
             const start  = $('#due-start').val().trim();

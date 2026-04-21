@@ -9,6 +9,7 @@ use PHPMailer\PHPMailer\Exception as MailerException;
 use Andrea\Helpdesk\Core\Database;
 use Andrea\Helpdesk\Settings\SettingsService;
 use Andrea\Helpdesk\Tickets\AttachmentService;
+use Andrea\Helpdesk\Tickets\TicketRepository;
 use Andrea\Helpdesk\IMAP\ImapAccountRepository;
 
 class EmailNotifier
@@ -110,6 +111,7 @@ class EmailNotifier
                 [$messageId, $reply['id']]);
             $db->execute("UPDATE tickets SET last_message_id = ? WHERE id = ?",
                 [$messageId, $ticket['id']]);
+            $this->clearTicketDeliveryFailure((int)$ticket['id']);
 
             return true;
         } catch (\Throwable $e) {
@@ -239,6 +241,9 @@ class EmailNotifier
                 }
             }
             $mailer->send();
+            if ($ticketId) {
+                $this->clearTicketDeliveryFailure($ticketId);
+            }
             return true;
         } catch (\Throwable $e) {
             $this->logError('sendRaw: ' . $e->getMessage());
@@ -324,5 +329,14 @@ class EmailNotifier
         if (!is_dir($dir)) mkdir($dir, 0750, true);
         $line = '[' . date('Y-m-d H:i:s') . '] [ERROR] EmailNotifier: ' . $message . PHP_EOL;
         file_put_contents($logFile, $line, FILE_APPEND | LOCK_EX);
+    }
+
+    private function clearTicketDeliveryFailure(int $ticketId): void
+    {
+        try {
+            (new TicketRepository())->clearDeliveryFailure($ticketId);
+        } catch (\Throwable $e) {
+            $this->logError('clearTicketDeliveryFailure: ' . $e->getMessage());
+        }
     }
 }

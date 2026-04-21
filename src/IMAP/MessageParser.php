@@ -33,6 +33,8 @@ class MessageParser
             'references'   => $this->extractRawHeader($rawHeaders, 'References'),
             'x_ticket_id'  => $this->extractRawHeader($rawHeaders, 'X-Ticket-ID'),
             'is_auto_reply'=> $isAutoReply,
+            'is_bounce'    => false,
+            'delivery_failure' => null,
             'subject'     => $decodedSubject,
             'from_email'  => '',
             'from_name'   => '',
@@ -74,9 +76,14 @@ class MessageParser
         }
         [$htmlBody, $textBody, $attachments] = $this->parseStructure($imap, $msgNum, $structure);
 
+        $rawText = $textBody ?: trim(strip_tags($htmlBody));
         $result['body_html']   = $htmlBody ? $this->replaceCidImages($isForwarded ? $htmlBody : $this->stripHtmlQuotes($htmlBody)) : '';
         $result['body_text']   = $textBody ? ($isForwarded ? $textBody : $this->stripPlainTextQuotes($textBody)) : '';
         $result['attachments'] = $attachments;
+        $result['is_bounce'] = $this->detectBounce($decodedSubject, $result['from_email'], $rawText, $rawHeaders);
+        if ($result['is_bounce']) {
+            $result['delivery_failure'] = $this->extractDeliveryFailure($rawText, $decodedSubject);
+        }
 
         // Clean up message IDs - remove angle brackets
         foreach (['message_id', 'in_reply_to'] as $field) {
@@ -256,6 +263,84 @@ class MessageParser
         }
 
         return rtrim(implode("\n", $out));
+    }
+
+    private function detectBounce(string $subject, string $fromEmail, string $rawText, string $rawHeaders): bool
+    {
+        $fromEmail = strtolower($fromEmail);
+        if (preg_match('/^(mailer-daemon|postmaster)@/i', $fromEmail)) {
+            return true;
+        }
+
+        if (preg_match('/\b(mail delivery failed|delivery status notification|undelivered|returned mail|failure notice)\b/i', $subject)) {
+            return true;
+        }
+
+        $haystack = $rawHeaders . "\n" . $rawText;
+        return (bool)preg_match(
+            '/(This message was created automatically by the mail system|The following address(?:es)? failed|Diagnostic-Code:|Final-Recipient:|delivery to the following recipient failed permanently)/i',
+            $haystack
+        );
+    }
+
+    private function extractDeliveryFailure(string $rawText, string $subject): array
+    {
+        $recipient = null;
+        $status = null;
+        $diagnostic = null;
+        $remoteMta = null;
+
+        if (preg_match('/^Final-Recipient:\s*rfc822;\s*(.+)$/mi', $rawText, $m)) {
+            $recipient = trim($m[1]);
+        } elseif (preg_match('/^Original-Recipient:\s*rfc822;\s*(.+)$/mi', $rawText, $m)) {
+            $recipient = trim($m[1]);
+        } elseif (preg_match('/The following address(?:es)? failed:\s*(.+?)(?:\r?\n\r?\n|\z)/is', $rawText, $m)) {
+            if (preg_match('/[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}/i', $m[1], $email)) {
+                $recipient = $email[0];
+            } else {
+                $recipient = trim(preg_split('/\r?\n/', trim($m[1]))[0] ?? '');
+            }
+        }
+
+        if (preg_match('/^Status:\s*([0-9.]+)$/mi', $rawText, $m)) {
+            $status = trim($m[1]);
+        }
+        if (preg_match('/^Diagnostic-Code:\s*[^;]+;\s*(.+)$/mi', $rawText, $m)) {
+            $diagnostic = trim($m[1]);
+        }
+        if (preg_match('/^Remote-MTA:\s*[^;]+;\s*(.+)$/mi', $rawText, $m)) {
+            $remoteMta = trim($m[1]);
+        }
+
+        $summary = $diagnostic ?: ($status ? "SMTP status {$status}" : 'Outbound delivery failed');
+        $summary = mb_substr($summary, 0, 255);
+
+        $details = [];
+        if ($recipient) {
+            $details[] = "Recipient: {$recipient}";
+        }
+        if ($status) {
+            $details[] = "Status: {$status}";
+        }
+        if ($diagnostic) {
+            $details[] = "Diagnostic: {$diagnostic}";
+        }
+        if ($remoteMta) {
+            $details[] = "Remote server: {$remoteMta}";
+        }
+        if (empty($details)) {
+            $details[] = "Subject: {$subject}";
+            $details[] = trim(mb_substr(preg_replace('/\s+/', ' ', $rawText) ?: '', 0, 255));
+        }
+
+        return [
+            'recipient' => $recipient,
+            'status' => $status,
+            'diagnostic' => $diagnostic,
+            'remote_mta' => $remoteMta,
+            'summary' => $summary,
+            'details' => array_values(array_filter($details)),
+        ];
     }
 
     private function extractRawHeader(string $rawHeaders, string $name): string

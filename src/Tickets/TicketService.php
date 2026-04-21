@@ -228,7 +228,14 @@ class TicketService
             throw new \InvalidArgumentException("Invalid status: {$status}");
         }
 
+        $ticket = $this->ticketRepo->findById($ticketId);
+        if (!$ticket) {
+            throw new \InvalidArgumentException('Ticket not found');
+        }
+
         $updates = ['status' => $status];
+        $normalizeOverdue = in_array($status, ['resolved', 'closed'], true)
+            && ($ticket['priority'] ?? '') === 'overdue';
         if (in_array($status, ['resolved', 'closed'], true)) {
             $updates['closed_at'] = date('Y-m-d H:i:s');
         }
@@ -237,6 +244,10 @@ class TicketService
         $replyService->createSystemReply($ticketId, "Status changed to {$status}.", $agentId);
         $updated = $this->ticketRepo->update($ticketId, $updates);
         if ($updated) {
+            if ($normalizeOverdue) {
+                $this->ticketRepo->update($ticketId, ['priority' => 'normal']);
+                $replyService->createSystemReply($ticketId, 'Priority changed to normal because the ticket was resolved or closed.', $agentId);
+            }
             $this->ticketRepo->touchAttention($ticketId);
         }
         return $updated;

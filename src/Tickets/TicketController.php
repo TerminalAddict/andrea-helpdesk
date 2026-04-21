@@ -150,6 +150,11 @@ class TicketController
             throw new HttpException('Subject must not exceed 255 characters', 422);
         }
 
+        $normalizedDueReason = $this->resolveOverduePriorityResetReason($ticket, $data);
+        if ($normalizedDueReason !== null) {
+            $data['priority'] = 'normal';
+        }
+
         $newCustomer = null;
         if (isset($data['customer_id'])) {
             $customerRepo = new \Andrea\Helpdesk\Customers\CustomerRepository();
@@ -178,6 +183,9 @@ class TicketController
         }
         if (isset($data['priority']) && $data['priority'] !== $ticket['priority']) {
             $replyService->createSystemReply($ticket['id'], 'Priority changed to ' . $data['priority'] . '.', $request->agent->id);
+        }
+        if ($normalizedDueReason !== null) {
+            $replyService->createSystemReply($ticket['id'], $normalizedDueReason, $request->agent->id);
         }
 
         $notifications = null;
@@ -213,6 +221,52 @@ class TicketController
         }
 
         Response::success($this->repo->findById($ticket['id']), 'Ticket updated');
+    }
+
+    private function resolveOverduePriorityResetReason(array $ticket, array $data): ?string
+    {
+        if (($ticket['priority'] ?? '') !== 'overdue') {
+            return null;
+        }
+
+        if (!array_key_exists('due_at', $data) && !array_key_exists('due_end', $data) && !array_key_exists('due_all_day', $data)) {
+            return null;
+        }
+
+        $effectiveDueAt = array_key_exists('due_at', $data) ? $data['due_at'] : ($ticket['due_at'] ?? null);
+        $effectiveDueEnd = array_key_exists('due_end', $data) ? $data['due_end'] : ($ticket['due_end'] ?? null);
+        $effectiveAllDay = array_key_exists('due_all_day', $data) ? (int)$data['due_all_day'] : (int)($ticket['due_all_day'] ?? 0);
+
+        if (empty($effectiveDueAt)) {
+            return 'Priority changed to normal because the due date was removed.';
+        }
+
+        if (!$this->isDueDateOverdue($effectiveDueAt, $effectiveDueEnd, $effectiveAllDay)) {
+            return 'Priority changed to normal because the due date is no longer overdue.';
+        }
+
+        return null;
+    }
+
+    private function isDueDateOverdue(?string $dueAt, ?string $dueEnd, int $allDay): bool
+    {
+        if (!$dueAt) {
+            return false;
+        }
+
+        $compareRaw = $dueEnd ?: $dueAt;
+        try {
+            $compare = new \DateTimeImmutable($compareRaw);
+            $now = new \DateTimeImmutable('now');
+        } catch (\Throwable) {
+            return false;
+        }
+
+        if ($allDay) {
+            return $compare->format('Y-m-d') < $now->format('Y-m-d');
+        }
+
+        return $compare < $now;
     }
 
     public function updateReply(Request $request, array $params): void

@@ -172,7 +172,8 @@ class TicketRepository
     {
         $allowed = ['subject', 'status', 'priority', 'assigned_agent_id', 'closed_at',
                     'first_response_at', 'last_message_id', 'merged_into_id', 'customer_id', 'created_by_agent_id',
-                    'suppress_emails', 'due_at', 'due_end', 'due_all_day'];
+                    'suppress_emails', 'due_at', 'due_end', 'due_all_day',
+                    'email_delivery_failed_at', 'email_delivery_failed_recipient', 'email_delivery_failed_summary'];
         $set     = [];
         $params  = [];
 
@@ -205,6 +206,34 @@ class TicketRepository
             $this->db->rollback();
             throw $e;
         }
+    }
+
+    public function markDeliveryFailure(int $id, ?string $recipient, string $summary): bool
+    {
+        return $this->db->execute(
+            "UPDATE tickets
+             SET email_delivery_failed_at = NOW(),
+                 email_delivery_failed_recipient = ?,
+                 email_delivery_failed_summary = ?
+             WHERE id = ?",
+            [
+                $recipient ?: null,
+                mb_substr(trim($summary), 0, 255),
+                $id,
+            ]
+        );
+    }
+
+    public function clearDeliveryFailure(int $id): bool
+    {
+        return $this->db->execute(
+            "UPDATE tickets
+             SET email_delivery_failed_at = NULL,
+                 email_delivery_failed_recipient = NULL,
+                 email_delivery_failed_summary = NULL
+             WHERE id = ?",
+            [$id]
+        );
     }
 
     public function generateTicketNumber(string $prefix, string $date): string

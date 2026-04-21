@@ -100,6 +100,22 @@ class ImapPoller
         // Find existing ticket
         $existingTicket = $this->matcher->findExistingTicket($parsed);
 
+        if (!empty($parsed['is_bounce'])) {
+            if ($existingTicket) {
+                $this->recordDeliveryFailure($existingTicket, $parsed);
+            } else {
+                $this->log("Ignoring unmatched bounce: {$parsed['subject']}");
+            }
+
+            $this->markSeen($msgNum);
+            if ($config['delete_after_import']) {
+                imap_delete($this->connection, (string)$msgNum);
+                imap_expunge($this->connection);
+                $this->log("Deleted message {$msgNum}");
+            }
+            return true;
+        }
+
         // Skip auto-replies that would create a new ticket (loop prevention)
         // If they match an existing thread we still add the reply — no auto-response is sent for replies
         if ($parsed['is_auto_reply'] && !$existingTicket) {
@@ -217,6 +233,27 @@ class ImapPoller
                 $this->log("Failed to save attachment {$attachment['filename']}: " . $e->getMessage(), 'WARN');
             }
         }
+    }
+
+    private function recordDeliveryFailure(array $ticket, array $parsed): void
+    {
+        $failure = $parsed['delivery_failure'] ?? [];
+        $summary = trim((string)($failure['summary'] ?? 'Outbound delivery failed'));
+        $recipient = trim((string)($failure['recipient'] ?? ''));
+        $details = $failure['details'] ?? [];
+
+        $ticketRepo = new TicketRepository();
+        $ticketRepo->markDeliveryFailure((int)$ticket['id'], $recipient ?: null, $summary);
+
+        $body = "Outbound email delivery failed.";
+        if ($details) {
+            $body .= ' ' . implode(' · ', array_map('trim', $details));
+        } elseif ($summary !== '') {
+            $body .= ' ' . $summary;
+        }
+
+        (new ReplyService())->createSystemReply((int)$ticket['id'], $body);
+        $this->log("Recorded delivery failure on {$ticket['ticket_number']}: {$summary}");
     }
 
     private function log(string $message, string $level = 'INFO'): void
