@@ -8,7 +8,18 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
-## [1.3.13] — 2026-04-21
+## [1.4.0] — 2026-04-21
+
+### Added
+- Bounce emails matched to existing tickets now create structured delivery-failure system events instead of normal customer replies, and unmatched bounces are ignored
+- Tickets now show an outbound email delivery warning state with preserved recipient and diagnostic details
+
+### Changed
+- Outbound delivery warnings now clear automatically after a later successful customer email on the same ticket
+- Overdue tickets now normalize back to `normal` priority when the due date is removed, moved into the future, or the ticket is resolved/closed
+
+### Fixed
+- Ticket detail due-date controls no longer stack duplicate event handlers and spam repeated green toast notifications
 
 ---
 
