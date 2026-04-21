@@ -144,8 +144,8 @@ class TicketRepository
         return $this->db->insert(
             "INSERT INTO tickets (ticket_number, subject, status, priority, channel, customer_id,
              created_by_agent_id, assigned_agent_id, original_message_id, last_message_id, reply_to_address, parent_ticket_id,
-             due_at, due_end, due_all_day, last_attention_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+             suppress_emails, due_at, due_end, due_all_day, last_attention_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $data['ticket_number'],
                 $data['subject'],
@@ -159,6 +159,7 @@ class TicketRepository
                 $data['last_message_id'] ?? null,
                 $data['reply_to_address'] ?? null,
                 $data['parent_ticket_id'] ?? null,
+                $data['suppress_emails'] ?? 0,
                 $data['due_at'] ?? null,
                 $data['due_end'] ?? null,
                 $data['due_all_day'] ?? 0,

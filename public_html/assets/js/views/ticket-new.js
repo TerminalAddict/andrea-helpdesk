@@ -60,6 +60,15 @@ const TicketNewView = {
                                 </select>
                             </div>
                             <div class="col-12">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="nt-suppress-emails">
+                                    <label class="form-check-label small fw-semibold text-danger" for="nt-suppress-emails">
+                                        <i class="bi bi-envelope-slash me-1"></i>Suppress notification of this ticket
+                                    </label>
+                                </div>
+                                <div class="form-text">When enabled, the customer will not be notified when this ticket is created. This only applies to this ticket.</div>
+                            </div>
+                            <div class="col-12">
                                 <label class="form-label">Due Date <span class="text-muted fw-normal small">(optional)</span></label>
                                 <div class="border rounded p-3 bg-light">
                                     <div class="form-check form-switch mb-2">
@@ -375,6 +384,7 @@ const TicketNewView = {
                 priority,
                 channel,
                 assigned_agent_id: assigned || undefined,
+                suppress_emails: $('#nt-suppress-emails').is(':checked') ? 1 : 0,
             };
             if (this._parentId) payload.parent_ticket_id = this._parentId;
 

@@ -83,6 +83,10 @@ const CustomerDetailView = {
                                     <input type="text" class="form-control form-control-sm" id="edit-cust-name" value="${App.escapeHtml(c.name || '')}">
                                 </div>
                                 <div class="mb-2">
+                                    <label class="form-label small">Email</label>
+                                    <input type="email" class="form-control form-control-sm" id="edit-cust-email" value="${App.escapeHtml(c.email || '')}">
+                                </div>
+                                <div class="mb-2">
                                     <label class="form-label small">Phone</label>
                                     <input type="text" class="form-control form-control-sm" id="edit-cust-phone" value="${App.escapeHtml(c.phone || '')}">
                                 </div>
@@ -310,6 +314,7 @@ const CustomerDetailView = {
             try {
                 await API.put('/customers/' + this.customer.id, {
                     name:            $('#edit-cust-name').val().trim(),
+                    email:           $('#edit-cust-email').val().trim(),
                     phone:           $('#edit-cust-phone').val().trim(),
                     company:         $('#edit-cust-company').val().trim(),
                     suppress_emails: $('#edit-cust-suppress').is(':checked') ? 1 : 0,

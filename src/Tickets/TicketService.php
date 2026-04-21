@@ -105,6 +105,7 @@ class TicketService
             'created_by_agent_id' => $agentId,
             'priority'          => $data['priority'] ?? 'normal',
             'assigned_agent_id' => $data['assigned_agent_id'] ?? $agentId,
+            'suppress_emails'   => $data['suppress_emails'] ?? 0,
             'parent_ticket_id'  => $data['parent_ticket_id'] ?? null,
         ]);
 

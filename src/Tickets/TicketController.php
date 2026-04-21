@@ -75,6 +75,7 @@ class TicketController
             'channel'           => $request->input('channel', 'phone'),
             'body_html'         => $bodyHtml,
             'assigned_agent_id' => $request->input('assigned_agent_id'),
+            'suppress_emails'   => (int)(bool)$request->input('suppress_emails', 0),
             'parent_ticket_id'  => $request->input('parent_ticket_id'),
         ];
 
