@@ -22,6 +22,7 @@ All API endpoints are served under the `/api` prefix. The API returns JSON for a
 - [Knowledge base endpoints](#knowledge-base-endpoints)
 - [Portal auth endpoints](#portal-auth-endpoints)
 - [Portal ticket endpoints](#portal-ticket-endpoints)
+- [Public support form endpoints](#public-support-form-endpoints)
 - [Calendar endpoints](#calendar-endpoints)
 - [Version endpoints](#version-endpoints)
 - [Update endpoints](#update-endpoints)
@@ -78,6 +79,7 @@ All API endpoints are served under the `/api` prefix. The API returns JSON for a
 | 403 | Forbidden (authenticated but no permission) |
 | 404 | Resource not found |
 | 409 | Conflict (e.g. duplicate email) |
+| 429 | Too many requests / rate limited |
 | 422 | Unprocessable (business logic rejection) |
 | 500 | Server error |
 
@@ -1570,6 +1572,62 @@ Upload a file attachment from a customer. Supports multiple files.
 **Request:** `multipart/form-data` with `file` field(s).
 
 **Response `201`** — array of attachment objects.
+
+---
+
+## Public support form endpoints
+
+These endpoints power the public website support form at `#/login/support-form` and its embeddable `#/login/support-form?embed=1` mode.
+
+### `GET /api/support-form/challenge`
+
+Return a signed fallback human-verification challenge when reCAPTCHA v3 is not configured.
+
+**Auth:** none
+
+**Response `200`**
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "question": "What is 5 + 3?",
+    "token": "base64payload.hmac"
+  }
+}
+```
+
+**Notes:** The token expires after 30 minutes and is bound to the requester IP address.
+
+### `POST /api/support-form`
+
+Create a new inbound-style ticket from the public website support form.
+
+**Auth:** none
+
+**Request:** `multipart/form-data`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `name` | string | yes | Requester name, max 255 chars |
+| `email` | string | yes | Requester email |
+| `subject` | string | yes | Ticket subject, max 255 chars |
+| `message` | string | yes | Plain text message body |
+| `file[]` | file[] | no | Zero or more attachments |
+| `website` | string | no | Honeypot field; must remain empty |
+| `started_at` | integer | yes | Client timestamp used for minimum-submit-time validation |
+| `recaptcha_token` | string | conditional | Required when reCAPTCHA keys are configured |
+| `human_check_token` | string | conditional | Required when reCAPTCHA is not configured |
+| `human_check_answer` | string | conditional | Required when reCAPTCHA is not configured |
+
+**Response `201`** — created ticket object.
+
+**Notes:**
+- Tickets created here use channel `web`.
+- The initial customer message is stored as the first inbound reply on the ticket.
+- Attachments are stored against that initial reply.
+- The endpoint applies honeypot, minimum-submit-time, and server-side throttles per IP address and per email address.
 
 ---
 

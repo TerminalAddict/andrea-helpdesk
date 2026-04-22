@@ -19,6 +19,10 @@ use Andrea\Helpdesk\Settings\SettingsService;
 
 class PortalController
 {
+    private const SUPPORT_FORM_WINDOW_SECONDS = 900;
+    private const SUPPORT_FORM_MAX_SUBMISSIONS_PER_IP = 5;
+    private const SUPPORT_FORM_MAX_SUBMISSIONS_PER_EMAIL = 3;
+
     private Database $db;
 
     public function __construct()
@@ -40,6 +44,7 @@ class PortalController
         ]);
 
         $this->assertSupportFormHuman($request);
+        $this->assertSupportFormRateLimit($request, (string)$data['email']);
 
         $ticketService = new TicketService();
         $result = $ticketService->createFromEmail([
@@ -101,6 +106,7 @@ class PortalController
         $payload = [
             'a' => $left,
             'b' => $right,
+            'ip' => $request->ip(),
             'exp' => time() + 1800,
         ];
         $json = json_encode($payload, JSON_UNESCAPED_SLASHES);
@@ -383,6 +389,11 @@ class PortalController
 
     private function verifyHumanChallenge(string $token, string $answer): void
     {
+        $answer = trim($answer);
+        if ($answer === '') {
+            throw new HttpException('Please complete the human verification check.', 422);
+        }
+
         $parts = explode('.', $token, 2);
         if (count($parts) !== 2) {
             throw new HttpException('Human verification failed', 422);
@@ -403,10 +414,93 @@ class PortalController
         if (!is_array($payload) || ($payload['exp'] ?? 0) < time()) {
             throw new HttpException('Human verification expired. Please try again.', 422);
         }
+        if (($payload['ip'] ?? '') !== $this->currentRequestIp()) {
+            throw new HttpException('Human verification failed', 422);
+        }
 
         $expected = (int)($payload['a'] ?? 0) + (int)($payload['b'] ?? 0);
-        if ((string)$expected !== trim($answer)) {
+        if ((string)$expected !== $answer) {
             throw new HttpException('Human verification answer is incorrect.', 422);
         }
+    }
+
+    private function assertSupportFormRateLimit(Request $request, string $email): void
+    {
+        $ipAttempts = $this->recordSupportFormAttempt('ip', hash('sha256', $request->ip()));
+        if ($ipAttempts > self::SUPPORT_FORM_MAX_SUBMISSIONS_PER_IP) {
+            throw new HttpException('Too many support requests from this IP address. Please wait 15 minutes and try again.', 429);
+        }
+
+        $emailAttempts = $this->recordSupportFormAttempt('email', hash('sha256', strtolower(trim($email))));
+        if ($emailAttempts > self::SUPPORT_FORM_MAX_SUBMISSIONS_PER_EMAIL) {
+            throw new HttpException('Too many support requests for this email address. Please wait 15 minutes and try again.', 429);
+        }
+    }
+
+    private function recordSupportFormAttempt(string $scope, string $key): int
+    {
+        $dir = $this->supportFormRateLimitDir();
+        if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
+            throw new HttpException('Support form rate-limit storage could not be created', 500);
+        }
+
+        $path = $dir . '/' . $scope . '-' . $key . '.json';
+        $now = time();
+        $windowStart = $now - self::SUPPORT_FORM_WINDOW_SECONDS;
+
+        $handle = fopen($path, 'c+');
+        if ($handle === false) {
+            throw new HttpException('Support form rate-limit storage could not be opened', 500);
+        }
+
+        try {
+            if (!flock($handle, LOCK_EX)) {
+                throw new HttpException('Support form rate-limit storage could not be locked', 500);
+            }
+
+            $raw = stream_get_contents($handle);
+            $timestamps = json_decode($raw ?: '[]', true);
+            if (!is_array($timestamps)) {
+                $timestamps = [];
+            }
+
+            $timestamps = array_values(array_filter(
+                array_map('intval', $timestamps),
+                static fn(int $ts): bool => $ts >= $windowStart
+            ));
+            $timestamps[] = $now;
+
+            ftruncate($handle, 0);
+            rewind($handle);
+            fwrite($handle, json_encode($timestamps, JSON_UNESCAPED_SLASHES));
+            fflush($handle);
+
+            return count($timestamps);
+        } finally {
+            fclose($handle);
+        }
+    }
+
+    private function supportFormRateLimitDir(): string
+    {
+        $storagePath = rtrim((string)(getenv('STORAGE_PATH') ?: sys_get_temp_dir() . '/andrea-helpdesk-storage'), '/');
+        return $storagePath . '/support-form-rate-limit';
+    }
+
+    private function currentRequestIp(): string
+    {
+        $trustProxyHeaders = filter_var(getenv('TRUST_PROXY_HEADERS') ?: false, FILTER_VALIDATE_BOOL);
+        if ($trustProxyHeaders) {
+            $forwarded = trim((string)($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ''));
+            if ($forwarded !== '') {
+                $candidate = trim(explode(',', $forwarded)[0]);
+                if (filter_var($candidate, FILTER_VALIDATE_IP)) {
+                    return $candidate;
+                }
+            }
+        }
+
+        $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+        return filter_var($remoteAddr, FILTER_VALIDATE_IP) ? $remoteAddr : '0.0.0.0';
     }
 }

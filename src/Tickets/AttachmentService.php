@@ -11,7 +11,7 @@ class AttachmentService
     private string $storagePath;
     private int $maxSize;
     private array $allowedMimeTypes = [
-        'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+        'image/jpeg', 'image/png', 'image/gif', 'image/webp',
         'application/pdf',
         'application/msword',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -19,11 +19,10 @@ class AttachmentService
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'application/vnd.ms-powerpoint',
         'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-        'text/plain', 'text/csv', 'text/html',
+        'text/plain', 'text/csv',
         'application/zip', 'application/x-zip-compressed',
         'application/x-tar', 'application/gzip',
         'video/mp4', 'video/mpeg', 'audio/mpeg', 'audio/wav',
-        'application/octet-stream',
     ];
 
     public function __construct()

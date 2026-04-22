@@ -651,6 +651,13 @@ The following settings are seeded by `schema.sql`. Values shown are the defaults
 | `slack_icon_url` | `` | string | URL of an image to use as the bot icon; takes priority over `slack_icon_emoji` |
 | `slack_icon_emoji` | `` | string | Slack emoji code for the bot icon, e.g. `:robot_face:` or `:paul:` |
 
+### Support Form
+
+| Key | Default | Type | Description |
+|-----|---------|------|-------------|
+| `support_form_recaptcha_site_key` | `` | string | Optional reCAPTCHA v3 site key for the public website support form |
+| `support_form_recaptcha_secret_key` | `` | string | Optional reCAPTCHA v3 secret key for the public website support form (AES-256-CBC encrypted at rest) |
+
 ---
 
 ## 19. Entity Relationship Summary

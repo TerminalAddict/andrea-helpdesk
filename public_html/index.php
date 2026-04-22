@@ -4,6 +4,16 @@ require $projectRoot . '/vendor/autoload.php';
 $dotenv = Dotenv\Dotenv::createUnsafeImmutable($projectRoot);
 $dotenv->safeLoad();
 
+$frameAncestors = [
+    "'self'",
+    'https://andreahelpdesk.com',
+    'https://www.andreahelpdesk.com',
+];
+header_remove('X-Frame-Options');
+header(
+    'Content-Security-Policy: frame-ancestors ' . implode(' ', $frameAncestors)
+);
+
 $pageTitle  = 'Andrea Helpdesk';
 $faviconUrl = '/Andrea-Helpdesk-favicon.png';
 try {

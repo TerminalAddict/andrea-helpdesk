@@ -49,12 +49,13 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Path traversal protection** — `realpath()` validation ensures served files stay within the storage directory
 - **MIME type detection** — server-side detection via `mime_content_type()`; client-supplied MIME type is never trusted
 - **Safe inline rendering** — only images, PDFs, video, and audio are served inline; HTML and SVG attachments are forced to download to prevent XSS
-- **Attachment type allowlist** — uploaded and inbound attachment MIME types are validated server-side before being stored
+- **Attachment type allowlist** — uploaded and inbound attachment MIME types are validated server-side before being stored; active-content types such as HTML, SVG, and generic `application/octet-stream` uploads are rejected
 
 ### Customer Portal
 - **Magic link login** — customers receive a one-click login link via email; no password required
 - **Password login** — customers can optionally set a portal password
 - **New ticket submission** — customers can open new support tickets directly from the portal with a rich text editor
+- **Public website support form** — `#/login/support-form` provides a public support-request form with attachments; submissions create normal inbound tickets with channel `Web`, and an iframe-friendly `?embed=1` mode can be embedded in another website
 - **Ticket view** — customers see only their own tickets and can post rich text replies
 - **Participant access** — CC'd participants can also view and reply to tickets they're involved in
 - **Email replies** — customers can reply directly to notification emails; replies are threaded back into the ticket
@@ -105,6 +106,8 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Date format** — configurable display format
 - **SLA policy** — enable/disable escalation, set the inactivity thresholds for **High** and **Overdue**, and choose whether reminder emails go to all active agents or only specific agents
 - **Slack appearance** — configurable bot display name, icon (image URL or emoji), and link preview toggle per Slack integration
+- **Support form** — configure public support-form reCAPTCHA keys, copy the direct URL or iframe embed snippet, and preview the embeddable support form from **Settings → Support Form**
+- **Support form embedding** — the SPA shell allows iframe embedding from `https://andreahelpdesk.com` and `https://www.andreahelpdesk.com` via `Content-Security-Policy: frame-ancestors`
 - **Version & update check** — the General tab shows the currently installed version and a **Check for Updates** button; the server fetches `version.json` from `UPDATE_VERSION_URL` when set, otherwise from the public GitHub `main` branch, and reports whether an update is available; when an update is found, an **Update Now** button opens a preflight checklist (directory writability, overwriteability of existing files, PHP extensions, disk space) with fix instructions for any failures, then a one-click updater that downloads, extracts, copies files, and runs database migrations automatically. On shared hosting, if PHP cannot overwrite application files owned by your account, use SFTP/rsync/file-manager deployment instead of the in-app updater.
 - **Notification preferences** — `/my-profile` includes browser-notification controls so each agent can enable or disable browser / OS alerts independently
 
@@ -115,6 +118,7 @@ Route structure:
 - `/admin/settings/autoresponse`
 - `/admin/settings/imap`
 - `/admin/settings/slack`
+- `/admin/settings/support-form`
 - `/admin/tags`
 - `/my-profile`
 - `/my-profile/notifications`
@@ -123,6 +127,7 @@ Route structure:
 - **JWT authentication** — short-lived access tokens (15 min) + long-lived refresh tokens (30 days, hashed in DB)
 - **Refresh token rotation** — every refresh issues a new token and revokes the old one
 - **XSS protection** — dual-layer sanitisation: client-side via [DOMPurify](https://github.com/cure53/DOMPurify) before submission; server-side via `Sanitizer::html()` (DOMDocument, allowlist of safe tags/attributes, and strict `http/https/mailto/tel` or relative-link enforcement) before storage. Replies, knowledge base articles, agent signatures, and HTML email settings are sanitised on write. Plain text fields are `htmlspecialchars()`-escaped throughout.
+- **Support-form abuse controls** — the public website support form supports reCAPTCHA v3 when configured, falls back to a signed human-verification challenge when not configured, and enforces server-side submission throttles per IP address and per email address
 - **SQL injection prevention** — all queries use PDO prepared statements with parameterised placeholders
 - **Config hardening** — DB charset/collation values are validated before interpolation, and proxy IP headers are ignored unless `TRUST_PROXY_HEADERS=true`
 - **bcrypt passwords** — agent passwords hashed with `password_hash()` at cost 12
