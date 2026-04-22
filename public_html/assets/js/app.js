@@ -113,6 +113,10 @@ const App = {
         const matched = this.matchRoute(hash);
         const viewName = matched ? matched.viewName : null;
         const params   = matched ? matched.params : {};
+        const isSupportEmbed = hash.startsWith('/login/support-form') && String(params.embed || '') === '1';
+        document.body.classList.toggle('support-form-embed', isSupportEmbed);
+        document.getElementById('app-wrapper')?.classList.toggle('support-form-embed', isSupportEmbed);
+        document.getElementById('navbar-container')?.classList.toggle('d-none', isSupportEmbed);
 
         if (hash === '/login' || hash.startsWith('/login?')) {
             window.location.hash = '#/login/agent';
@@ -163,7 +167,7 @@ const App = {
                 window.location.hash = '#/';
                 return;
             }
-            if (!['general', 'branding', 'email', 'autoresponse', 'imap', 'slack'].includes(params.section)) {
+            if (!['general', 'branding', 'email', 'autoresponse', 'imap', 'slack', 'support-form'].includes(params.section)) {
                 window.location.hash = '#/admin/settings/general';
                 return;
             }

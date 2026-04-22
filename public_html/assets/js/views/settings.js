@@ -11,6 +11,7 @@ const SettingsView = {
         { key: 'autoresponse', label: 'Auto-Response' },
         { key: 'imap', label: 'IMAP Polling' },
         { key: 'slack', label: 'Slack' },
+        { key: 'support-form', label: 'Support Form' },
     ],
 
     getAdminSectionKeys() {
@@ -161,6 +162,64 @@ const SettingsView = {
                   placeholder: ':robot_face:',
                   hint_html: `<div class="mt-2 mb-1">Quick pick:</div>${emojiPicks}<div class="form-text mt-1">Or type any emoji code set up in your Slack workspace, e.g. <code>:paul:</code></div>` },
             ]);
+        } else if (tab === 'support-form') {
+            const appUrl = (this.settings.app_url || window.location.origin || '').replace(/\/$/, '');
+            const formUrl = `${appUrl}/#/login/support-form`;
+            const embedUrl = `${appUrl}/#/login/support-form?embed=1`;
+            const iframeSnippet = `<iframe src="${embedUrl}" title="Andrea Helpdesk support form" style="width:100%;max-width:720px;height:860px;border:0;border-radius:12px;overflow:hidden;" loading="lazy"></iframe>`;
+            html = `
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white fw-semibold py-2">
+                        <i class="bi bi-life-preserver me-2"></i>Website Support Form
+                    </div>
+                    <div class="card-body py-3">
+                        <p class="text-muted mb-3">This public support form creates tickets in Andrea Helpdesk with channel <strong>Web</strong>. It can be linked directly or embedded in another website.</p>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">reCAPTCHA v3 Site Key</label>
+                                <input type="text" class="form-control" id="s-support_form_recaptcha_site_key" value="${App.escapeHtml(s.support_form_recaptcha_site_key || '')}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">reCAPTCHA v3 Secret Key</label>
+                                <input type="password" class="form-control" id="s-support_form_recaptcha_secret_key" value="" placeholder="Leave blank to keep current">
+                            </div>
+                        </div>
+                        <div class="form-text mb-3">
+                            If both keys are configured, the public support form will use reCAPTCHA v3. If not, it falls back to a built-in human verification challenge.
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small text-muted mb-1">Direct URL</label>
+                            <input type="text" class="form-control" readonly value="${App.escapeHtml(formUrl)}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small text-muted mb-1">Iframe Embed Snippet</label>
+                            <textarea class="form-control" rows="4" readonly>${App.escapeHtml(iframeSnippet)}</textarea>
+                            <div class="form-text">Paste this iframe into your website to embed the support form.</div>
+                        </div>
+
+                        <div class="d-flex gap-2 flex-wrap mb-3">
+                            <a class="btn btn-primary btn-sm" href="#/login/support-form" target="_blank" rel="noopener">
+                                <i class="bi bi-box-arrow-up-right me-1"></i>Open Support Form
+                            </a>
+                            <a class="btn btn-outline-secondary btn-sm" href="${App.escapeHtml(embedUrl)}" target="_blank" rel="noopener">
+                                <i class="bi bi-window-sidebar me-1"></i>Open Embed Preview
+                            </a>
+                        </div>
+
+                        <div class="ratio ratio-4x3 border rounded overflow-hidden bg-light">
+                            <iframe src="${App.escapeHtml(embedUrl)}" title="Support form preview" style="border:0;"></iframe>
+                        </div>
+
+                        <div class="mt-3">
+                            <button class="btn btn-primary btn-save-settings" data-tab="support-form">
+                                <i class="bi bi-save me-1"></i>Save Settings
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
         }
 
         $('#settings-content').html(html);
@@ -1102,6 +1161,7 @@ const SettingsView = {
             autoresponse: ['auto_response_enabled','auto_response_subject','auto_response_body'],
             imap:         [],
             slack:        ['slack_enabled','slack_webhook_url','slack_channel','slack_on_new_ticket','slack_on_assign','slack_on_new_reply','slack_unfurl_links','slack_username','slack_icon_url','slack_icon_emoji'],
+            'support-form': ['support_form_recaptcha_site_key','support_form_recaptcha_secret_key'],
         };
 
         const payload = {};

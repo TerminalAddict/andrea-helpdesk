@@ -1918,3 +1918,28 @@ html[data-theme='dark'] #app .btn-outline-success {
         font-size: clamp(1rem, 1.8vw, 1.35rem);
     }
 }
+.grecaptcha-badge { visibility: hidden; }
+
+body.support-form-embed {
+    background: #fff;
+}
+
+body.support-form-embed #app-wrapper,
+body.support-form-embed #app {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+}
+
+body.support-form-embed .terminal-login-shell,
+body.support-form-embed .terminal-shell-wrap {
+    min-height: auto;
+    background: transparent;
+    padding: 0;
+}
+
+body.support-form-embed .terminal-login-card {
+    border-radius: 0;
+    box-shadow: none !important;
+}

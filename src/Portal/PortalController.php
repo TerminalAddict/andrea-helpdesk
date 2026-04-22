@@ -15,6 +15,7 @@ use Andrea\Helpdesk\Tickets\ReplyService;
 use Andrea\Helpdesk\Tickets\AttachmentService;
 use Andrea\Helpdesk\Customers\CustomerRepository;
 use Andrea\Helpdesk\Notifications\NotificationService;
+use Andrea\Helpdesk\Settings\SettingsService;
 
 class PortalController
 {
@@ -23,6 +24,92 @@ class PortalController
     public function __construct()
     {
         $this->db = Database::getInstance();
+    }
+
+    /**
+     * POST /api/support-form
+     * Create a new public ticket from the website support form.
+     */
+    public function publicCreate(Request $request): void
+    {
+        $data = $request->validate([
+            'name'    => 'required|max:255',
+            'email'   => 'required|email',
+            'subject' => 'required|max:255',
+            'message' => 'required',
+        ]);
+
+        $this->assertSupportFormHuman($request);
+
+        $ticketService = new TicketService();
+        $result = $ticketService->createFromEmail([
+            'from_email' => $data['email'],
+            'from_name'  => $data['name'],
+            'subject'    => $data['subject'],
+            'body_text'  => $data['message'],
+            'body_html'  => $request->input('body_html')
+                ? \Andrea\Helpdesk\Core\Sanitizer::html((string)$request->input('body_html'))
+                : nl2br(htmlspecialchars((string)$data['message'], ENT_QUOTES, 'UTF-8')),
+            'reply_to'   => $data['email'],
+            'channel'    => 'web',
+            'cc_emails'  => [],
+        ]);
+
+        if (!empty($request->files)) {
+            $service  = new AttachmentService();
+            $uploaded = [];
+            foreach ($request->files as $file) {
+                if (is_array($file['name'] ?? null)) {
+                    for ($i = 0; $i < count($file['name']); $i++) {
+                        $uploaded[] = $service->store(
+                            (int)$result['ticket']['id'],
+                            [
+                                'name' => $file['name'][$i],
+                                'tmp_name' => $file['tmp_name'][$i],
+                                'type' => $file['type'][$i],
+                                'size' => $file['size'][$i],
+                                'error' => $file['error'][$i],
+                            ],
+                            $result['initial_reply_id'] ? (int)$result['initial_reply_id'] : null,
+                            null,
+                            !empty($result['customer']['id']) ? (int)$result['customer']['id'] : null
+                        );
+                    }
+                } else {
+                    $uploaded[] = $service->store(
+                        (int)$result['ticket']['id'],
+                        $file,
+                        $result['initial_reply_id'] ? (int)$result['initial_reply_id'] : null,
+                        null,
+                        !empty($result['customer']['id']) ? (int)$result['customer']['id'] : null
+                    );
+                }
+            }
+        }
+
+        Response::created($result['ticket'], 'Support request submitted');
+    }
+
+    /**
+     * GET /api/support-form/challenge
+     * Returns a lightweight human challenge when reCAPTCHA is not configured.
+     */
+    public function challenge(Request $request): void
+    {
+        $left = random_int(2, 9);
+        $right = random_int(1, 9);
+        $payload = [
+            'a' => $left,
+            'b' => $right,
+            'exp' => time() + 1800,
+        ];
+        $json = json_encode($payload, JSON_UNESCAPED_SLASHES);
+        $token = base64_encode($json) . '.' . hash_hmac('sha256', $json, (string)getenv('JWT_SECRET'));
+
+        Response::success([
+            'question' => "What is {$left} + {$right}?",
+            'token' => $token,
+        ]);
     }
 
     /**
@@ -218,5 +305,108 @@ class PortalController
         );
 
         return $participant ? $ticket : null;
+    }
+
+    private function assertSupportFormHuman(Request $request): void
+    {
+        $config = SettingsService::getInstance()->getSupportFormConfig();
+        $honeypot = trim((string)$request->input('website', ''));
+        if ($honeypot !== '') {
+            throw new HttpException('Support form verification failed', 422);
+        }
+
+        $startedAt = (int)$request->input('started_at', 0);
+        if ($startedAt > 0 && ((int)floor(microtime(true) * 1000) - $startedAt) < 1500) {
+            throw new HttpException('Support form submitted too quickly. Please try again.', 422);
+        }
+
+        if (!empty($config['recaptcha_site_key']) && !empty($config['recaptcha_secret_key'])) {
+            $token = trim((string)$request->input('recaptcha_token', ''));
+            if ($token === '') {
+                throw new HttpException('reCAPTCHA verification failed', 422);
+            }
+            $this->verifyRecaptcha($token, $request->ip(), (string)$config['recaptcha_secret_key']);
+            return;
+        }
+
+        $challengeToken = trim((string)$request->input('human_check_token', ''));
+        $challengeAnswer = trim((string)$request->input('human_check_answer', ''));
+        if ($challengeToken === '' || $challengeAnswer === '') {
+            throw new HttpException('Please complete the human verification check.', 422);
+        }
+        $this->verifyHumanChallenge($challengeToken, $challengeAnswer);
+    }
+
+    private function verifyRecaptcha(string $token, string $ip, string $secret): void
+    {
+        $postFields = http_build_query([
+            'secret' => $secret,
+            'response' => $token,
+            'remoteip' => $ip,
+        ]);
+
+        $response = false;
+        if (function_exists('curl_init')) {
+            $ch = curl_init('https://www.google.com/recaptcha/api/siteverify');
+            curl_setopt_array($ch, [
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => $postFields,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 10,
+            ]);
+            $response = curl_exec($ch);
+            curl_close($ch);
+        }
+
+        if ($response === false) {
+            $context = stream_context_create([
+                'http' => [
+                    'method' => 'POST',
+                    'header' => "Content-type: application/x-www-form-urlencoded\r\n",
+                    'content' => $postFields,
+                    'timeout' => 10,
+                ],
+            ]);
+            $response = @file_get_contents('https://www.google.com/recaptcha/api/siteverify', false, $context);
+        }
+
+        $json = json_decode((string)$response, true);
+        if (
+            !is_array($json)
+            || empty($json['success'])
+            || (($json['score'] ?? 0) < 0.5)
+            || (!empty($json['action']) && $json['action'] !== 'support_form_submit')
+        ) {
+            throw new HttpException('reCAPTCHA verification failed', 422);
+        }
+    }
+
+    private function verifyHumanChallenge(string $token, string $answer): void
+    {
+        $parts = explode('.', $token, 2);
+        if (count($parts) !== 2) {
+            throw new HttpException('Human verification failed', 422);
+        }
+
+        [$payloadB64, $sig] = $parts;
+        $json = base64_decode($payloadB64, true);
+        if ($json === false) {
+            throw new HttpException('Human verification failed', 422);
+        }
+
+        $expectedSig = hash_hmac('sha256', $json, (string)getenv('JWT_SECRET'));
+        if (!hash_equals($expectedSig, $sig)) {
+            throw new HttpException('Human verification failed', 422);
+        }
+
+        $payload = json_decode($json, true);
+        if (!is_array($payload) || ($payload['exp'] ?? 0) < time()) {
+            throw new HttpException('Human verification expired. Please try again.', 422);
+        }
+
+        $expected = (int)($payload['a'] ?? 0) + (int)($payload['b'] ?? 0);
+        if ((string)$expected !== trim($answer)) {
+            throw new HttpException('Human verification answer is incorrect.', 422);
+        }
     }
 }

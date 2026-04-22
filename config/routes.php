@@ -34,6 +34,8 @@ return [
     ['POST', '/api/portal/auth/verify-magic-link',  PortalAuthController::class,'verifyMagicLink', []],
     ['POST', '/api/portal/auth/set-password',        PortalAuthController::class,'setPassword',     ['auth:customer']],
     ['POST', '/api/portal/auth/change-password',    PortalAuthController::class,'changePassword',  ['auth:customer']],
+    ['GET',  '/api/support-form/challenge',         PortalController::class,    'challenge',       []],
+    ['POST', '/api/support-form',                   PortalController::class,    'publicCreate',    []],
 
     // ── Tickets ──────────────────────────────────────────────────────────────
     ['GET',    '/api/tickets',                              TicketController::class, 'index',           ['auth:agent']],

@@ -76,6 +76,14 @@ class SettingsService
         ];
     }
 
+    public function getSupportFormConfig(): array
+    {
+        return [
+            'recaptcha_site_key' => (string)$this->repo->get('support_form_recaptcha_site_key', ''),
+            'recaptcha_secret_key' => $this->decrypt((string)$this->repo->get('support_form_recaptcha_secret_key', '')),
+        ];
+    }
+
     public function getSlackConfig(): array
     {
         return [

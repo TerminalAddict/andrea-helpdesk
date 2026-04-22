@@ -8,6 +8,7 @@ use Andrea\Helpdesk\Core\Request;
 use Andrea\Helpdesk\Core\Response;
 use Andrea\Helpdesk\Notifications\EmailNotifier;
 use Andrea\Helpdesk\Notifications\SlackNotifier;
+use Andrea\Helpdesk\Tickets\AttachmentService;
 
 class SettingsController
 {
@@ -25,11 +26,14 @@ class SettingsController
      */
     public function publicSettings(Request $request): void
     {
-        $keys = ['company_name', 'logo_url', 'primary_color', 'date_format', 'favicon_url', 'global_signature', 'imap_poll_mode'];
+        $keys = ['company_name', 'logo_url', 'primary_color', 'date_format', 'favicon_url', 'global_signature', 'imap_poll_mode', 'support_form_recaptcha_site_key'];
         $data = [];
         foreach ($keys as $key) {
             $data[$key] = $this->repo->get($key);
         }
+        $attachmentService = new AttachmentService();
+        $data['support_form_attachment_max_bytes'] = $attachmentService->getMaxSizeBytes();
+        $data['support_form_attachment_mime_types'] = $attachmentService->getAllowedMimeTypes();
         Response::success($data);
     }
 
@@ -47,7 +51,7 @@ class SettingsController
         }
 
         // Mask sensitive values
-        $sensitiveKeys = ['smtp_password', 'imap_password'];
+        $sensitiveKeys = ['smtp_password', 'imap_password', 'support_form_recaptcha_secret_key'];
         array_walk_recursive($settings, function (&$item, $key) use ($sensitiveKeys) {
             if (in_array($key, $sensitiveKeys, true) && !empty($item)) {
                 $item = '***';
@@ -98,7 +102,7 @@ class SettingsController
         }
 
         // Encrypt passwords before saving
-        $sensitiveKeys = ['smtp_password', 'imap_password'];
+        $sensitiveKeys = ['smtp_password', 'imap_password', 'support_form_recaptcha_secret_key'];
         foreach ($sensitiveKeys as $key) {
             if (isset($data[$key]) && $data[$key] !== '***' && $data[$key] !== '') {
                 $data[$key] = $this->service->encrypt($data[$key]);

@@ -209,6 +209,16 @@ class AttachmentService
         return $attachment;
     }
 
+    public function getMaxSizeBytes(): int
+    {
+        return $this->maxSize;
+    }
+
+    public function getAllowedMimeTypes(): array
+    {
+        return $this->allowedMimeTypes;
+    }
+
     private function sanitiseFilename(string $filename): string
     {
         $filename = basename($filename);
