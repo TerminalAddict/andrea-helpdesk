@@ -73,7 +73,7 @@ const App = {
     },
 
     getHash() {
-        return window.location.hash.replace(/^#/, '') || '/';
+        return window.location.hash.replace(/^#/, '') || window.AppConfig.initialHash || '/';
     },
 
     matchRoute(path) {

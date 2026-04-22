@@ -1577,7 +1577,7 @@ Upload a file attachment from a customer. Supports multiple files.
 
 ## Public support form endpoints
 
-These endpoints power the public website support form at `#/login/support-form` and its embeddable `#/login/support-form?embed=1` mode.
+These endpoints power the public website support form at `#/login/support-form` and its embeddable `/support-form/embed` entrypoint.
 
 ### `GET /api/support-form/challenge`
 

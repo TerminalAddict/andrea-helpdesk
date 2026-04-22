@@ -4,7 +4,14 @@ require $projectRoot . '/vendor/autoload.php';
 $dotenv = Dotenv\Dotenv::createUnsafeImmutable($projectRoot);
 $dotenv->safeLoad();
 
-$pageTitle  = 'Andrea Helpdesk';
+$settingsService = \Andrea\Helpdesk\Settings\SettingsService::getInstance();
+$supportFormConfig = $settingsService->getSupportFormConfig();
+$frameAncestors = array_merge(["'self'"], $supportFormConfig['allowed_embed_origins'] ?? []);
+
+header_remove('X-Frame-Options');
+header('Content-Security-Policy: frame-ancestors ' . implode(' ', $frameAncestors));
+
+$pageTitle  = 'Andrea Helpdesk Support Form';
 $faviconUrl = '/Andrea-Helpdesk-favicon.png';
 try {
     $pdo = new PDO(
@@ -19,9 +26,14 @@ try {
     $rows = $pdo->query(
         "SELECT key_name, value FROM settings WHERE key_name IN ('company_name','favicon_url')"
     )->fetchAll(PDO::FETCH_KEY_PAIR);
-    if (!empty($rows['company_name'])) $pageTitle  = $rows['company_name'];
-    if (!empty($rows['favicon_url']))  $faviconUrl = $rows['favicon_url'];
-} catch (Throwable) {}
+    if (!empty($rows['company_name'])) {
+        $pageTitle = $rows['company_name'] . ' Support Form';
+    }
+    if (!empty($rows['favicon_url'])) {
+        $faviconUrl = $rows['favicon_url'];
+    }
+} catch (Throwable) {
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -38,9 +50,9 @@ try {
 </head>
 <body>
 
-<div id="navbar-container"></div>
+<div id="navbar-container" class="d-none"></div>
 
-<div id="app-wrapper" class="terminal-shell-wrap">
+<div id="app-wrapper" class="terminal-shell-wrap support-form-embed">
     <div id="loading-screen">
         <div class="text-center">
             <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;">
@@ -52,15 +64,8 @@ try {
     <div id="app" class="container-fluid mt-0" style="display:none;"></div>
 </div>
 
-<!-- Scroll to top button -->
-<button id="scroll-to-top" title="Scroll to top" aria-label="Scroll to top">
-    <i class="bi bi-arrow-up"></i>
-</button>
-
-<!-- Toast container -->
 <div id="toast-container" class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:11000;"></div>
 
-<!-- Confirm modal -->
 <div class="modal fade" id="confirmModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -80,8 +85,8 @@ try {
 <script>
 window.AppConfig = {
     apiBase: '/api',
-    version: '1.4.2',
-    initialHash: ''
+    version: '1.4.1',
+    initialHash: '/login/support-form?embed=1'
 };
 </script>
 
@@ -90,15 +95,9 @@ window.AppConfig = {
 <script src="/assets/vendor/dompurify/purify.min.js"></script>
 <script src="/assets/vendor/quill/quill.min.js"></script>
 <script src="/assets/js/rich-editor.js"></script>
-
-<!-- API wrapper (must load first) -->
 <script src="/assets/js/api.js"></script>
-
-<!-- Components -->
 <script src="/assets/js/components/notifications.js"></script>
 <script src="/assets/js/components/navbar.js"></script>
-
-<!-- Views -->
 <script src="/assets/js/views/login.js"></script>
 <script src="/assets/js/views/dashboard.js"></script>
 <script src="/assets/js/views/tickets.js"></script>
@@ -112,8 +111,6 @@ window.AppConfig = {
 <script src="/assets/js/views/calendar.js"></script>
 <script src="/assets/js/views/knowledge-base.js"></script>
 <script src="/assets/js/views/portal.js"></script>
-
-<!-- Main app router (must load last) -->
 <script src="/assets/js/app.js"></script>
 
 </body>

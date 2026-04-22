@@ -94,6 +94,9 @@ class SettingsController
             Response::error('Select at least one SLA reminder recipient when using specific agents', 422);
             return;
         }
+        if (array_key_exists('support_form_allowed_origins', $data)) {
+            $data['support_form_allowed_origins'] = $this->service->normalizeSupportFormAllowedOrigins($data['support_form_allowed_origins']);
+        }
 
         foreach (['global_signature', 'auto_response_body'] as $htmlKey) {
             if (array_key_exists($htmlKey, $data)) {

@@ -165,7 +165,10 @@ const SettingsView = {
         } else if (tab === 'support-form') {
             const appUrl = (this.settings.app_url || window.location.origin || '').replace(/\/$/, '');
             const formUrl = `${appUrl}/#/login/support-form`;
-            const embedUrl = `${appUrl}/#/login/support-form?embed=1`;
+            const embedUrl = `${appUrl}/support-form/embed`;
+            const allowedOrigins = Array.isArray(s.support_form_allowed_origins)
+                ? s.support_form_allowed_origins.join('\n')
+                : '';
             const iframeSnippet = `<iframe src="${embedUrl}" title="Andrea Helpdesk support form" style="width:100%;max-width:720px;height:860px;border:0;border-radius:12px;overflow:hidden;" loading="lazy"></iframe>`;
             html = `
                 <div class="card border-0 shadow-sm">
@@ -187,6 +190,12 @@ const SettingsView = {
                         </div>
                         <div class="form-text mb-3">
                             If both keys are configured, the public support form will use reCAPTCHA v3. If not, it falls back to a built-in human verification challenge.
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Allow This Form To Be Embedded In The Following Websites</label>
+                            <textarea class="form-control" id="s-support_form_allowed_origins" rows="4" placeholder="https://example.com&#10;https://www.example.com">${App.escapeHtml(allowedOrigins)}</textarea>
+                            <div class="form-text">Enter one origin per line. Use the origin only, for example <code>https://www.example.com</code>. These origins will be added to the support form embed page's <code>Content-Security-Policy: frame-ancestors</code> allowlist.</div>
                         </div>
 
                         <div class="mb-3">
@@ -1161,7 +1170,7 @@ const SettingsView = {
             autoresponse: ['auto_response_enabled','auto_response_subject','auto_response_body'],
             imap:         [],
             slack:        ['slack_enabled','slack_webhook_url','slack_channel','slack_on_new_ticket','slack_on_assign','slack_on_new_reply','slack_unfurl_links','slack_username','slack_icon_url','slack_icon_emoji'],
-            'support-form': ['support_form_recaptcha_site_key','support_form_recaptcha_secret_key'],
+            'support-form': ['support_form_recaptcha_site_key','support_form_recaptcha_secret_key','support_form_allowed_origins'],
         };
 
         const payload = {};
@@ -1173,7 +1182,9 @@ const SettingsView = {
             } else if (el.type === 'password') {
                 if (el.value) payload[key] = el.value;
             } else {
-                payload[key] = el.value;
+                payload[key] = key === 'support_form_allowed_origins'
+                    ? el.value.split(/\r\n|\r|\n/).map(v => v.trim()).filter(Boolean)
+                    : el.value;
             }
         });
 

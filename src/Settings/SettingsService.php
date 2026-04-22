@@ -81,7 +81,13 @@ class SettingsService
         return [
             'recaptcha_site_key' => (string)$this->repo->get('support_form_recaptcha_site_key', ''),
             'recaptcha_secret_key' => $this->decrypt((string)$this->repo->get('support_form_recaptcha_secret_key', '')),
+            'allowed_embed_origins' => $this->normalizeOriginList($this->repo->get('support_form_allowed_origins', [])),
         ];
+    }
+
+    public function normalizeSupportFormAllowedOrigins(mixed $value): array
+    {
+        return $this->normalizeOriginList($value);
     }
 
     public function getSlackConfig(): array
@@ -177,5 +183,48 @@ class SettingsService
     private function getEncryptionKey(): string
     {
         return (string)getenv('JWT_SECRET');
+    }
+
+    private function normalizeOriginList(mixed $value): array
+    {
+        $items = is_array($value) ? $value : preg_split('/\r\n|\r|\n/', (string)$value);
+        $seen = [];
+        $origins = [];
+
+        foreach ($items as $item) {
+            $item = trim((string)$item);
+            if ($item === '') {
+                continue;
+            }
+            $parts = parse_url($item);
+            if ($parts === false) {
+                continue;
+            }
+
+            $scheme = strtolower((string)($parts['scheme'] ?? ''));
+            $host = strtolower((string)($parts['host'] ?? ''));
+            if (!in_array($scheme, ['http', 'https'], true) || $host === '') {
+                continue;
+            }
+            if (isset($parts['path']) && $parts['path'] !== '' && $parts['path'] !== '/') {
+                continue;
+            }
+            if (isset($parts['query']) || isset($parts['fragment']) || isset($parts['user']) || isset($parts['pass'])) {
+                continue;
+            }
+
+            $origin = $scheme . '://' . $host;
+            if (isset($parts['port']) && $parts['port'] !== null) {
+                $origin .= ':' . (int)$parts['port'];
+            }
+
+            if (isset($seen[$origin])) {
+                continue;
+            }
+            $seen[$origin] = true;
+            $origins[] = $origin;
+        }
+
+        return $origins;
     }
 }

@@ -393,6 +393,11 @@ INSERT INTO settings (key_name, value, type, group_name, label) VALUES
 ('slack_unfurl_links',  '1',                 'boolean', 'slack',    'Show Link Previews'),
 ('slack_username',      '',                  'string',  'slack',    'Bot Display Name'),
 ('slack_icon_url',      '',                  'string',  'slack',    'Bot Icon Image URL'),
-('slack_icon_emoji',    '',                  'string',  'slack',    'Bot Icon Emoji')
+('slack_icon_emoji',    '',                  'string',  'slack',    'Bot Icon Emoji'),
+
+-- Support Form
+('support_form_recaptcha_site_key', '',      'string',  'support-form', 'reCAPTCHA v3 Site Key'),
+('support_form_recaptcha_secret_key', '',    'string',  'support-form', 'reCAPTCHA v3 Secret Key'),
+('support_form_allowed_origins',   '[]',     'json',    'support-form', 'Allowed Embed Origins')
 
 ON DUPLICATE KEY UPDATE label = VALUES(label);

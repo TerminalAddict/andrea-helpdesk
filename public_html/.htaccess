@@ -2,7 +2,12 @@ Options -Indexes
 Options -MultiViews
 
 # Security headers
-Header always set X-Frame-Options "SAMEORIGIN"
+<If "%{REQUEST_URI} !~ m#/support-form/embed/?$#">
+    Header always set X-Frame-Options "SAMEORIGIN"
+</If>
+<If "%{REQUEST_URI} =~ m#/support-form/embed/?$#">
+    Header always unset X-Frame-Options
+</If>
 Header always set X-Content-Type-Options "nosniff"
 Header always set X-XSS-Protection "1; mode=block"
 Header always set Referrer-Policy "strict-origin-when-cross-origin"
@@ -42,6 +47,9 @@ RewriteRule ^api/(.*)$ api.php [QSA,L]
 
 # Route /attachment/* to attachment.php
 RewriteRule ^attachment/([0-9]+)$ attachment.php?id=$1 [QSA,L]
+
+# Route /support-form/embed to dedicated support form entrypoint
+RewriteRule ^support-form/embed/?$ support-form-embed.php [QSA,L]
 
 # Cache vendor assets for 1 year (they are versioned by Makefile)
 <IfModule mod_headers.c>

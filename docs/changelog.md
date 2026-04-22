@@ -6,12 +6,17 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ## [Unreleased]
 
+---
+
+## [1.4.2] — 2026-04-22
+
 ### Changed
-- Relaxed the SPA `frame-ancestors` policy so Andrea Helpdesk can be embedded from `https://andreahelpdesk.com` and `https://www.andreahelpdesk.com`, which allows the public support form iframe to be embedded on those sites
+- Support form embedding now uses a dedicated `/support-form/embed` entrypoint with a per-instance allowlist of permitted origins, instead of relaxing iframe headers for the whole SPA
 
 ### Security
 - Tightened the public website support-form defenses with server-side throttles per IP address and per email address, and bound the fallback signed human-verification challenge to the requester IP address
 - Removed active-content attachment types (`text/html`, `image/svg+xml`, `application/octet-stream`) from the upload allowlist so uploads and inbound email attachments cannot store executable browser content as attachments
+
 
 ---
 
