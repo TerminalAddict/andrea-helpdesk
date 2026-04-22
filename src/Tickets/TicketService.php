@@ -42,7 +42,7 @@ class TicketService
             $ticketId = $this->ticketRepo->create([
                 'ticket_number'      => $ticketNumber,
                 'subject'            => $emailData['subject'],
-                'channel'            => 'email',
+                'channel'            => $emailData['channel'] ?? 'email',
                 'customer_id'        => $customer['id'],
                 'original_message_id'=> $emailData['message_id'] ?? null,
                 'last_message_id'    => $emailData['message_id'] ?? null,
@@ -53,7 +53,7 @@ class TicketService
 
             // Create initial reply
             $safeHtml = Sanitizer::html($emailData['body_html'] ?? '');
-            $this->replyRepo->create([
+            $firstReplyId = $this->replyRepo->create([
                 'ticket_id'      => $ticketId,
                 'author_type'    => 'customer',
                 'customer_id'    => $customer['id'],
@@ -86,7 +86,7 @@ class TicketService
             $notifications->onNewTicket($ticket, $customer);
         } catch (\Throwable) {}
 
-        return ['ticket' => $ticket, 'customer' => $customer];
+        return ['ticket' => $ticket, 'customer' => $customer, 'initial_reply_id' => $firstReplyId ?? null];
     }
 
     /**
