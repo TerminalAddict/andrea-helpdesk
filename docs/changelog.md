@@ -6,6 +6,10 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ## [Unreleased]
 
+---
+
+## [1.4.1] — 2026-04-22
+
 ### Added
 - Added a public website support form at `#/login/support-form` with an embeddable iframe mode and an admin `Support Form` settings section for direct links, embed snippets, and preview
 - Added reCAPTCHA v3 configuration for the public support form, with a built-in fallback human verification challenge when reCAPTCHA keys are not configured
@@ -17,6 +21,7 @@ All notable changes to Andrea Helpdesk are documented here.
 - Embedded support form mode now strips the app chrome and background for clean iframe use
 - Support form attachment limits now open in a proper modal instead of a browser alert
 - Resolving or closing overdue tickets now reliably resets priority back to `normal`
+
 
 ---
 
