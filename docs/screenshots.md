@@ -250,6 +250,14 @@ Filename: `admin slack.png`
 
 The Slack integration settings page for webhook destination, posting behaviour, and Slack-side notification options.
 
+### Support Form Settings
+
+![Admin Support Form](screenshots/admin%20settings%20support-form.png)
+
+Filename: `admin settings support-form.png`
+
+The **Support Form** settings page, showing the public support-form controls for reCAPTCHA v3 site and secret keys, the allowlist of website origins permitted to embed `/support-form/embed`, the direct public form URL, and the generated iframe embed snippet and preview.
+
 ---
 
 ## My Profile

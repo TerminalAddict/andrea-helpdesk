@@ -655,9 +655,9 @@ The following settings are seeded by `schema.sql`. Values shown are the defaults
 
 | Key | Default | Type | Description |
 |-----|---------|------|-------------|
-| `support_form_recaptcha_site_key` | `` | string | Optional reCAPTCHA v3 site key for the public website support form |
-| `support_form_recaptcha_secret_key` | `` | string | Optional reCAPTCHA v3 secret key for the public website support form (AES-256-CBC encrypted at rest) |
-| `support_form_allowed_origins` | `[]` | json | Allowlist of `scheme://host[:port]` origins permitted to embed `/support-form/embed` via `Content-Security-Policy: frame-ancestors` |
+| `support_form_recaptcha_site_key` | `` | string | Optional Google reCAPTCHA v3 site key for the public website support form |
+| `support_form_recaptcha_secret_key` | `` | string | Optional Google reCAPTCHA v3 secret key for the public website support form (AES-256-CBC encrypted at rest) |
+| `support_form_allowed_origins` | `[]` | json | JSON array of `scheme://host[:port]` origins permitted to embed `/support-form/embed` via `Content-Security-Policy: frame-ancestors` |
 
 ---
 
