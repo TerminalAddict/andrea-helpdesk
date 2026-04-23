@@ -40,7 +40,10 @@ const App = {
         // Load public settings (no auth required) — sets title/brand for all screens
         await this.loadAppName();
 
-        if (API.isAuthenticated()) {
+        const initialHash = window.AppConfig?.initialHash || this.getHash();
+        const isSupportEmbed = initialHash.startsWith('/login/support-form') && String(this.matchPattern('/login/:section', initialHash)?.embed || '') === '1';
+
+        if (!isSupportEmbed && API.isAuthenticated()) {
             const user = await API.loadCurrentUser();
             if (user) {
                 this.applyTheme(user.theme || 'light');
