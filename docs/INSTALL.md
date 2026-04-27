@@ -346,6 +346,28 @@ https://your-domain.example/
 
 and sign in with the admin email and password you set in `.env`.
 
+#### Admin Password Recovery
+
+If you later forget an admin password, use the built-in recovery command:
+
+```bash
+make reset-admin-password
+```
+
+That command:
+
+- lists admin accounts only
+- lets you choose which admin to reset
+- prompts for a new password twice
+- updates the password hash safely
+- revokes that admin's existing refresh-token sessions
+
+You can also run the script directly:
+
+```bash
+php bin/reset-admin-password.php
+```
+
 #### Step 9: Add cron for IMAP polling and SLA checks
 
 Recommended cron:

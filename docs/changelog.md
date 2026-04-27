@@ -6,6 +6,12 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ## [Unreleased]
 
+### Added
+- Added `make reset-admin-password` / `bin/reset-admin-password.php` to interactively list admin accounts, reset the selected admin password, and revoke that admin's existing refresh-token sessions
+
+### Changed
+- The admin **Agents** screen now includes inactive agents so historical ownership remains visible and inactive accounts can be reactivated from the same page
+
 ---
 
 ## [1.4.3] — 2026-04-23

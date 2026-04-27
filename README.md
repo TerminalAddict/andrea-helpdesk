@@ -63,6 +63,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 ### Agent Features
 - **Role-based access** — `admin` and `agent` roles; admins bypass all permission checks
 - **Granular permissions** — per-agent toggles for: close tickets, delete tickets, edit customers, view reports, manage knowledge base, manage tags
+- **Inactive-agent visibility** — the admin **Agents** screen shows both active and inactive agents so historical ownership remains visible and former agents can be reactivated when needed
 - **Agent assignment** — assign tickets to specific agents; filter by assigned agent
 - **Rich text composer** — Quill 2.x editor (self-hosted, no CDN) in every body input: new tickets, replies, internal notes, edit ticket body, global signature, personal signature, auto-response body, and knowledge base articles; agents get a full toolbar (bold, italic, underline, lists, link, blockquote, clean), portal customers get a simplified toolbar
 - **@mention agents** — type `@` in the reply or internal note composer to get a live filtered dropdown of agents; selecting one inserts a styled mention chip; mentioned agents receive an email notification with a link to the ticket; self-mentions are silently ignored
@@ -110,6 +111,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Support form embedding** — `/support-form/embed` sends a `Content-Security-Policy: frame-ancestors ...` header generated from the saved allowlist of origins, while the rest of the app continues to send `X-Frame-Options: SAMEORIGIN`
 - **Version & update check** — the General tab shows the currently installed version and a **Check for Updates** button; the server fetches `version.json` from `UPDATE_VERSION_URL` when set, otherwise from the public GitHub `main` branch, and reports whether an update is available; when an update is found, an **Update Now** button opens a preflight checklist (directory writability, overwriteability of existing files, PHP extensions, disk space) with fix instructions for any failures, then a one-click updater that downloads, extracts, copies files, and runs database migrations automatically. On shared hosting, if PHP cannot overwrite application files owned by your account, use SFTP/rsync/file-manager deployment instead of the in-app updater.
 - **Notification preferences** — `/my-profile` includes browser-notification controls so each agent can enable or disable browser / OS alerts independently
+- **Admin password recovery** — `make reset-admin-password` lists admin accounts only, lets you choose one, resets the password interactively, and revokes that admin’s existing refresh-token sessions
 
 Route structure:
 - `/admin/settings/general`

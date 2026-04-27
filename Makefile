@@ -20,7 +20,7 @@ RSYNC_EXCLUDE = --exclude=/vendor --exclude=.env --exclude=storage --exclude=.gi
 
 CRON_ENTRY  = "* * * * * php $(REMOTE_PATH)/bin/imap-poll.php >> $(REMOTE_PATH)/storage/logs/imap.log 2>&1"
 
-.PHONY: help install install-dev db-migrate db-seed update fetch-assets \
+.PHONY: help install install-dev db-migrate db-seed reset-admin-password update fetch-assets \
         script \
         package \
         release \
@@ -69,6 +69,9 @@ db-migrate: ## Run database migrations
 
 db-seed: ## Seed initial admin agent (reads ADMIN_* from .env)
 	php bin/seed.php
+
+reset-admin-password: ## Interactively reset a password for an existing admin account
+	php bin/reset-admin-password.php
 
 script: ## Bump CLI installer patch version, commit, and push only bin/install-cli.sh if it changed
 	@if git diff --quiet -- bin/install-cli.sh && git diff --cached --quiet -- bin/install-cli.sh; then \

@@ -789,7 +789,7 @@ List all agents.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `include_inactive` | `1` | Include deactivated agents |
+| `include_inactive` | `1` | Include deactivated agents in the result; omit it for the default active-only list used by assignment selectors and other day-to-day filters |
 
 **Response `200`** — array of agent objects (no `password_hash`).
 
@@ -877,6 +877,8 @@ Generate and set a new random password. Returns the new plaintext password — s
   "message": "Password reset. Share this password securely."
 }
 ```
+
+Operational note: if no admin can log in, use the server-side recovery utility `make reset-admin-password` or `php bin/reset-admin-password.php` instead of this API endpoint.
 
 ---
 

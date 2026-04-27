@@ -8,7 +8,10 @@ const AgentsView = {
         return `
         <div class="container-fluid terminal-screen terminal-screen-agents p-4">
             <div class="terminal-screen-header d-flex justify-content-between align-items-center mb-4">
-                <h4 class="terminal-heading mb-0"><i class="bi bi-people-fill me-2"></i>Agents</h4>
+                <div>
+                    <h4 class="terminal-heading mb-1"><i class="bi bi-people-fill me-2"></i>Agents</h4>
+                    <div class="small text-muted">Active and inactive agents are shown here so you can review historical ownership and reactivate accounts when needed.</div>
+                </div>
                 <button class="btn btn-primary btn-sm" id="btn-new-agent">
                     <i class="bi bi-plus-lg me-1"></i>Add Agent
                 </button>
@@ -92,7 +95,7 @@ const AgentsView = {
 
     async loadAgents() {
         try {
-            const res = await API.get('/agents');
+            const res = await API.get('/agents', { include_inactive: 1 });
             this.agents = res.data || [];
             this.renderTable();
         } catch (e) {
@@ -111,6 +114,7 @@ const AgentsView = {
                 .filter(p => a[p])
                 .map(p => `<span class="badge bg-light text-dark border me-1 small">${p.replace('can_','')}</span>`)
                 .join('');
+            const lastLogin = a.last_login_at ? App.formatDate(a.last_login_at) : 'Never';
             return `
             <tr>
                 <td>
@@ -124,6 +128,7 @@ const AgentsView = {
                 <td>
                     <span class="badge ${a.is_active ? 'bg-success' : 'bg-secondary'}">${a.is_active ? 'Active' : 'Inactive'}</span>
                 </td>
+                <td class="small text-muted text-nowrap">${App.escapeHtml(lastLogin)}</td>
                 <td>
                     <button class="btn btn-sm btn-outline-secondary btn-edit-agent me-1" data-id="${a.id}">Edit</button>
                     ${a.id !== (API.currentUser && API.currentUser.id) ?
@@ -138,7 +143,7 @@ const AgentsView = {
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
-                        <tr><th>Agent</th><th>Role</th><th>Permissions</th><th>Status</th><th style="width:160px;"></th></tr>
+                        <tr><th>Agent</th><th>Role</th><th>Permissions</th><th>Status</th><th>Last Login</th><th style="width:160px;"></th></tr>
                     </thead>
                     <tbody>${rows}</tbody>
                 </table>

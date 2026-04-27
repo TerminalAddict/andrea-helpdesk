@@ -160,7 +160,7 @@ The reports screen with the current activity-based reporting layout, including d
 
 Filename: `admin agents.png`
 
-The agents administration list, showing roles, status, permissions, and the controls for editing or deactivating agents.
+The agents administration list, showing roles, permissions, active/inactive status, last-login information, and the controls for editing, deactivating, or reactivating agents while preserving historical ownership and audit visibility.
 
 ### Admin Agents Edit Modal
 
