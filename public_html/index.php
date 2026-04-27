@@ -80,7 +80,7 @@ try {
 <script>
 window.AppConfig = {
     apiBase: '/api',
-    version: '1.4.3',
+    version: '1.4.4',
     initialHash: ''
 };
 </script>
