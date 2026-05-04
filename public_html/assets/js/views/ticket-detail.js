@@ -6,6 +6,7 @@ const TicketDetailView = {
     agents: [],
     allTags: [],
     pendingReplyFiles: [],
+    _dropDragDepth: 0,
 
     _bindModalCleanup(modalId) {
         const modalEl = document.getElementById(modalId);
@@ -104,6 +105,10 @@ const TicketDetailView = {
             <div class="row g-3 terminal-ticket-grid">
                 <!-- LEFT: Thread + Reply -->
                 <div class="col-lg-8">
+                    <div class="terminal-dropzone ticket-thread-dropzone" id="ticket-thread-dropzone">
+                        <div class="terminal-dropzone-hint" aria-hidden="true">
+                            <i class="bi bi-cloud-arrow-up me-2"></i>Drop files anywhere in the conversation area to attach them to your reply
+                        </div>
                     <!-- Thread -->
                     <div id="ticket-thread" class="mb-3"></div>
 
@@ -158,6 +163,7 @@ const TicketDetailView = {
                                 <i class="bi bi-send me-1"></i>Send Reply
                             </button>
                         </div>
+                    </div>
                     </div>
                 </div>
 
@@ -562,6 +568,52 @@ const TicketDetailView = {
         $('#reply-attachments-preview').html(html);
     },
 
+    setDropzoneActive(active) {
+        $('#ticket-thread-dropzone').toggleClass('is-dragover', !!active);
+    },
+
+    bindReplyDropzone() {
+        const zone = document.getElementById('ticket-thread-dropzone');
+        if (!zone) return;
+
+        this._dropDragDepth = 0;
+        const prevent = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        };
+
+        ['dragenter', 'dragover'].forEach(evt => {
+            zone.addEventListener(evt, (e) => {
+                prevent(e);
+                this._dropDragDepth += evt === 'dragenter' ? 1 : 0;
+                this.setDropzoneActive(true);
+            });
+        });
+
+        zone.addEventListener('dragleave', (e) => {
+            prevent(e);
+            this._dropDragDepth = Math.max(0, this._dropDragDepth - 1);
+            if (this._dropDragDepth === 0) {
+                this.setDropzoneActive(false);
+            }
+        });
+
+        zone.addEventListener('drop', (e) => {
+            prevent(e);
+            this._dropDragDepth = 0;
+            this.setDropzoneActive(false);
+            const files = Array.from(e.dataTransfer?.files || []);
+            if (!files.length) return;
+            this.addPendingReplyFiles(files);
+            const $card = $('#reply-card');
+            if ($card.hasClass('reply-collapsed')) {
+                $card.removeClass('reply-collapsed');
+                $('#btn-toggle-reply i').removeClass('bi-chevron-up').addClass('bi-chevron-down');
+            }
+            App.toast(`${files.length} file${files.length === 1 ? '' : 's'} added to reply`, 'success');
+        });
+    },
+
     renderRelatedTickets(relations, children, parent) {
         let html = '';
         if (parent) {
@@ -854,6 +906,7 @@ const TicketDetailView = {
 
         // Rich text editor for reply body — with @mention support
         RichEditor.initWithMentions('reply-body', { placeholder: 'Write your reply… (type @ to mention an agent)', minHeight: '150px' }, this.agents);
+        this.bindReplyDropzone();
     },
 
     async sendReply() {

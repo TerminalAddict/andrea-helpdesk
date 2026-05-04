@@ -3,6 +3,7 @@
  */
 const TicketNewView = {
     _files: [],
+    _dropDragDepth: 0,
 
     render(params) {
         this._params = params || {};
@@ -103,8 +104,13 @@ const TicketNewView = {
                             </div>
                             <div class="col-12 mt-5 pt-5">
                                 <label class="form-label">Attachments</label>
-                                <input type="file" class="form-control" id="nt-files" multiple>
-                                <div id="nt-files-preview" class="d-flex flex-wrap gap-1 mt-2"></div>
+                                <div class="terminal-dropzone ticket-new-dropzone" id="nt-files-dropzone">
+                                    <div class="terminal-dropzone-hint" aria-hidden="true">
+                                        <i class="bi bi-cloud-arrow-up me-2"></i>Drag and drop files here, or use Attach files
+                                    </div>
+                                    <input type="file" class="form-control" id="nt-files" multiple>
+                                    <div id="nt-files-preview" class="d-flex flex-wrap gap-1 mt-2"></div>
+                                </div>
                             </div>
                             ${this._params.parent_id ? `
                             <div class="col-12">
@@ -252,6 +258,7 @@ const TicketNewView = {
         $(document).off('click.newticketfiles', '#nt-files-preview .btn-close').on('click.newticketfiles', '#nt-files-preview .btn-close', (e) => {
             this.removeFile(parseInt($(e.currentTarget).data('index'), 10));
         });
+        this.bindDropzone();
 
         // All-day toggle switches input types
         $('#nt-due-allday').on('change', function() {
@@ -293,6 +300,47 @@ const TicketNewView = {
         `).join('');
 
         $('#nt-files-preview').html(html);
+    },
+
+    setDropzoneActive(active) {
+        $('#nt-files-dropzone').toggleClass('is-dragover', !!active);
+    },
+
+    bindDropzone() {
+        const zone = document.getElementById('nt-files-dropzone');
+        if (!zone) return;
+
+        this._dropDragDepth = 0;
+        const prevent = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        };
+
+        ['dragenter', 'dragover'].forEach(evt => {
+            zone.addEventListener(evt, (e) => {
+                prevent(e);
+                this._dropDragDepth += evt === 'dragenter' ? 1 : 0;
+                this.setDropzoneActive(true);
+            });
+        });
+
+        zone.addEventListener('dragleave', (e) => {
+            prevent(e);
+            this._dropDragDepth = Math.max(0, this._dropDragDepth - 1);
+            if (this._dropDragDepth === 0) {
+                this.setDropzoneActive(false);
+            }
+        });
+
+        zone.addEventListener('drop', (e) => {
+            prevent(e);
+            this._dropDragDepth = 0;
+            this.setDropzoneActive(false);
+            const files = Array.from(e.dataTransfer?.files || []);
+            if (!files.length) return;
+            this.addFiles(files);
+            App.toast(`${files.length} file${files.length === 1 ? '' : 's'} added to ticket`, 'success');
+        });
     },
 
     async searchCustomers(q) {
