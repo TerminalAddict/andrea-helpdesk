@@ -46,6 +46,87 @@
     color: #1967d2;
 }
 
+/* Quill emoji picker */
+.ql-toolbar .ql-emoji {
+    font-size: 1.05rem;
+    line-height: 1;
+}
+
+.quill-emoji-host {
+    position: relative;
+}
+
+.quill-emoji-picker-card {
+    position: absolute;
+    z-index: 12000;
+    width: min(320px, calc(100vw - 1.5rem));
+    max-height: 320px;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #d9e0ec;
+    border-radius: 0.75rem;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
+    top: calc(100% + 0.5rem);
+    right: 0;
+}
+
+.quill-emoji-picker-header {
+    padding: 0.85rem 1rem 0.65rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #516070;
+    border-bottom: 1px solid #edf1f6;
+    background: linear-gradient(180deg, #fbfcfe 0%, #f4f7fb 100%);
+}
+
+.quill-emoji-picker-groups {
+    max-height: 260px;
+    overflow-y: auto;
+    padding: 0.6rem;
+}
+
+.quill-emoji-group + .quill-emoji-group {
+    margin-top: 0.7rem;
+}
+
+.quill-emoji-group-label {
+    margin: 0 0 0.35rem;
+    padding: 0 0.35rem;
+    font-size: 0.73rem;
+    font-weight: 600;
+    color: #6b7280;
+}
+
+.quill-emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0.25rem;
+}
+
+.quill-emoji-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 1;
+    border: 0;
+    border-radius: 0.55rem;
+    background: transparent;
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 0.16s ease, transform 0.16s ease;
+}
+
+.quill-emoji-btn:hover,
+.quill-emoji-btn:focus-visible {
+    background: #eef4ff;
+    outline: none;
+    transform: translateY(-1px);
+}
+
 /* Reply thread */
 .reply-html {
     overflow-wrap: break-word;

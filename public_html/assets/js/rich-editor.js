@@ -15,6 +15,14 @@
 const RichEditor = {
     _editors: {},
     _mentionBlotRegistered: false,
+    _emojiPickerEl: null,
+    _emojiPickerBound: false,
+    _activeEmojiContext: null,
+    _emojiGroups: [
+        { label: 'Smileys', emojis: ['😀','😁','😂','🤣','😊','🙂','😉','😍','😘','😎','🤩','🥳','🤔','😴','😢','😭','😡','👍','👎','👏','🙏'] },
+        { label: 'People', emojis: ['👋','🙌','👌','✌️','🤝','💪','🫶','🧠','👀','❤️','💙','💚','🔥','✨','⭐','🎉','✅','❌'] },
+        { label: 'Objects', emojis: ['📎','📌','📍','💡','📞','💻','🖥️','📱','⌚','🔒','🔑','🧾','📦','🚨','⚠️','🛠️','🔧','🧹'] },
+    ],
 
     _registerMentionBlot() {
         if (this._mentionBlotRegistered) return;
@@ -40,6 +48,86 @@ const RichEditor = {
         MentionBlot.tagName   = 'span';
         MentionBlot.className = 'mention';
         Quill.register(MentionBlot);
+    },
+
+    _ensureEmojiPicker(hostEl = null) {
+        if (this._emojiPickerEl) return this._emojiPickerEl;
+
+        const picker = document.createElement('div');
+        picker.className = 'quill-emoji-picker-card d-none';
+        picker.innerHTML = `
+            <div class="quill-emoji-picker-header">Emoji</div>
+            <div class="quill-emoji-picker-groups">
+                ${this._emojiGroups.map(group => `
+                    <div class="quill-emoji-group">
+                        <div class="quill-emoji-group-label">${group.label}</div>
+                        <div class="quill-emoji-grid">
+                            ${group.emojis.map(emoji => `<button type="button" class="quill-emoji-btn" data-emoji="${emoji}" aria-label="${emoji}">${emoji}</button>`).join('')}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>`;
+
+        (hostEl || document.body).appendChild(picker);
+        picker.addEventListener('click', (e) => {
+            const btn = e.target.closest('.quill-emoji-btn');
+            if (!btn) return;
+            e.preventDefault();
+            this.insertEmoji(btn.dataset.emoji || '');
+        });
+
+        if (!this._emojiPickerBound) {
+            this._emojiPickerBound = true;
+            document.addEventListener('mousedown', (e) => {
+                if (!this._emojiPickerEl || this._emojiPickerEl.classList.contains('d-none')) return;
+                if (this._emojiPickerEl.contains(e.target)) return;
+                const toolbarButton = this._activeEmojiContext?.button;
+                if (toolbarButton && toolbarButton.contains(e.target)) return;
+                this.closeEmojiPicker();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') this.closeEmojiPicker();
+            });
+        }
+
+        this._emojiPickerEl = picker;
+        return picker;
+    },
+
+    positionEmojiPicker() {
+        return;
+    },
+
+    toggleEmojiPicker(quill, button) {
+        if (!quill || !button) return;
+        const hostEl = button.closest('.ql-formats') || button.parentElement || document.body;
+        const picker = this._ensureEmojiPicker(hostEl);
+        if (picker.parentNode !== hostEl) {
+            hostEl.appendChild(picker);
+        }
+        if (!picker.classList.contains('d-none') && this._activeEmojiContext?.quill === quill) {
+            this.closeEmojiPicker();
+            return;
+        }
+        this._activeEmojiContext = { quill, button };
+        picker.classList.remove('d-none');
+    },
+
+    closeEmojiPicker() {
+        if (!this._emojiPickerEl) return;
+        this._emojiPickerEl.classList.add('d-none');
+        this._activeEmojiContext = null;
+    },
+
+    insertEmoji(emoji) {
+        const quill = this._activeEmojiContext?.quill;
+        if (!quill || !emoji) return;
+        const range = quill.getSelection(true);
+        const index = range ? range.index : quill.getLength();
+        quill.insertText(index, emoji, 'user');
+        quill.setSelection(index + emoji.length, 0, 'silent');
+        quill.focus();
+        this.closeEmojiPicker();
     },
 
     /**
@@ -178,9 +266,16 @@ const RichEditor = {
             ['clean'],
         ];
 
+        const modules = {
+            toolbar: {
+                container: toolbar,
+                handlers: {},
+            },
+        };
+
         const quill = new Quill('#' + id + '-quill', {
             theme: 'snow',
-            modules: { toolbar },
+            modules,
             placeholder: options.placeholder || '',
         });
 
@@ -197,6 +292,28 @@ const RichEditor = {
         quill.on('text-change', () => {
             el.value = quill.root.innerHTML;
         });
+
+        const toolbarModule = quill.getModule('toolbar');
+        const toolbarEl = toolbarModule?.container
+            || (container.previousElementSibling?.classList?.contains('ql-toolbar') ? container.previousElementSibling : null);
+        if (toolbarEl) {
+            const formatGroup = document.createElement('span');
+            formatGroup.className = 'ql-formats quill-emoji-host';
+
+            const emojiButton = document.createElement('button');
+            emojiButton.type = 'button';
+            emojiButton.className = 'ql-emoji';
+            emojiButton.title = 'Insert emoji';
+            emojiButton.setAttribute('aria-label', 'Insert emoji');
+            emojiButton.textContent = '😀';
+            emojiButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.toggleEmojiPicker(quill, emojiButton);
+            });
+
+            formatGroup.appendChild(emojiButton);
+            toolbarEl.appendChild(formatGroup);
+        }
 
         this._editors[id] = quill;
         return quill;
