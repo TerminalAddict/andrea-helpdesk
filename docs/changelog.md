@@ -6,6 +6,10 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ## [Unreleased]
 
+---
+
+## [1.4.8] — 2026-05-11
+
 ### Added
 - Added per-agent notification preferences at `#/my-profile/settings/notifications`, including browser notification controls and checkboxes for update alerts, new tickets, assignments, replies, internal notes, SLA overdue alerts, and due-date overdue alerts
 - Added online-first PWA support with `manifest.webmanifest`, install metadata, app icons, a minimal service worker, and static-asset-only caching
@@ -28,6 +32,7 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ### Removed
 - Removed the Mark as read / Mark all read workflow and the orange read-but-still-active notification state
+
 
 ---
 
