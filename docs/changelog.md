@@ -8,6 +8,18 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
+## [1.4.12] — 2026-05-11
+
+### Added
+- Added a dynamic PWA manifest that uses the configured Application Name and branding icon values instead of hardcoded Andrea Helpdesk branding
+- Added a `pwa_icon_url` notification setting for installs that need a PWA/mobile-safe icon separate from the browser favicon
+
+### Changed
+- Web Push payloads and local browser notifications now use the configured app name and PWA/Favicon icon fallback chain
+
+
+---
+
 ## [1.4.11] — 2026-05-11
 
 ### Changed

@@ -119,11 +119,12 @@ class PushNotificationService
         ];
 
         $safePayload = json_encode([
-            'title' => $this->safeText((string)($payload['title'] ?? 'Andrea Helpdesk'), 180),
+            'title' => $this->safeText((string)($payload['title'] ?? $this->settings->getCompanyName()), 180),
             'body' => $this->safeText((string)($payload['body'] ?? ''), 240),
             'link' => $this->safeLink((string)($payload['link'] ?? '/my-profile/notifications')),
             'tag' => 'andrea-helpdesk-' . preg_replace('/[^a-zA-Z0-9:_-]/', '-', (string)($payload['dedupe_key'] ?? uniqid('push:', true))),
-            'icon' => '/Andrea-Helpdesk-favicon.png',
+            'icon' => $this->notificationIcon(),
+            'badge' => $this->notificationIcon(),
         ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
         if ($safePayload === false) {
@@ -187,6 +188,30 @@ class PushNotificationService
         }
 
         return mb_substr($link, 0, 255);
+    }
+
+    private function notificationIcon(): string
+    {
+        $icon = (string)$this->settings->get('pwa_icon_url', '');
+        if ($icon === '') {
+            $icon = (string)$this->settings->get('favicon_url', '');
+        }
+        return $this->safeIconUrl($icon) ?: '/Andrea-Helpdesk-favicon.png';
+    }
+
+    private function safeIconUrl(string $url): string
+    {
+        $url = trim($url);
+        if ($url === '' || preg_match('/[\r\n]/', $url)) {
+            return '';
+        }
+        if (str_starts_with($url, '/') && !str_starts_with($url, '//')) {
+            return mb_substr($url, 0, 500);
+        }
+        if (preg_match('#^https://#i', $url)) {
+            return mb_substr($url, 0, 500);
+        }
+        return '';
     }
 
     private function log(string $message): void

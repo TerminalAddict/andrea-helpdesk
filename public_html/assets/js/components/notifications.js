@@ -230,9 +230,9 @@ const Notifications = {
             const id = parseInt(item.id, 10) || 0;
             if (!id) return;
 
-            const note = new Notification(item.title || 'Andrea Helpdesk', {
+            const note = new Notification(item.title || App.appName || 'Andrea Helpdesk', {
                 body: item.body || '',
-                icon: App.settings.logo_url || '/Andrea-Helpdesk-favicon.png',
+                icon: App.pwaIconUrl(),
                 tag: 'andrea-helpdesk-' + id,
             });
 
@@ -350,9 +350,9 @@ const Notifications = {
             throw new Error('Browser notifications are not enabled');
         }
 
-        const note = new Notification('Andrea Helpdesk', {
+        const note = new Notification(App.appName || 'Andrea Helpdesk', {
             body: 'Browser notifications are enabled for this account.',
-            icon: App.settings.logo_url || '/Andrea-Helpdesk-favicon.png',
+            icon: App.pwaIconUrl(),
             tag: 'andrea-helpdesk-test',
         });
         window.setTimeout(() => note.close(), 5000);

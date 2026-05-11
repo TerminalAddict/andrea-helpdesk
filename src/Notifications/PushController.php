@@ -5,6 +5,7 @@ namespace Andrea\Helpdesk\Notifications;
 
 use Andrea\Helpdesk\Core\Request;
 use Andrea\Helpdesk\Core\Response;
+use Andrea\Helpdesk\Settings\SettingsService;
 
 class PushController
 {
@@ -61,7 +62,7 @@ class PushController
         }
 
         $this->push->sendToAgents([$agentId], [
-            'title' => 'Andrea Helpdesk test push',
+            'title' => SettingsService::getInstance()->getCompanyName() . ' test push',
             'body' => 'Push notifications are working for this account.',
             'link' => '/my-profile/settings/notifications',
             'dedupe_key' => 'test-push:' . $agentId . ':' . time(),

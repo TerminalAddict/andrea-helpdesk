@@ -421,6 +421,7 @@ INSERT INTO settings (key_name, value, type, group_name, label) VALUES
 ('push_vapid_public_key',          '',       'string',  'notifications', 'VAPID Public Key'),
 ('push_vapid_private_key',         '',       'string',  'notifications', 'VAPID Private Key'),
 ('push_vapid_subject',             '',       'string',  'notifications', 'VAPID Subject'),
+('pwa_icon_url',                   '',       'string',  'notifications', 'PWA / Notification Icon URL'),
 ('push_last_send_failed_at',       '',       'string',  'notifications', 'Last Push Send Failure At'),
 ('push_last_send_failure',         '',       'string',  'notifications', 'Last Push Send Failure')
 

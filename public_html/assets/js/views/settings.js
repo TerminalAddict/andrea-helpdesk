@@ -238,6 +238,11 @@ const SettingsView = {
                                 <input type="text" class="form-control" id="s-push_vapid_subject" value="${App.escapeHtml(s.push_vapid_subject || '')}" placeholder="mailto:support@example.com or https://helpdesk.example.com">
                                 <div class="form-text">Use a contact email as <code>mailto:name@example.com</code> or this application's HTTPS origin.</div>
                             </div>
+                            <div class="col-12">
+                                <label class="form-label">PWA / Notification Icon URL</label>
+                                <input type="text" class="form-control" id="s-pwa_icon_url" value="${App.escapeHtml(s.pwa_icon_url || '')}" placeholder="Leave blank to use Favicon URL">
+                                <div class="form-text">Optional. Use a square HTTPS or root-relative PNG/SVG with safe padding for installed app icons and push notifications. If empty, the Branding → Favicon URL is used.</div>
+                            </div>
                         </div>
 
                         <div class="d-flex gap-2 flex-wrap mt-3">
@@ -1275,7 +1280,7 @@ const SettingsView = {
             autoresponse: ['auto_response_enabled','auto_response_subject','auto_response_body'],
             imap:         [],
             slack:        ['slack_enabled','slack_webhook_url','slack_channel','slack_on_new_ticket','slack_on_assign','slack_on_new_reply','slack_unfurl_links','slack_username','slack_icon_url','slack_icon_emoji'],
-            notifications: ['push_vapid_public_key','push_vapid_private_key','push_vapid_subject'],
+            notifications: ['push_vapid_public_key','push_vapid_private_key','push_vapid_subject','pwa_icon_url'],
             'support-form': ['support_form_recaptcha_site_key','support_form_recaptcha_secret_key','support_form_allowed_origins'],
         };
 
@@ -1323,6 +1328,10 @@ const SettingsView = {
                 this.pushStatus = (await API.get('/admin/settings/push-status')).data || {};
                 if (payload.push_vapid_public_key !== undefined) {
                     App.settings.push_vapid_public_key = payload.push_vapid_public_key;
+                }
+                if (payload.pwa_icon_url !== undefined) {
+                    App.settings.pwa_icon_url = payload.pwa_icon_url;
+                    App.applyManifest();
                 }
                 this.renderTab('notifications');
             }

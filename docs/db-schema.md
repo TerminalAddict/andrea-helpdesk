@@ -411,7 +411,7 @@ Runtime-configurable key/value store for application settings that don't require
 | `key_name` | VARCHAR(100) | NO | | Setting key (primary key) |
 | `value` | TEXT | YES | NULL | Setting value (stored as string regardless of `type`) |
 | `type` | ENUM('string','integer','boolean','json') | NO | 'string' | Hint for how to cast the value when reading |
-| `group_name` | VARCHAR(60) | NO | 'general' | Logical grouping for the settings UI (`general`, `branding`, `email`, `imap`, `slack`) |
+| `group_name` | VARCHAR(60) | NO | 'general' | Logical grouping for the settings UI (`general`, `branding`, `email`, `imap`, `slack`, `notifications`, `support-form`) |
 | `label` | VARCHAR(120) | NO | | Human-readable label shown in the settings UI |
 | `updated_at` | DATETIME | NO | CURRENT_TIMESTAMP ON UPDATE | Last modification time |
 
@@ -699,6 +699,7 @@ The following settings are seeded by `schema.sql`. Values shown are the defaults
 | `push_vapid_public_key` | `` | string | Public VAPID key exposed to browsers when creating push subscriptions |
 | `push_vapid_private_key` | `` | string | Private VAPID key used server-side to send push notifications (AES-256-CBC encrypted at rest) |
 | `push_vapid_subject` | `` | string | VAPID contact subject, either `mailto:name@example.com` or the HTTPS origin of the app |
+| `pwa_icon_url` | `` | string | Optional PWA install / Web Push notification icon URL. If empty, the app uses `favicon_url`, then the bundled Andrea Helpdesk icon |
 | `push_last_send_failed_at` | `` | string | Timestamp of the most recent Web Push send failure, shown in admin diagnostics |
 | `push_last_send_failure` | `` | string | Short diagnostic message for the most recent Web Push send failure |
 

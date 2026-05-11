@@ -1,4 +1,4 @@
-const APP_VERSION = '1.4.11';
+const APP_VERSION = '1.4.12';
 const CACHE_NAME = `andrea-helpdesk-static-${APP_VERSION}`;
 const STATIC_ASSETS = [
     '/',
@@ -96,10 +96,11 @@ self.addEventListener('push', (event) => {
     }
 
     const title = payload.title || 'Andrea Helpdesk';
+    const icon = payload.icon || '/Andrea-Helpdesk-favicon.png';
     const options = {
         body: payload.body || '',
-        icon: payload.icon || '/Andrea-Helpdesk-favicon.png',
-        badge: '/Andrea-Helpdesk-favicon.png',
+        icon,
+        badge: payload.badge || icon,
         tag: payload.tag || 'andrea-helpdesk',
         data: {
             url: payload.link ? '/#' + payload.link : '/#/my-profile/notifications'

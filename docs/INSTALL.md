@@ -640,4 +640,5 @@ After any install method:
 4. Configure cron for `bin/imap-poll.php`.
 5. Send a test SMTP message.
 6. Add an IMAP account and run **Poll Now**.
-7. Remove or restrict `public_html/install/`.
+7. Configure browser push notifications and PWA install behaviour from **Admin → Settings → Notifications** if you want desktop/mobile OS alerts. The PWA uses the configured **Application Name** and optional **PWA / Notification Icon URL**; when that icon is empty it falls back to Branding → **Favicon URL**.
+8. Remove or restrict `public_html/install/`.

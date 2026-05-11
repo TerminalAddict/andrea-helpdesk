@@ -280,7 +280,8 @@ const App = {
             if (res.data) {
                 this.settings = res.data;
                 if (res.data.company_name) this.applyAppName(res.data.company_name);
-                if (res.data.favicon_url)  this.applyFavicon(res.data.favicon_url);
+                if (res.data.favicon_url) this.applyFavicon(res.data.favicon_url);
+                this.applyManifest();
             }
         } catch (e) {}
     },
@@ -297,7 +298,25 @@ const App = {
 
     applyFavicon(url) {
         const link = document.getElementById('app-favicon');
-        if (link && url && /^https?:\/\//i.test(url)) link.href = url;
+        if (link && this.isSafeAssetUrl(url)) link.href = url;
+    },
+
+    applyManifest() {
+        const link = document.querySelector('link[rel="manifest"]');
+        if (link) link.href = '/manifest.php?v=' + encodeURIComponent(this.settings.company_name || this.appName);
+    },
+
+    pwaIconUrl() {
+        return this.isSafeAssetUrl(this.settings.pwa_icon_url)
+            ? this.settings.pwa_icon_url
+            : (this.isSafeAssetUrl(this.settings.favicon_url) ? this.settings.favicon_url : '/Andrea-Helpdesk-favicon.png');
+    },
+
+    isSafeAssetUrl(url) {
+        url = String(url || '').trim();
+        if (!url || /[\r\n]/.test(url)) return false;
+        if (url.startsWith('/') && !url.startsWith('//')) return true;
+        return /^https:\/\//i.test(url);
     },
 
     navigate(path) {

@@ -207,6 +207,8 @@ Filename: `admin branding.png`
 
 The **Branding** settings page for logo, favicon, primary colour, and support-email presentation.
 
+The PWA uses the configured **Application Name** for the install manifest. It uses the optional **PWA / Notification Icon URL** from **Admin → Settings → Notifications** when set; otherwise it falls back to this Branding page's **Favicon URL**.
+
 ### Email / SMTP Settings
 
 ![Admin Email](screenshots/admin%20email.png)

@@ -16,6 +16,10 @@ The service worker intentionally caches static application assets only. API resp
 4. Save the settings.
 5. Confirm the status shows **Push notifications are configured**.
 
+PWA branding uses the normal **Application Name** from `#/admin/settings/general`. Icons use the optional **PWA / Notification Icon URL** in `#/admin/settings/notifications`; if that is blank, Andrea Helpdesk uses the **Favicon URL** from `#/admin/settings/branding`; if that is also blank, it falls back to the bundled Andrea Helpdesk icons.
+
+For best install prompts and mobile Home Screen icons, use a square PNG or SVG with safe padding. Root-relative URLs such as `/my-icon.png` and HTTPS URLs are supported.
+
 The diagnostics panel also shows:
 
 - active push subscription count
@@ -123,7 +127,7 @@ Installing Andrea Helpdesk and allowing notifications are separate browser/OS pe
 
 ### Why do I not see the install option?
 
-Confirm the site is served over HTTPS, `manifest.webmanifest` is reachable, `service-worker.js` is reachable, and the browser supports installable PWAs. Some browsers hide the install action inside the main browser menu.
+Confirm the site is served over HTTPS, `/manifest.php` is reachable, `service-worker.js` is reachable, and the browser supports installable PWAs. Some browsers hide the install action inside the main browser menu.
 
 ### Why do I not receive push notifications after installing?
 

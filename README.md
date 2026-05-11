@@ -86,7 +86,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Per-agent notification preferences** — agents can choose which in-app/browser notifications they receive at `#/my-profile/settings/notifications`; update alerts are admin-only and enabled by default for admins
 - **Ticket notification lifecycle** — new-ticket, assignment, customer-reply, and internal-note notifications are removed for an agent when that agent opens the ticket; SLA/due-date overdue notifications remain until the overdue condition is cleared
 - **Silent admin update checks** — once per day, each admin session silently checks for a newer release in the background and raises an in-app alert that links straight to **Settings → General → Version & Updates**; overlapping checks for the same admin are serialised server-side
-- **PWA / browser push notifications** — Andrea Helpdesk can be installed as an online-first PWA, and agents can opt in from `#/my-profile/settings/notifications` to receive browser / OS push notifications for enabled notification types after an admin configures VAPID keys in `#/admin/settings/notifications`
+- **PWA / browser push notifications** — Andrea Helpdesk can be installed as an online-first PWA, uses the configured Application Name and PWA/Favicon icon for install prompts and push payloads, and lets agents opt in from `#/my-profile/settings/notifications` after an admin configures VAPID keys in `#/admin/settings/notifications`
 - **Slack notifications** — optional webhook integration for new ticket alerts, assignments, and customer replies; configurable bot display name, icon image or emoji, and link preview behaviour
 - **Global email signature** — appended to all outbound agent emails
 
@@ -104,7 +104,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 ### Settings And Profile Routes
 - **SMTP configuration** — host, port, encryption, credentials, from address — all managed in the UI
 - **IMAP accounts** — add, edit, test, and browse folders on multiple inbound mailboxes; username accepts both email (`user@domain.com`) and Windows domain (`DOMAIN\user`) formats; leading/trailing whitespace in host and username is stripped on save; credentials encrypted at rest with AES-256-CBC
-- **Company branding** — company name, logo URL, support email
+- **Company branding** — company name, logo URL, favicon URL, primary colour, and support email
 - **Ticket prefix** — customise the ticket number prefix
 - **Auto-responder** — enable/disable and customise the automatic acknowledgement email
 - **Date format** — configurable display format
@@ -112,7 +112,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Slack appearance** — configurable bot display name, icon (image URL or emoji), and link preview toggle per Slack integration
 - **Support form** — configure public support-form reCAPTCHA v3 site and secret keys, maintain an allowlist of permitted embed origins, copy the direct URL or iframe embed snippet, and preview the embeddable support form from **Settings → Support Form**
 - **Support form embedding** — `/support-form/embed` sends a `Content-Security-Policy: frame-ancestors ...` header generated from the saved allowlist of origins, while the rest of the app continues to send `X-Frame-Options: SAMEORIGIN`
-- **Notification push settings** — configure or generate VAPID keys from **Settings → Notifications** so browser push subscriptions can be created securely
+- **Notification push settings** — configure or generate VAPID keys from **Settings → Notifications** so browser push subscriptions can be created securely; optionally set a dedicated PWA / notification icon, otherwise the PWA manifest and push notifications use the Branding favicon
 - **Version & update check** — the General tab shows the currently installed version and a **Check for Updates** button; the server fetches `version.json` from `UPDATE_VERSION_URL` when set, otherwise from the public GitHub `main` branch, and reports whether an update is available; when an update is found, an **Update Now** button opens a preflight checklist (directory writability, overwriteability of existing files, PHP extensions, disk space) with fix instructions for any failures, then a one-click updater that downloads, extracts, copies files, and runs database migrations automatically. On shared hosting, if PHP cannot overwrite application files owned by your account, use SFTP/rsync/file-manager deployment instead of the in-app updater.
 - **Notification preferences** — `#/my-profile/settings/notifications` includes browser push subscription controls and app install guidance so each agent can enable or disable browser / OS alerts independently
 - **Admin password recovery** — `make reset-admin-password` lists admin accounts only, lets you choose one, resets the password interactively, and revokes that admin’s existing refresh-token sessions

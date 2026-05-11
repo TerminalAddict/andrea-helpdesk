@@ -1127,6 +1127,7 @@ Public branding and display settings. No authentication required.
     "primary_color": "#0d6efd",
     "date_format": "d/m/Y H:i",
     "favicon_url": "",
+    "pwa_icon_url": "",
     "global_signature": "<p>-- ...</p>",
     "imap_poll_mode": "cron",
     "push_vapid_public_key": "BExamplePublicVapidKey..."
@@ -1154,7 +1155,7 @@ Sensitive values (`smtp_password`, `imap_password`, `support_form_recaptcha_secr
 
 ### `GET /api/admin/settings/push-status`
 
-Return VAPID configuration status for the admin Notifications settings page.
+Return VAPID configuration status and push diagnostics for the admin Notifications settings page. The same settings group also includes optional `pwa_icon_url`, which is used by the dynamic PWA manifest and Web Push payloads; when empty, `favicon_url` is used.
 
 **Auth:** `role:admin`
 
@@ -1186,7 +1187,7 @@ Return VAPID configuration status for the admin Notifications settings page.
 }
 ```
 
-Possible `status` values: `not_configured`, `configured`, `invalid`.
+Possible `status` values: `not_configured`, `configured`, `invalid`, `dependency_missing`.
 
 ### `POST /api/admin/settings/generate-push-keys`
 
