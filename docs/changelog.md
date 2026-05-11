@@ -10,10 +10,18 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ## [1.4.11] — 2026-05-11
 
+### Changed
+- Web Push dependency repair now works on hosts without Composer by downloading the full GitHub release package for the installed version and copying `vendor/` from that package
+- VAPID key actions now verify the Web Push classes after dependency repair and report a specific failure if `vendor/` remains unavailable or unwritable
+
 ---
 
 ## [1.4.10] — 2026-05-11
 
+### Changed
+- Added a dependency repair service used by VAPID settings actions so installs updated by the older updater can attempt to repair missing Web Push dependencies before returning an error
+- VAPID key generation and VAPID setting saves now attempt a one-time Composer repair before reporting that the Web Push dependency is missing
+- Updated PWA documentation to explain the transitional repair path for installs that were updated before `vendor/` was included in the updater flow
 
 ---
 
@@ -22,7 +30,6 @@ All notable changes to Andrea Helpdesk are documented here.
 ### Changed
 - In-app updates now prefer the full GitHub release package, copy packaged `vendor/` dependencies when present, and run Composer as a fallback so new PHP dependencies such as Web Push are installed during the update instead of failing later at runtime
 - Updater preflight now checks for a PHP dependency update path and verifies `vendor/` writability because Composer/package dependency repair requires the PHP process to overwrite dependency files
-- VAPID settings actions now attempt a one-time dependency repair before reporting a missing Web Push dependency, using Composer when available or the full GitHub release package when Composer is unavailable
 
 
 ---
