@@ -8,11 +8,16 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
+## [1.4.10] — 2026-05-11
+
+---
+
 ## [1.4.9] — 2026-05-11
 
 ### Changed
 - In-app updates now prefer the full GitHub release package, copy packaged `vendor/` dependencies when present, and run Composer as a fallback so new PHP dependencies such as Web Push are installed during the update instead of failing later at runtime
 - Updater preflight now checks for a PHP dependency update path and verifies `vendor/` writability because Composer/package dependency repair requires the PHP process to overwrite dependency files
+- VAPID settings actions now attempt a one-time Composer dependency repair before reporting a missing Web Push dependency, which helps installs that were updated by an older updater that skipped `vendor/`
 
 
 ---

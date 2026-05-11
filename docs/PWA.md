@@ -139,6 +139,8 @@ composer install --no-dev --optimize-autoloader
 
 If you are on shared hosting without Composer, install from the full GitHub release package instead of the source zip. The full release package includes the `vendor/` dependencies. Current versions of the in-app updater also prefer the full release package and can repair missing PHP dependencies automatically if `vendor/` is writable by the PHP process.
 
+If an install was already updated by an older updater that skipped `vendor/`, the VAPID key actions will try one Composer repair automatically when Composer is available. If Composer is disabled or unavailable, upload the full release package or run Composer manually from the application directory.
+
 ### Why does iOS behave differently from Android?
 
 iOS Web Push requires the app to be added to the Home Screen and opened from the installed app icon. A normal Safari tab is not equivalent to the installed PWA for push notifications.

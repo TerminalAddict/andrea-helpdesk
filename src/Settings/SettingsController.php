@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Andrea\Helpdesk\Settings;
 
+use Andrea\Helpdesk\Core\DependencyRepairService;
 use Andrea\Helpdesk\Core\Sanitizer;
 use Andrea\Helpdesk\Core\Request;
 use Andrea\Helpdesk\Core\Response;
@@ -107,8 +108,9 @@ class SettingsController
             || array_key_exists('push_vapid_private_key', $data)
             || array_key_exists('push_vapid_subject', $data)
         ) {
-            if (!class_exists(VAPID::class)) {
-                Response::error('Web Push dependency is missing. Run composer install --no-dev --optimize-autoloader on the server, or install from the full release package.', 503);
+            $dependency = $this->ensureWebPushDependency();
+            if (!$dependency['available']) {
+                Response::error('Web Push dependency is missing. ' . $dependency['message'], 503);
                 return;
             }
             $publicKey = (string)($data['push_vapid_public_key'] ?? $this->repo->get('push_vapid_public_key', ''));
@@ -151,8 +153,9 @@ class SettingsController
     public function generatePushKeys(Request $request): void
     {
         try {
-            if (!class_exists(VAPID::class)) {
-                Response::error('Web Push dependency is missing. Run composer install --no-dev --optimize-autoloader on the server, or install from the full release package.', 503);
+            $dependency = $this->ensureWebPushDependency();
+            if (!$dependency['available']) {
+                Response::error('Web Push dependency is missing. ' . $dependency['message'], 503);
                 return;
             }
             $keys = VAPID::createVapidKeys();
@@ -178,6 +181,19 @@ class SettingsController
         } catch (\Throwable $e) {
             Response::error('Failed to generate VAPID keys: ' . $e->getMessage(), 500);
         }
+    }
+
+    private function ensureWebPushDependency(): array
+    {
+        if (class_exists(VAPID::class)) {
+            return ['available' => true, 'message' => ''];
+        }
+
+        $repair = (new DependencyRepairService())->ensureClasses([VAPID::class]);
+        return [
+            'available' => (bool)$repair['available'],
+            'message' => (string)$repair['message'],
+        ];
     }
 
     public function pushStatus(Request $request): void
