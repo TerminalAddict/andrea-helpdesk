@@ -18,6 +18,7 @@ use Andrea\Helpdesk\IMAP\ImapAccountController;
 use Andrea\Helpdesk\Reports\ReportController;
 use Andrea\Helpdesk\KnowledgeBase\KbController;
 use Andrea\Helpdesk\Notifications\NotificationController;
+use Andrea\Helpdesk\Notifications\PushController;
 
 // Route format: [METHOD, /path, ControllerClass, 'method', ['middleware', ...]]
 return [
@@ -92,9 +93,15 @@ return [
     ['PUT',  '/api/agent/profile',            AgentController::class, 'updateProfile', ['auth:agent']],
     ['GET',  '/api/notifications',            NotificationController::class, 'index',         ['auth:agent']],
     ['GET',  '/api/notifications/active',     NotificationController::class, 'active',        ['auth:agent']],
-    ['POST', '/api/notifications/read-all',   NotificationController::class, 'markAllRead',   ['auth:agent']],
-    ['POST', '/api/notifications/:id/read',   NotificationController::class, 'markRead',      ['auth:agent']],
+    ['GET',  '/api/notifications/preferences', NotificationController::class, 'preferences', ['auth:agent']],
+    ['PUT',  '/api/notifications/preferences', NotificationController::class, 'updatePreferences', ['auth:agent']],
+    ['DELETE', '/api/notifications/:id',      NotificationController::class, 'delete',        ['auth:agent']],
+    ['POST', '/api/tickets/:id/notifications/opened', NotificationController::class, 'dismissOpenedTicket', ['auth:agent']],
     ['POST', '/api/notifications/check-updates', NotificationController::class, 'checkUpdates', ['role:admin']],
+    ['GET',  '/api/push/config',              PushController::class, 'config',      ['auth:agent']],
+    ['POST', '/api/push/subscriptions',       PushController::class, 'subscribe',   ['auth:agent']],
+    ['DELETE', '/api/push/subscriptions',     PushController::class, 'unsubscribe', ['auth:agent']],
+    ['POST', '/api/push/test',                PushController::class, 'test',        ['auth:agent']],
     ['GET',  '/api/agents',                   AgentController::class, 'index',         ['auth:agent']],
     ['POST', '/api/agents',                   AgentController::class, 'store',         ['role:admin']],
     ['GET',  '/api/agents/:id',               AgentController::class, 'show',          ['auth:agent']],
@@ -119,6 +126,8 @@ return [
     ['POST', '/api/admin/settings/test-smtp',   SettingsController::class, 'testSmtp',  ['role:admin']],
     ['POST', '/api/admin/settings/test-imap',   SettingsController::class, 'testImap',  ['role:admin']],
     ['POST', '/api/admin/settings/test-slack',  SettingsController::class, 'testSlack', ['role:admin']],
+    ['GET',  '/api/admin/settings/push-status', SettingsController::class, 'pushStatus', ['role:admin']],
+    ['POST', '/api/admin/settings/generate-push-keys', SettingsController::class, 'generatePushKeys', ['role:admin']],
 
     // ── Version & updates ─────────────────────────────────────────────────────
     ['GET',  '/api/version',          VersionController::class, 'index',     ['role:admin']],

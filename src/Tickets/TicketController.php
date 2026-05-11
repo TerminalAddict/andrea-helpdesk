@@ -9,6 +9,7 @@ use Andrea\Helpdesk\Core\Response;
 use Andrea\Helpdesk\Core\Exceptions\NotFoundException;
 use Andrea\Helpdesk\Core\Exceptions\HttpException;
 use Andrea\Helpdesk\Notifications\NotificationService;
+use Andrea\Helpdesk\Notifications\AgentNotificationRepository;
 use Andrea\Helpdesk\Settings\SettingsService;
 use Andrea\Helpdesk\Agents\AgentRepository;
 
@@ -103,6 +104,9 @@ class TicketController
     {
         $ticket = $this->service->getWithFullThread((int)$params['id']);
         if (!$ticket) throw new NotFoundException('Ticket not found');
+        if (!empty($request->agent?->id)) {
+            (new AgentNotificationRepository())->deleteOpenedTicketNotifications((int)$request->agent->id, (int)$ticket['id']);
+        }
         Response::success($ticket);
     }
 

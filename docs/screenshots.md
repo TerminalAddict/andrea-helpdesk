@@ -6,6 +6,7 @@ The screenshot library now covers:
 - agent login and agent workspace screens
 - customer login and customer portal flows
 - the expanded admin settings areas and modals
+- Android PWA install and notification-permission prompts
 - light and dark mode examples
 
 Unless noted otherwise, screenshots are from the light theme.
@@ -269,6 +270,42 @@ The **Support Form** settings page, showing the public support-form controls for
 Filename: `my profile.png`
 
 The per-agent profile page, showing personal signature editing, global signature preview, display preferences, browser-notification controls, and the new profile-level navigation that includes the notifications overview.
+
+---
+
+## PWA And Mobile Install
+
+### Android Chrome Install Menu
+
+![Android Chrome Install Menu](screenshots/Andrea%20Helpdesk%20install%20on%20Android.jpg)
+
+Filename: `Andrea Helpdesk install on Android.jpg`
+
+Android Chrome showing Andrea Helpdesk with the browser install option available from the site menu.
+
+### Android Install App Action
+
+![Android Install App Action](screenshots/Andrea%20Helpdesk%20-%20install%20app.jpg)
+
+Filename: `Andrea Helpdesk - install app.jpg`
+
+The Android Chrome **Install app** action for Andrea Helpdesk, documenting the user entry point for adding the PWA to the device.
+
+### Android Install Confirmation
+
+![Android Install Confirmation](screenshots/Android%20prompt%20install%20Andrea%20Helpdesk.jpg)
+
+Filename: `Android prompt install Andrea Helpdesk.jpg`
+
+The Android install confirmation prompt shown before Andrea Helpdesk is added to the device.
+
+### Android Notification Permission
+
+![Android Notification Permission](screenshots/Andrea%20Helpdesk%20wants%20to%20send%20you%20notifications%20-%20Android.jpg)
+
+Filename: `Andrea Helpdesk wants to send you notifications - Android.jpg`
+
+The Android browser / OS permission prompt shown after an agent enables browser push notifications for Andrea Helpdesk.
 
 ---
 

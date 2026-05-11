@@ -895,7 +895,7 @@ Update the currently authenticated agent's own profile. Requires current passwor
 | `signature` | string | HTML email signature |
 | `page_size` | int | `10`, `20`, or `50` |
 | `theme` | string | `light` or `dark` |
-| `browser_notifications_enabled` | bool | Enable or disable browser notifications for this agent while the app is open |
+| `browser_notifications_enabled` | bool | Enable or disable browser / OS push notifications for this agent |
 | `current_password` | string | Required if changing password |
 | `new_password` | string | Min 8 chars |
 
@@ -909,7 +909,7 @@ All notification endpoints require **`auth:agent`**. The silent update-check end
 
 ### `GET /api/notifications`
 
-Return the current agent's unread, still-active notification queue for the navbar bell menu.
+Return the current agent's current actionable notification queue for the navbar bell menu.
 
 **Query params**
 
@@ -934,19 +934,17 @@ Return the current agent's unread, still-active notification queue for the navba
         "data": {
           "ticket_id": 185
         },
-        "read_at": null,
         "created_at": "2026-04-16 14:03:11"
       }
     ],
-    "unread_count": 3,
-    "active_count": 5
+    "active_count": 3
   }
 }
 ```
 
 ### `GET /api/notifications/active`
 
-Return the current agent's active notification overview for `#/my-profile/notifications`. This includes both unread and read notifications that are still relevant based on current ticket/update state.
+Return the current agent's active notification overview for `#/my-profile/notifications`.
 
 **Query params**
 
@@ -962,7 +960,7 @@ Return the current agent's active notification overview for `#/my-profile/notifi
     "items": [
       {
         "id": 51,
-        "type": "ticket_overdue",
+        "type": "ticket_due_overdue",
         "severity": "danger",
         "title": "Overdue: HD-2026-04-16-185",
         "body": "Cannot log in · Due date has passed",
@@ -970,34 +968,60 @@ Return the current agent's active notification overview for `#/my-profile/notifi
         "data": {
           "ticket_id": 185
         },
-        "read_at": "2026-04-16 15:11:02",
         "created_at": "2026-04-16 14:40:07"
       }
     ],
-    "unread_count": 0,
     "active_count": 1
   }
 }
 ```
 
-### `POST /api/notifications/:id/read`
+### `GET /api/notifications/preferences`
 
-Mark one notification as read for the current agent.
+Return the current agent's notification preferences.
 
 **Response `200`**
 
 ```json
 {
   "data": {
-    "unread_count": 2,
-    "active_count": 5
+    "preferences": {
+      "update_available": true,
+      "ticket_created": true,
+      "ticket_assigned": true,
+      "customer_reply": true,
+      "ticket_internal_note": true,
+      "ticket_sla_overdue": true,
+      "ticket_due_overdue": true
+    },
+    "browser_notifications_enabled": true
   }
 }
 ```
 
-### `POST /api/notifications/read-all`
+### `PUT /api/notifications/preferences`
 
-Mark all notifications as read for the current agent.
+Update the current agent's notification preferences.
+
+**Request**
+
+```json
+{
+  "preferences": {
+    "ticket_created": true,
+    "customer_reply": false,
+    "ticket_sla_overdue": true
+  }
+}
+```
+
+### `POST /api/tickets/:id/notifications/opened`
+
+Delete ticket-open notifications for the current agent and ticket. This is used when an agent opens a ticket; overdue notifications are not deleted by this endpoint.
+
+### `DELETE /api/notifications/:id`
+
+Delete one notification for the current agent. The UI does not expose this as a read/unread workflow.
 
 ### `POST /api/notifications/check-updates`
 
@@ -1022,6 +1046,71 @@ If the latest version is newer and no existing notification has already been rec
 
 ---
 
+## Browser Push endpoints
+
+All push endpoints require **`auth:agent`**.
+
+### `GET /api/push/config`
+
+Return the public VAPID configuration needed by the browser when creating a push subscription. The private VAPID key is never exposed.
+
+**Response `200`**
+
+```json
+{
+  "data": {
+    "configured": true,
+    "public_key": "BExamplePublicVapidKey...",
+    "subject": "https://support.example.com"
+  }
+}
+```
+
+### `POST /api/push/subscriptions`
+
+Store or refresh the current browser/device push subscription for the authenticated agent.
+
+**Request**
+
+```json
+{
+  "subscription": {
+    "endpoint": "https://fcm.googleapis.com/fcm/send/...",
+    "keys": {
+      "p256dh": "browserPublicKey",
+      "auth": "browserAuthSecret"
+    },
+    "contentEncoding": "aes128gcm"
+  }
+}
+```
+
+**Response `200`** — `message: "Push subscription saved"`
+
+### `DELETE /api/push/subscriptions`
+
+Remove the current agent's push subscription. If `endpoint` is provided, only that browser/device endpoint is removed; otherwise all push subscriptions for the agent are removed.
+
+**Request**
+
+```json
+{
+  "endpoint": "https://fcm.googleapis.com/fcm/send/..."
+}
+```
+
+**Response `200`** — `message: "Push subscription removed"`
+
+### `POST /api/push/test`
+
+Send a Web Push test notification to the authenticated agent's registered browser/device subscriptions.
+
+**Response `200`** — `message: "Test push sent"`
+
+If the agent has no registered push subscriptions, the endpoint returns `422`.
+
+---
+
 ## Settings endpoints
 
 ### `GET /api/settings/public`
@@ -1039,7 +1128,8 @@ Public branding and display settings. No authentication required.
     "date_format": "d/m/Y H:i",
     "favicon_url": "",
     "global_signature": "<p>-- ...</p>",
-    "imap_poll_mode": "cron"
+    "imap_poll_mode": "cron",
+    "push_vapid_public_key": "BExamplePublicVapidKey..."
   }
 }
 ```
@@ -1056,11 +1146,67 @@ Get all runtime settings (or a specific group).
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `group` | string | `general`, `branding`, `email`, `imap`, `slack` |
+| `group` | string | `general`, `branding`, `email`, `imap`, `slack`, `notifications`, `support-form` |
 
-Sensitive values (`smtp_password`, `imap_password`) are masked as `***` in the response.
+Sensitive values (`smtp_password`, `imap_password`, `support_form_recaptcha_secret_key`, `push_vapid_private_key`) are masked as `***` in the response.
 
 **Response `200`** — object of `{ key_name: value }` pairs (when group specified) or grouped object (all settings).
+
+### `GET /api/admin/settings/push-status`
+
+Return VAPID configuration status for the admin Notifications settings page.
+
+**Auth:** `role:admin`
+
+**Response `200`**
+
+```json
+{
+  "data": {
+    "status": "configured",
+    "message": "Push notifications are configured.",
+    "configured": true,
+    "public_key_present": true,
+    "private_key_present": true,
+    "subject": "https://support.example.com",
+    "diagnostics": {
+      "subscription_count": 12,
+      "subscribed_agent_count": 4,
+      "last_subscription_seen_at": "2026-05-11 19:30:00",
+      "php_extensions": {
+        "curl": true,
+        "mbstring": true,
+        "openssl": true
+      },
+      "openssl_prime256v1": true,
+      "last_send_failed_at": "",
+      "last_send_failure": ""
+    }
+  }
+}
+```
+
+Possible `status` values: `not_configured`, `configured`, `invalid`.
+
+### `POST /api/admin/settings/generate-push-keys`
+
+Generate and store a VAPID public/private key pair. The private key is encrypted before storage.
+
+**Auth:** `role:admin`
+
+**Response `200`**
+
+```json
+{
+  "data": {
+    "push_vapid_public_key": "BExamplePublicVapidKey...",
+    "push_vapid_subject": "https://support.example.com",
+    "status": {
+      "configured": true
+    }
+  }
+}
+```
 
 ---
 

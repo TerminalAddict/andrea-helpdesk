@@ -6,18 +6,21 @@ namespace Andrea\Helpdesk\Notifications;
 use Andrea\Helpdesk\Core\Request;
 use Andrea\Helpdesk\Core\Response;
 use Andrea\Helpdesk\Core\VersionService;
+use Andrea\Helpdesk\Agents\AgentRepository;
 
 class NotificationController
 {
     private AgentNotificationRepository $repo;
     private UpdateCheckService $updateChecks;
     private VersionService $versions;
+    private AgentRepository $agents;
 
     public function __construct()
     {
         $this->repo         = new AgentNotificationRepository();
         $this->updateChecks = new UpdateCheckService();
         $this->versions     = new VersionService();
+        $this->agents       = new AgentRepository();
     }
 
     public function index(Request $request): void
@@ -26,8 +29,8 @@ class NotificationController
         $limit   = max(1, min(50, (int)$request->input('limit', 12)));
         $afterId = (int)$request->input('after_id', 0);
 
-        $items = $this->repo->listActiveTicketNotificationsForAgent($agentId, max($limit, 50), $afterId > 0 ? $afterId : null, true);
-        $updateItem = $this->activeUpdateNotification($agentId, true, $afterId > 0 ? $afterId : null);
+        $items = $this->repo->listActiveTicketNotificationsForAgent($agentId, max($limit, 50), $afterId > 0 ? $afterId : null);
+        $updateItem = $this->activeUpdateNotification($agentId, $afterId > 0 ? $afterId : null);
         if ($updateItem) {
             $items[] = $updateItem;
         }
@@ -36,7 +39,6 @@ class NotificationController
 
         Response::success([
             'items'        => $items,
-            'unread_count' => $this->activeUnreadCount($agentId),
             'active_count' => $this->activeCount($agentId),
         ]);
     }
@@ -54,35 +56,60 @@ class NotificationController
 
         Response::success([
             'items'        => $this->normaliseItems($items, $limit, false, false),
-            'unread_count' => $this->activeUnreadCount($agentId),
             'active_count' => $this->activeCount($agentId),
         ]);
     }
 
-    public function markRead(Request $request, array $params): void
+    public function delete(Request $request, array $params): void
     {
         $agentId = (int)$request->agent->id;
-        $this->repo->markRead($agentId, (int)$params['id']);
+        $this->repo->deleteForAgent($agentId, (int)$params['id']);
         Response::success([
-            'unread_count' => $this->activeUnreadCount($agentId),
             'active_count' => $this->activeCount($agentId),
         ], 'Notification updated');
     }
 
-    public function markAllRead(Request $request): void
+    public function dismissOpenedTicket(Request $request, array $params): void
     {
         $agentId = (int)$request->agent->id;
-        $this->repo->markAllRead($agentId);
+        $this->repo->deleteOpenedTicketNotifications($agentId, (int)$params['id']);
         Response::success([
-            'unread_count' => 0,
             'active_count' => $this->activeCount($agentId),
-        ], 'Notifications marked read');
+        ], 'Ticket notifications dismissed');
     }
 
     public function checkUpdates(Request $request): void
     {
         $force = in_array((string)$request->input('force', '0'), ['1', 'true', 'yes'], true);
         Response::success($this->updateChecks->checkForAgent((int)$request->agent->id, $force));
+    }
+
+    public function preferences(Request $request): void
+    {
+        $agent = $this->agents->findById((int)$request->agent->id);
+        Response::success([
+            'preferences' => NotificationService::normalisePreferences(
+                $agent['notification_preferences_json'] ?? null,
+                (string)($agent['role'] ?? 'agent')
+            ),
+            'browser_notifications_enabled' => !empty($agent['browser_notifications_enabled']),
+        ]);
+    }
+
+    public function updatePreferences(Request $request): void
+    {
+        $agent = $this->agents->findById((int)$request->agent->id);
+        $incoming = $request->input('preferences', []);
+        $prefs = NotificationService::normalisePreferences(
+            is_array($incoming) ? $incoming : [],
+            (string)($agent['role'] ?? 'agent')
+        );
+
+        $this->agents->update((int)$request->agent->id, [
+            'notification_preferences_json' => json_encode($prefs),
+        ]);
+
+        Response::success(['preferences' => $prefs], 'Notification preferences saved');
     }
 
     private function normaliseItems(array $items, int $limit, bool $ascending, bool $forMenu): array
@@ -136,9 +163,9 @@ class NotificationController
         }
 
         return match ($type) {
-            'ticket_overdue' => 'ticket_overdue:' . $ticketId,
-            'sla_escalated' => 'sla_escalated:' . $ticketId,
-            default => $forMenu ? null : $type . ':' . $ticketId,
+            'ticket_sla_overdue' => 'ticket_sla_overdue:' . $ticketId,
+            'ticket_due_overdue' => 'ticket_due_overdue:' . $ticketId,
+            default => $type . ':' . $ticketId,
         };
     }
 
@@ -152,19 +179,14 @@ class NotificationController
         return count($this->normaliseItems($items, 1000, false, false));
     }
 
-    private function activeUnreadCount(int $agentId): int
+    private function activeUpdateNotification(int $agentId, ?int $afterId = null): ?array
     {
-        $items = $this->repo->listActiveTicketNotificationsForAgent($agentId, 250, null, true);
-        $updateItem = $this->activeUpdateNotification($agentId, true);
-        if ($updateItem) {
-            $items[] = $updateItem;
+        $agent = $this->agents->findById($agentId);
+        if (!$agent || !(new NotificationService())->agentWantsNotification($agent, 'update_available')) {
+            return null;
         }
-        return count($this->normaliseItems($items, 1000, false, true));
-    }
 
-    private function activeUpdateNotification(int $agentId, bool $unreadOnly = false, ?int $afterId = null): ?array
-    {
-        $item = $this->repo->latestUpdateNotificationForAgent($agentId, $unreadOnly, $afterId);
+        $item = $this->repo->latestUpdateNotificationForAgent($agentId, $afterId);
         if (!$item) {
             return null;
         }

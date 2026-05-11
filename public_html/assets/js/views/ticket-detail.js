@@ -43,6 +43,9 @@ const TicketDetailView = {
             this.agents = agentsRes.data || [];
             this.allTags = tagsRes.data || [];
             this.renderFull();
+            if (typeof Notifications !== 'undefined') {
+                Notifications.refreshSummary({ silent: true });
+            }
         } catch (e) {
             $('#ticket-detail-wrap').html('<div class="alert alert-danger m-4">' + App.escapeHtml(e.message) + '</div>');
         }

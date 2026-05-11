@@ -6,6 +6,29 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ## [Unreleased]
 
+### Added
+- Added per-agent notification preferences at `#/my-profile/settings/notifications`, including browser notification controls and checkboxes for update alerts, new tickets, assignments, replies, internal notes, SLA overdue alerts, and due-date overdue alerts
+- Added online-first PWA support with `manifest.webmanifest`, install metadata, app icons, a minimal service worker, and static-asset-only caching
+- Added Web Push notification delivery using VAPID keys, per-agent browser/device subscriptions, expired-subscription cleanup, and admin VAPID configuration at `#/admin/settings/notifications`
+- Added an install prompt/status panel to `#/my-profile/settings/notifications`, including iOS Home Screen guidance
+- Added push diagnostics for subscription counts, PHP extension support, OpenSSL curve support, last subscription refresh, and last push-send failure
+- Added subscription-refresh handling so rotated browser push subscriptions are re-saved on the next authenticated app load
+- Added `docs/PWA.md` with desktop, Android, and iOS install guidance plus service-worker security notes
+- Added a server-side **Send Test Push To Me** action for browser/device push delivery testing
+- Added an offline fallback page and a service-worker update refresh prompt
+- Added separate padded maskable PWA icons for mobile launchers
+- Added Android PWA install and notification-permission screenshots to the PWA and screenshot documentation
+
+### Changed
+- Reworked the notification center so the bell and Alerts Panel show current actionable notifications instead of read/unread state
+- Opening a ticket now removes that agent's new-ticket, assignment, customer-reply, internal-note, and mention notifications for the ticket
+- SLA and due-date overdue notifications now remain until the overdue condition is cleared, instead of being dismissed by opening the ticket
+- Browser notifications now use service-worker push subscriptions when VAPID keys are configured, rather than only showing notifications while the app is open
+- Service-worker static caches are now versioned with the app release so browser assets refresh reliably after deployment
+
+### Removed
+- Removed the Mark as read / Mark all read workflow and the orange read-but-still-active notification state
+
 ---
 
 ## [1.4.7] — 2026-05-11

@@ -13,6 +13,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 | [docs/INSTALL.md](docs/INSTALL.md) | End-to-end installation guide for VPS/SSH installs, FTP/shared-hosting installs, and the `/install/` browser wizard, including install mock screenshots and post-install checks. |
 | [docs/api-spec.md](docs/api-spec.md) | Full REST API reference — every endpoint, request/response shape, required headers, auth middleware, and error codes. Essential if you're building an integration, a mobile client, or working in the backend without reading the PHP source. |
 | [docs/db-schema.md](docs/db-schema.md) | Complete database schema — all tables, columns, indexes, foreign keys, and the default settings reference. Essential for understanding the data model, writing migrations, or debugging unexpected query behaviour. |
+| [docs/PWA.md](docs/PWA.md) | PWA install guidance, Web Push setup, service-worker behaviour, diagnostics, and security notes. |
 | [docs/screenshots.md](docs/screenshots.md) | Annotated screenshots of every screen in the agent UI — useful for evaluating the product or understanding what each feature looks like before diving into the code. |
 ## Features
 
@@ -81,9 +82,11 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 
 ### Notifications
 - **Email notifications** — agents are notified of new tickets, customer replies, ticket assignments, and @mentions; customers and participants are notified of replies
-- **In-app notification center** — agents get a bell icon in the navbar for unread “right now” items; once a notification is marked read it drops out of the bell menu, while `/my-profile/notifications` keeps showing still-active issues until they are actually resolved
+- **In-app notification center** — agents get a bell icon in the navbar for current actionable alerts, plus an Alerts Panel at `#/my-profile/notifications`
+- **Per-agent notification preferences** — agents can choose which in-app/browser notifications they receive at `#/my-profile/settings/notifications`; update alerts are admin-only and enabled by default for admins
+- **Ticket notification lifecycle** — new-ticket, assignment, customer-reply, and internal-note notifications are removed for an agent when that agent opens the ticket; SLA/due-date overdue notifications remain until the overdue condition is cleared
 - **Silent admin update checks** — once per day, each admin session silently checks for a newer release in the background and raises an in-app alert that links straight to **Settings → General → Version & Updates**; overlapping checks for the same admin are serialised server-side
-- **Browser notifications** — agents can opt in from **My Profile** or **My Profile → Notifications** to receive browser / OS notifications while the app is open for new tickets, customer replies, overdue/SLA alerts, and update notices
+- **PWA / browser push notifications** — Andrea Helpdesk can be installed as an online-first PWA, and agents can opt in from `#/my-profile/settings/notifications` to receive browser / OS push notifications for enabled notification types after an admin configures VAPID keys in `#/admin/settings/notifications`
 - **Slack notifications** — optional webhook integration for new ticket alerts, assignments, and customer replies; configurable bot display name, icon image or emoji, and link preview behaviour
 - **Global email signature** — appended to all outbound agent emails
 
@@ -109,8 +112,9 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Slack appearance** — configurable bot display name, icon (image URL or emoji), and link preview toggle per Slack integration
 - **Support form** — configure public support-form reCAPTCHA v3 site and secret keys, maintain an allowlist of permitted embed origins, copy the direct URL or iframe embed snippet, and preview the embeddable support form from **Settings → Support Form**
 - **Support form embedding** — `/support-form/embed` sends a `Content-Security-Policy: frame-ancestors ...` header generated from the saved allowlist of origins, while the rest of the app continues to send `X-Frame-Options: SAMEORIGIN`
+- **Notification push settings** — configure or generate VAPID keys from **Settings → Notifications** so browser push subscriptions can be created securely
 - **Version & update check** — the General tab shows the currently installed version and a **Check for Updates** button; the server fetches `version.json` from `UPDATE_VERSION_URL` when set, otherwise from the public GitHub `main` branch, and reports whether an update is available; when an update is found, an **Update Now** button opens a preflight checklist (directory writability, overwriteability of existing files, PHP extensions, disk space) with fix instructions for any failures, then a one-click updater that downloads, extracts, copies files, and runs database migrations automatically. On shared hosting, if PHP cannot overwrite application files owned by your account, use SFTP/rsync/file-manager deployment instead of the in-app updater.
-- **Notification preferences** — `/my-profile` includes browser-notification controls so each agent can enable or disable browser / OS alerts independently
+- **Notification preferences** — `#/my-profile/settings/notifications` includes browser push subscription controls and app install guidance so each agent can enable or disable browser / OS alerts independently
 - **Admin password recovery** — `make reset-admin-password` lists admin accounts only, lets you choose one, resets the password interactively, and revokes that admin’s existing refresh-token sessions
 
 Route structure:
@@ -120,10 +124,12 @@ Route structure:
 - `/admin/settings/autoresponse`
 - `/admin/settings/imap`
 - `/admin/settings/slack`
+- `/admin/settings/notifications`
 - `/admin/settings/support-form`
 - `/admin/tags`
 - `/my-profile`
 - `/my-profile/notifications`
+- `/my-profile/settings/notifications`
 
 ### Security
 - **JWT authentication** — short-lived access tokens (15 min) + long-lived refresh tokens (30 days, hashed in DB)

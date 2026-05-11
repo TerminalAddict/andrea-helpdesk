@@ -19,13 +19,14 @@ Andrea Helpdesk uses MySQL (InnoDB, utf8mb4_unicode_ci throughout). All tables u
 11. [imap_accounts](#11-imap_accounts)
 12. [settings](#12-settings)
 13. [agent_notifications](#13-agent_notifications)
-14. [knowledge_base_categories](#14-knowledge_base_categories)
-15. [knowledge_base_articles](#15-knowledge_base_articles)
-16. [refresh_tokens](#16-refresh_tokens)
-17. [audit_log](#17-audit_log)
-18. [Default Settings Reference](#18-default-settings-reference)
-19. [Entity Relationship Summary](#19-entity-relationship-summary)
-20. [Indexes and Performance Notes](#20-indexes-and-performance-notes)
+14. [agent_push_subscriptions](#14-agent_push_subscriptions)
+15. [knowledge_base_categories](#15-knowledge_base_categories)
+16. [knowledge_base_articles](#16-knowledge_base_articles)
+17. [refresh_tokens](#17-refresh_tokens)
+18. [audit_log](#18-audit_log)
+19. [Default Settings Reference](#19-default-settings-reference)
+20. [Entity Relationship Summary](#20-entity-relationship-summary)
+21. [Indexes and Performance Notes](#21-indexes-and-performance-notes)
 
 ---
 
@@ -50,6 +51,7 @@ Stores staff members who log in to the helpdesk to manage tickets.
 | `page_size` | TINYINT UNSIGNED | NO | 20 | Preferred rows per page for ticket lists and dashboard blocks (10 / 20 / 50) |
 | `theme` | VARCHAR(20) | NO | 'light' | UI theme preference: `light` or `dark` |
 | `browser_notifications_enabled` | TINYINT(1) | NO | 0 | Whether this agent wants browser notifications while the app is open |
+| `notification_preferences_json` | TEXT | YES | NULL | Per-agent notification type preferences as JSON |
 | `is_active` | TINYINT(1) | NO | 1 | Soft-disable without deleting; inactive agents cannot log in |
 | `last_login_at` | DATETIME | YES | NULL | Updated on successful login |
 | `last_update_check_at` | DATETIME | YES | NULL | Last successful silent background update check for this admin |
@@ -64,7 +66,8 @@ Stores staff members who log in to the helpdesk to manage tickets.
 - Passwords are hashed with `password_hash()` (bcrypt, PHP default cost). The column is wide enough for argon2 if upgraded.
 - `admin` role agents are not subject to any of the `can_*` permission checks anywhere in the middleware or service layer.
 - `signature` is sanitised server-side before storage and rendered in the compose UI.
-- `browser_notifications_enabled` controls whether the frontend should show browser / OS notifications for this agent while the app is open.
+- `browser_notifications_enabled` controls whether browser / OS push notifications are enabled for this agent.
+- `notification_preferences_json` controls which notification types the agent receives. Admin update notifications default on for admins only; ticket and overdue notifications default on for all agents.
 
 ---
 
@@ -432,14 +435,14 @@ Per-agent in-app notification inbox entries shown in the navbar bell menu.
 |--------|------|----------|---------|-------------|
 | `id` | INT UNSIGNED | NO | AUTO_INCREMENT | Primary key |
 | `agent_id` | INT UNSIGNED | NO | | FK → agents.id |
-| `type` | VARCHAR(60) | NO | | Notification type, e.g. `ticket_created`, `customer_reply`, `ticket_overdue`, `update_available` |
+| `type` | VARCHAR(60) | NO | | Notification type, e.g. `ticket_created`, `customer_reply`, `ticket_internal_note`, `ticket_sla_overdue`, `ticket_due_overdue`, `update_available` |
 | `severity` | ENUM('info','success','warning','danger') | NO | `info` | UI severity styling |
 | `title` | VARCHAR(180) | NO | | Primary notification headline |
 | `body` | TEXT | YES | NULL | Optional secondary line shown in the bell menu / browser notification |
 | `link` | VARCHAR(255) | YES | NULL | Internal SPA route to open when clicked, e.g. `/tickets/123` |
 | `data_json` | TEXT | YES | NULL | Optional structured payload for future client use |
-| `dedupe_key` | VARCHAR(191) | YES | NULL | Optional per-agent dedupe key so recurring checks/events do not create duplicate unread notifications |
-| `read_at` | DATETIME | YES | NULL | Set when the agent opens or marks the notification read |
+| `dedupe_key` | VARCHAR(191) | YES | NULL | Optional per-agent dedupe key so recurring checks/events do not create duplicate current notifications |
+| `read_at` | DATETIME | YES | NULL | Legacy column retained for upgrade compatibility; current notification lifecycle removes rows instead of marking them read |
 | `created_at` | DATETIME | NO | CURRENT_TIMESTAMP | |
 
 **Indexes:** `idx_agent_notifications_agent_created` on `(agent_id, created_at)`, `idx_agent_notifications_agent_read` on `(agent_id, read_at)`
@@ -448,12 +451,42 @@ Per-agent in-app notification inbox entries shown in the navbar bell menu.
 
 **Notes:**
 - Rows are created for each recipient agent independently; there is no shared “notification master” table.
-- Silent admin update checks use `dedupe_key = update:<version>` so each admin sees at most one unread notification per released version.
-- Ticket/reply/SLA notifications use deep links so clicking the bell entry navigates directly to the affected ticket or settings screen.
+- Silent admin update checks use `dedupe_key = update:<version>` so each opted-in admin sees at most one current notification per released version.
+- New ticket, assignment, customer reply, and internal note notifications are deleted for an agent when that agent opens the ticket.
+- SLA and due-date overdue notifications remain active while the ticket is still overdue, and disappear once priority is no longer `overdue` or the due date moves out of the today/past window.
+- Newly created rows are also eligible for Web Push delivery when the agent has enabled browser notifications and has at least one active push subscription.
 
 ---
 
-## 14. knowledge_base_categories
+## 14. agent_push_subscriptions
+
+Stores Web Push subscriptions for each agent/browser device. These are created when an agent enables browser notifications from `#/my-profile/settings/notifications`.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | INT UNSIGNED | NO | AUTO_INCREMENT | Primary key |
+| `agent_id` | INT UNSIGNED | NO | | FK → agents.id |
+| `endpoint` | TEXT | NO | | Browser push endpoint URL |
+| `endpoint_hash` | CHAR(64) | NO | | SHA-256 hash of the endpoint for unique indexing |
+| `p256dh` | VARCHAR(255) | NO | | Browser push public key |
+| `auth` | VARCHAR(255) | NO | | Browser push auth secret |
+| `content_encoding` | VARCHAR(32) | NO | `aes128gcm` | Push payload encoding |
+| `user_agent` | VARCHAR(255) | YES | NULL | Browser user-agent captured at subscription time |
+| `created_at` | DATETIME | NO | CURRENT_TIMESTAMP | |
+| `last_seen_at` | DATETIME | NO | CURRENT_TIMESTAMP | Updated when the subscription is refreshed |
+
+**Indexes:** `idx_agent_push_agent` on `(agent_id)`
+
+**Unique keys:** `uq_agent_push_endpoint_hash` on `endpoint_hash`
+
+**Notes:**
+- Expired push endpoints are deleted automatically when the push provider returns `404` or `410`.
+- Disabling browser notifications removes the agent's current browser subscription, or all subscriptions if no endpoint is supplied.
+- Push payloads are intentionally small: notification title, short body, and internal app link only.
+
+---
+
+## 15. knowledge_base_categories
 
 Top-level categories for grouping knowledge base articles.
 
@@ -469,7 +502,7 @@ Top-level categories for grouping knowledge base articles.
 
 ---
 
-## 15. knowledge_base_articles
+## 16. knowledge_base_articles
 
 Individual knowledge base articles.
 
@@ -507,7 +540,7 @@ Individual knowledge base articles.
 
 ---
 
-## 16. refresh_tokens
+## 17. refresh_tokens
 
 JWT refresh tokens used for session persistence and token rotation.
 
@@ -540,7 +573,7 @@ JWT refresh tokens used for session persistence and token rotation.
 
 ---
 
-## 17. audit_log
+## 18. audit_log
 
 Immutable log of significant actions performed in the system.
 
@@ -574,7 +607,7 @@ Immutable log of significant actions performed in the system.
 
 ---
 
-## 18. Default Settings Reference
+## 19. Default Settings Reference
 
 The following settings are seeded by `schema.sql`. Values shown are the defaults; all can be changed at runtime via the admin settings routes (for example `#/admin/settings/general`).
 
@@ -659,9 +692,19 @@ The following settings are seeded by `schema.sql`. Values shown are the defaults
 | `support_form_recaptcha_secret_key` | `` | string | Optional Google reCAPTCHA v3 secret key for the public website support form (AES-256-CBC encrypted at rest) |
 | `support_form_allowed_origins` | `[]` | json | JSON array of `scheme://host[:port]` origins permitted to embed `/support-form/embed` via `Content-Security-Policy: frame-ancestors` |
 
+### Browser Push Notifications
+
+| Key | Default | Type | Description |
+|-----|---------|------|-------------|
+| `push_vapid_public_key` | `` | string | Public VAPID key exposed to browsers when creating push subscriptions |
+| `push_vapid_private_key` | `` | string | Private VAPID key used server-side to send push notifications (AES-256-CBC encrypted at rest) |
+| `push_vapid_subject` | `` | string | VAPID contact subject, either `mailto:name@example.com` or the HTTPS origin of the app |
+| `push_last_send_failed_at` | `` | string | Timestamp of the most recent Web Push send failure, shown in admin diagnostics |
+| `push_last_send_failure` | `` | string | Short diagnostic message for the most recent Web Push send failure |
+
 ---
 
-## 19. Entity Relationship Summary
+## 20. Entity Relationship Summary
 
 ```
 agents ──────────────────────────────────────────────────────────────────────────┐
@@ -695,12 +738,13 @@ audit_log (no FK constraints — append-only, references by value)
 ticket_number_sequences (standalone counter table, no FK)
 settings (standalone key/value store, no FK)
 agent_notifications ──► agents
+agent_push_subscriptions ──► agents
 imap_accounts (standalone — tag_id references tags but no FK defined)
 ```
 
 ---
 
-## 20. Indexes and Performance Notes
+## 21. Indexes and Performance Notes
 
 ### Covering indexes for common queries
 

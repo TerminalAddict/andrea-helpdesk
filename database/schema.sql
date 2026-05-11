@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS agents (
     page_size           TINYINT UNSIGNED NOT NULL DEFAULT 20 COMMENT 'Rows per page for tickets list and dashboard blocks (10/20/50)',
     theme               VARCHAR(20) NOT NULL DEFAULT 'light' COMMENT 'UI theme preference: light or dark',
     browser_notifications_enabled TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Whether this agent wants browser notifications while the app is open',
+    notification_preferences_json TEXT NULL COMMENT 'Per-agent notification type preferences as JSON',
     is_active           TINYINT(1) NOT NULL DEFAULT 1,
     last_login_at       DATETIME NULL,
     last_update_check_at DATETIME NULL COMMENT 'Last successful background update check for this admin',
@@ -264,6 +265,22 @@ CREATE TABLE IF NOT EXISTS agent_notifications (
     CONSTRAINT fk_agent_notifications_agent FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS agent_push_subscriptions (
+    id               INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    agent_id         INT UNSIGNED NOT NULL,
+    endpoint         TEXT NOT NULL,
+    endpoint_hash    CHAR(64) NOT NULL,
+    p256dh           VARCHAR(255) NOT NULL,
+    auth             VARCHAR(255) NOT NULL,
+    content_encoding VARCHAR(32) NOT NULL DEFAULT 'aes128gcm',
+    user_agent       VARCHAR(255) NULL,
+    created_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_seen_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_agent_push_endpoint_hash (endpoint_hash),
+    INDEX idx_agent_push_agent (agent_id),
+    CONSTRAINT fk_agent_push_agent FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ============================================================
 -- Knowledge Base
 -- ============================================================
@@ -398,6 +415,13 @@ INSERT INTO settings (key_name, value, type, group_name, label) VALUES
 -- Support Form
 ('support_form_recaptcha_site_key', '',      'string',  'support-form', 'reCAPTCHA v3 Site Key'),
 ('support_form_recaptcha_secret_key', '',    'string',  'support-form', 'reCAPTCHA v3 Secret Key'),
-('support_form_allowed_origins',   '[]',     'json',    'support-form', 'Allowed Embed Origins')
+('support_form_allowed_origins',   '[]',     'json',    'support-form', 'Allowed Embed Origins'),
+
+-- Browser Push Notifications
+('push_vapid_public_key',          '',       'string',  'notifications', 'VAPID Public Key'),
+('push_vapid_private_key',         '',       'string',  'notifications', 'VAPID Private Key'),
+('push_vapid_subject',             '',       'string',  'notifications', 'VAPID Subject'),
+('push_last_send_failed_at',       '',       'string',  'notifications', 'Last Push Send Failure At'),
+('push_last_send_failure',         '',       'string',  'notifications', 'Last Push Send Failure')
 
 ON DUPLICATE KEY UPDATE label = VALUES(label);

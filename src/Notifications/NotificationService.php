@@ -9,11 +9,22 @@ use Andrea\Helpdesk\Settings\SettingsService;
 
 class NotificationService
 {
+    public const PREFERENCE_KEYS = [
+        'update_available',
+        'ticket_created',
+        'ticket_assigned',
+        'customer_reply',
+        'ticket_internal_note',
+        'ticket_sla_overdue',
+        'ticket_due_overdue',
+    ];
+
     private EmailNotifier $emailNotifier;
     private SlackNotifier $slackNotifier;
     private AutoResponder $autoResponder;
     private AgentNotificationRepository $inbox;
     private AgentRepository $agents;
+    private PushNotificationService $push;
 
     public function __construct()
     {
@@ -23,6 +34,7 @@ class NotificationService
         $this->autoResponder  = new AutoResponder($this->emailNotifier, $settings);
         $this->inbox          = new AgentNotificationRepository();
         $this->agents         = new AgentRepository();
+        $this->push           = new PushNotificationService($settings);
     }
 
     public function onNewTicket(array $ticket, array $customer): void
@@ -261,16 +273,6 @@ class NotificationService
                     'No attention for ' . (int)$daysWithoutAttention . ' day(s)',
                     'sla:' . (int)$ticket['id'] . ':' . (string)($ticket['last_attention_at'] ?? '')
                 );
-            } else {
-                $this->createInAppNotifications($agentIds, [
-                    'type'       => 'sla_escalated',
-                    'severity'   => 'warning',
-                    'title'      => "{$stageLabel}: {$ticket['ticket_number']}",
-                    'body'       => trim($ticket['subject'] . ' · No attention for ' . (int)$daysWithoutAttention . ' day(s)'),
-                    'link'       => '/tickets/' . (int)$ticket['id'],
-                    'dedupe_key' => 'sla:high:' . (int)$ticket['id'] . ':' . (string)($ticket['last_attention_at'] ?? ''),
-                    'data'       => ['ticket_id' => (int)$ticket['id']],
-                ]);
             }
         } catch (\Throwable $e) {
             $this->log("sendSlaReminder({$stage}) inbox: " . $e->getMessage());
@@ -278,6 +280,14 @@ class NotificationService
     }
 
     public function sendOverdueAlert(array $ticket, array $agentIds, string $reason, ?string $dedupeSuffix = null): void
+    {
+        $type = str_starts_with((string)$dedupeSuffix, 'due:')
+            ? 'ticket_due_overdue'
+            : 'ticket_sla_overdue';
+        $this->sendOverdueAlertOfType($ticket, $agentIds, $reason, $dedupeSuffix, $type);
+    }
+
+    public function sendOverdueAlertOfType(array $ticket, array $agentIds, string $reason, ?string $dedupeSuffix, string $type): void
     {
         $agentIds = array_values(array_unique(array_map('intval', $agentIds)));
         if (empty($agentIds)) {
@@ -306,7 +316,7 @@ class NotificationService
 
         try {
             $this->createInAppNotifications($agentIds, [
-                'type'       => 'ticket_overdue',
+                'type'       => in_array($type, ['ticket_sla_overdue', 'ticket_due_overdue'], true) ? $type : 'ticket_sla_overdue',
                 'severity'   => 'danger',
                 'title'      => "Overdue: {$ticket['ticket_number']}",
                 'body'       => trim($ticket['subject'] . ' · ' . $reason),
@@ -316,6 +326,33 @@ class NotificationService
             ]);
         } catch (\Throwable $e) {
             $this->log('sendOverdueAlert inbox: ' . $e->getMessage());
+        }
+    }
+
+    public function onInternalNote(array $ticket, array $reply, array $agent): void
+    {
+        try {
+            $recipientIds = array_map('intval', array_column($this->agents->getActiveAgents(), 'id'));
+            $recipientIds = array_values(array_filter(
+                $recipientIds,
+                fn(int $id): bool => $id !== (int)$agent['id']
+            ));
+            if (!$recipientIds) {
+                return;
+            }
+
+            $preview = trim(substr((string)($reply['body_text'] ?: strip_tags((string)($reply['body_html'] ?? ''))), 0, 140));
+            $this->createInAppNotifications($recipientIds, [
+                'type'       => 'ticket_internal_note',
+                'severity'   => 'warning',
+                'title'      => "Internal note on {$ticket['ticket_number']}",
+                'body'       => trim(($agent['name'] ?? 'An agent') . ($preview ? ' · ' . $preview : '')),
+                'link'       => '/tickets/' . (int)$ticket['id'],
+                'dedupe_key' => 'ticket:internal-note:' . (int)$reply['id'],
+                'data'       => ['ticket_id' => (int)$ticket['id']],
+            ]);
+        } catch (\Throwable $e) {
+            $this->log('onInternalNote inbox: ' . $e->getMessage());
         }
     }
 
@@ -339,7 +376,71 @@ class NotificationService
 
     private function createInAppNotifications(array $agentIds, array $payload): void
     {
-        $this->inbox->createForAgents($agentIds, $payload);
+        $createdAgentIds = $this->inbox->createForAgents(
+            $this->filterRecipientsByPreference($agentIds, (string)$payload['type']),
+            $payload
+        );
+        if ($createdAgentIds) {
+            $this->push->sendToAgents($createdAgentIds, $payload);
+        }
+    }
+
+    private function filterRecipientsByPreference(array $agentIds, string $type): array
+    {
+        $agentIds = array_values(array_unique(array_filter(array_map('intval', $agentIds), fn(int $id): bool => $id > 0)));
+        if (!$agentIds || !in_array($type, self::PREFERENCE_KEYS, true)) {
+            return $agentIds;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($agentIds), '?'));
+        $rows = Database::getInstance()->fetchAll(
+            "SELECT id, role, notification_preferences_json FROM agents WHERE id IN ({$placeholders}) AND is_active = 1",
+            $agentIds
+        );
+
+        $allowed = [];
+        foreach ($rows as $row) {
+            if ($this->agentWantsNotification($row, $type)) {
+                $allowed[] = (int)$row['id'];
+            }
+        }
+
+        return $allowed;
+    }
+
+    public function agentWantsNotification(array $agent, string $type): bool
+    {
+        if ($type === 'update_available' && ($agent['role'] ?? '') !== 'admin') {
+            return false;
+        }
+
+        $prefs = self::normalisePreferences($agent['notification_preferences_json'] ?? null, (string)($agent['role'] ?? 'agent'));
+        return !empty($prefs[$type]);
+    }
+
+    public static function normalisePreferences(mixed $raw, string $role = 'agent'): array
+    {
+        $decoded = is_array($raw) ? $raw : [];
+        if (is_string($raw) && trim($raw) !== '') {
+            $decoded = json_decode($raw, true) ?: [];
+        }
+
+        $defaults = [];
+        foreach (self::PREFERENCE_KEYS as $key) {
+            $defaults[$key] = $key === 'update_available' ? $role === 'admin' : true;
+        }
+
+        foreach ($defaults as $key => $default) {
+            if (array_key_exists($key, $decoded)) {
+                $defaults[$key] = (bool)$decoded[$key];
+            }
+        }
+
+        if ($role !== 'admin') {
+            $defaults['update_available'] = false;
+        }
+
+        return $defaults;
     }
 
     private function ticketSeverity(array $ticket): string

@@ -30,6 +30,11 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($pageTitle) ?></title>
     <link id="app-favicon" rel="icon" href="<?= htmlspecialchars($faviconUrl) ?>">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#111b2d">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="<?= htmlspecialchars($pageTitle) ?>">
     <link rel="stylesheet" href="/assets/vendor/bootstrap/bootstrap.min.css">
     <link rel="stylesheet" href="/assets/vendor/bootstrap-icons/bootstrap-icons.min.css">
     <link rel="stylesheet" href="/assets/vendor/quill/quill.snow.css">

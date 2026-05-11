@@ -117,11 +117,7 @@ class SlaService
                AND t.status NOT IN ('resolved', 'closed')
                AND t.priority != 'overdue'
                AND t.due_at IS NOT NULL
-               AND (
-                    (t.due_all_day = 1 AND DATE(COALESCE(t.due_end, t.due_at)) < CURRENT_DATE())
-                    OR
-                    (t.due_all_day = 0 AND COALESCE(t.due_end, t.due_at) < NOW())
-               )
+               AND DATE(COALESCE(t.due_end, t.due_at)) <= CURRENT_DATE()
              ORDER BY COALESCE(t.due_end, t.due_at) ASC"
         );
 
@@ -195,11 +191,7 @@ class SlaService
                AND status NOT IN ('resolved', 'closed')
                AND priority != 'overdue'
                AND due_at IS NOT NULL
-               AND (
-                    (due_all_day = 1 AND DATE(COALESCE(due_end, due_at)) < CURRENT_DATE())
-                    OR
-                    (due_all_day = 0 AND COALESCE(due_end, due_at) < NOW())
-               )"
+               AND DATE(COALESCE(due_end, due_at)) <= CURRENT_DATE()"
         );
         $stmt->execute([$ticketId]);
         return $stmt->rowCount() > 0;

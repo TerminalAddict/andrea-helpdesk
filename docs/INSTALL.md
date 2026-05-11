@@ -11,6 +11,8 @@ If you just want the fastest path:
 - use **Command Line Install** if you have shell access and can point the site document root at `public_html/`
 - use **FTP + Web Installer** if you are on shared hosting or cannot point the document root at `public_html/`
 
+After installation, see [PWA and Push Notifications](PWA.md) to configure browser push notifications and install Andrea Helpdesk on desktop, Android, or iOS devices.
+
 ## Fastest VPS Path
 
 If you want to watch the CLI install flow first:

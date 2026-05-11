@@ -4,6 +4,8 @@
 const App = {
     appName: 'Andrea Helpdesk',
     settings: {},
+    deferredInstallPrompt: null,
+    refreshingForServiceWorker: false,
 
     routes: {
         '/':               'DashboardView',
@@ -16,6 +18,7 @@ const App = {
         '/customers':      'CustomersView',
         '/customers/:id':  'CustomerDetailView',
         '/my-profile':     'MyProfileView',
+        '/my-profile/settings/:setting': 'MyProfileView',
         '/my-profile/:section': 'MyProfileView',
         '/admin/agents':   'AgentsView',
         '/admin/settings': 'SettingsView',
@@ -51,6 +54,7 @@ const App = {
                 if (typeof Notifications !== 'undefined') {
                     Notifications.init();
                 }
+                this.registerServiceWorkerForPwa();
                 this.startImapWebPoller();
             } else {
                 window.location.hash = '#/login/agent';
@@ -59,6 +63,14 @@ const App = {
         }
 
         $(window).on('hashchange', () => this.route());
+        window.addEventListener('beforeinstallprompt', (event) => {
+            event.preventDefault();
+            this.deferredInstallPrompt = event;
+        });
+        window.addEventListener('appinstalled', () => {
+            this.deferredInstallPrompt = null;
+            this.toast('Andrea Helpdesk has been installed', 'success');
+        });
         this.route();
 
         // Scroll to top button
@@ -66,6 +78,49 @@ const App = {
             $('#scroll-to-top').toggleClass('visible', $(window).scrollTop() > 300);
         });
         $('#scroll-to-top').on('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    },
+
+    async registerServiceWorkerForPwa() {
+        if (!('serviceWorker' in navigator)) return;
+        try {
+            const registration = await navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
+            registration.addEventListener('updatefound', () => {
+                const worker = registration.installing;
+                if (!worker) return;
+                worker.addEventListener('statechange', () => {
+                    if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+                        this.showServiceWorkerUpdatePrompt(worker);
+                    }
+                });
+            });
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (this.refreshingForServiceWorker) return;
+                this.refreshingForServiceWorker = true;
+                window.location.reload();
+            });
+        } catch (e) {
+            // PWA install support is optional; the app remains online-first without it.
+        }
+    },
+
+    showServiceWorkerUpdatePrompt(worker) {
+        const id = 'toast-sw-update';
+        if (document.getElementById(id)) return;
+        const html = `
+            <div id="${id}" class="toast align-items-center bg-dark text-white border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="false">
+                <div class="d-flex">
+                    <div class="toast-body">A new Andrea Helpdesk version is ready.</div>
+                    <button type="button" class="btn btn-sm btn-light my-2 me-2" id="btn-reload-service-worker">Refresh</button>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>`;
+        $('#toast-container').append(html);
+        const toastEl = document.getElementById(id);
+        const toast = new bootstrap.Toast(toastEl, { autohide: false });
+        $('#btn-reload-service-worker').on('click', () => {
+            worker.postMessage({ type: 'ANDREA_SKIP_WAITING' });
+        });
+        toast.show();
     },
 
     startImapWebPoller() {
@@ -170,7 +225,7 @@ const App = {
                 window.location.hash = '#/';
                 return;
             }
-            if (!['general', 'branding', 'email', 'autoresponse', 'imap', 'slack', 'support-form'].includes(params.section)) {
+            if (!['general', 'branding', 'email', 'autoresponse', 'imap', 'slack', 'support-form', 'notifications'].includes(params.section)) {
                 window.location.hash = '#/admin/settings/general';
                 return;
             }

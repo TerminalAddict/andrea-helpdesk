@@ -20,7 +20,6 @@ const Navbar = {
                             <div class="terminal-menu-heading">Notifications</div>
                             <strong>Inbox</strong>
                         </div>
-                        <a href="#" class="small text-decoration-none" data-notification-mark-all>Mark all read</a>
                     </div>
                     <div class="terminal-notification-menu-body" data-notification-menu-body>
                         <div class="terminal-notification-empty">Loading…</div>
@@ -28,6 +27,9 @@ const Navbar = {
                     <div class="terminal-notification-menu-footer">
                         <a class="dropdown-item terminal-menu-link" href="#/my-profile/notifications" data-route="/my-profile/notifications">
                             <i class="bi bi-layout-text-window-reverse me-2"></i>Alerts Panel
+                        </a>
+                        <a class="dropdown-item terminal-menu-link" href="#/my-profile/settings/notifications" data-route="/my-profile/settings/notifications">
+                            <i class="bi bi-sliders me-2"></i>Notification Settings
                         </a>
                     </div>
                 </div>

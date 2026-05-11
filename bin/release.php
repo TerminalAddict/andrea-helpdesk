@@ -43,6 +43,12 @@ updateFile(
     "version: '{$newVersion}'"
 );
 
+updateFile(
+    $root . '/public_html/service-worker.js',
+    "/const APP_VERSION = '\\d+\\.\\d+\\.\\d+';/",
+    "const APP_VERSION = '{$newVersion}';"
+);
+
 updateChangelog($root . '/docs/changelog.md', $newVersion, $today, $currentVersion, $root);
 
 echo $newVersion . PHP_EOL;

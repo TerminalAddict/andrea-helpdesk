@@ -59,6 +59,9 @@ class ReplyService
                 $notificationService = new NotificationService();
                 $notificationService->onAgentReply($ticket, $reply, $agent, $customer, $ccEmails, $attachmentIds, $includeSignature);
             }
+        } elseif ($reply) {
+            $notificationService = new NotificationService();
+            $notificationService->onInternalNote($ticket, $reply, $agent);
         }
 
         // Notify any @mentioned agents

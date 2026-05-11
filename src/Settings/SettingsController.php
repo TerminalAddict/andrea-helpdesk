@@ -7,8 +7,10 @@ use Andrea\Helpdesk\Core\Sanitizer;
 use Andrea\Helpdesk\Core\Request;
 use Andrea\Helpdesk\Core\Response;
 use Andrea\Helpdesk\Notifications\EmailNotifier;
+use Andrea\Helpdesk\Notifications\PushNotificationService;
 use Andrea\Helpdesk\Notifications\SlackNotifier;
 use Andrea\Helpdesk\Tickets\AttachmentService;
+use Minishlink\WebPush\VAPID;
 
 class SettingsController
 {
@@ -26,7 +28,7 @@ class SettingsController
      */
     public function publicSettings(Request $request): void
     {
-        $keys = ['company_name', 'logo_url', 'primary_color', 'date_format', 'favicon_url', 'global_signature', 'imap_poll_mode', 'support_form_recaptcha_site_key'];
+        $keys = ['company_name', 'logo_url', 'primary_color', 'date_format', 'favicon_url', 'global_signature', 'imap_poll_mode', 'support_form_recaptcha_site_key', 'push_vapid_public_key'];
         $data = [];
         foreach ($keys as $key) {
             $data[$key] = $this->repo->get($key);
@@ -51,7 +53,7 @@ class SettingsController
         }
 
         // Mask sensitive values
-        $sensitiveKeys = ['smtp_password', 'imap_password', 'support_form_recaptcha_secret_key'];
+        $sensitiveKeys = ['smtp_password', 'imap_password', 'support_form_recaptcha_secret_key', 'push_vapid_private_key'];
         array_walk_recursive($settings, function (&$item, $key) use ($sensitiveKeys) {
             if (in_array($key, $sensitiveKeys, true) && !empty($item)) {
                 $item = '***';
@@ -97,6 +99,30 @@ class SettingsController
         if (array_key_exists('support_form_allowed_origins', $data)) {
             $data['support_form_allowed_origins'] = $this->service->normalizeSupportFormAllowedOrigins($data['support_form_allowed_origins']);
         }
+        if (array_key_exists('push_vapid_subject', $data)) {
+            $data['push_vapid_subject'] = $this->normalizeVapidSubject((string)$data['push_vapid_subject']);
+        }
+        if (
+            array_key_exists('push_vapid_public_key', $data)
+            || array_key_exists('push_vapid_private_key', $data)
+            || array_key_exists('push_vapid_subject', $data)
+        ) {
+            $publicKey = (string)($data['push_vapid_public_key'] ?? $this->repo->get('push_vapid_public_key', ''));
+            $privateKey = (string)($data['push_vapid_private_key'] ?? $this->service->decrypt((string)$this->repo->get('push_vapid_private_key', '')));
+            $subject = (string)($data['push_vapid_subject'] ?? $this->repo->get('push_vapid_subject', ''));
+            if ($publicKey !== '' || $privateKey !== '' || $subject !== '') {
+                try {
+                    VAPID::validate([
+                        'subject' => $subject,
+                        'publicKey' => $publicKey,
+                        'privateKey' => $privateKey,
+                    ]);
+                } catch (\Throwable $e) {
+                    Response::error('Invalid VAPID configuration: ' . $e->getMessage(), 422);
+                    return;
+                }
+            }
+        }
 
         foreach (['global_signature', 'auto_response_body'] as $htmlKey) {
             if (array_key_exists($htmlKey, $data)) {
@@ -105,7 +131,7 @@ class SettingsController
         }
 
         // Encrypt passwords before saving
-        $sensitiveKeys = ['smtp_password', 'imap_password', 'support_form_recaptcha_secret_key'];
+        $sensitiveKeys = ['smtp_password', 'imap_password', 'support_form_recaptcha_secret_key', 'push_vapid_private_key'];
         foreach ($sensitiveKeys as $key) {
             if (isset($data[$key]) && $data[$key] !== '***' && $data[$key] !== '') {
                 $data[$key] = $this->service->encrypt($data[$key]);
@@ -116,6 +142,39 @@ class SettingsController
 
         $this->repo->setMany($data);
         Response::success(null, 'Settings saved');
+    }
+
+    public function generatePushKeys(Request $request): void
+    {
+        try {
+            $keys = VAPID::createVapidKeys();
+            $subject = $this->normalizeVapidSubject(
+                (string)$this->repo->get('push_vapid_subject', '')
+            );
+            if ($subject === '') {
+                $appUrl = rtrim((string)($this->repo->get('app_url', '') ?: getenv('APP_URL') ?: ''), '/');
+                $subject = $appUrl !== '' ? $appUrl : 'mailto:admin@example.com';
+            }
+
+            $this->repo->setMany([
+                'push_vapid_public_key' => $keys['publicKey'],
+                'push_vapid_private_key' => $this->service->encrypt($keys['privateKey']),
+                'push_vapid_subject' => $subject,
+            ]);
+
+            Response::success([
+                'push_vapid_public_key' => $keys['publicKey'],
+                'push_vapid_subject' => $subject,
+                'status' => (new PushNotificationService())->getAdminStatus(),
+            ], 'VAPID keys generated');
+        } catch (\Throwable $e) {
+            Response::error('Failed to generate VAPID keys: ' . $e->getMessage(), 500);
+        }
+    }
+
+    public function pushStatus(Request $request): void
+    {
+        Response::success((new PushNotificationService())->getAdminStatus());
     }
 
     /**
@@ -191,5 +250,34 @@ class SettingsController
         } catch (\Throwable $e) {
             Response::error('Slack test failed: ' . $e->getMessage());
         }
+    }
+
+    private function normalizeVapidSubject(string $subject): string
+    {
+        $subject = trim($subject);
+        if ($subject === '') {
+            return '';
+        }
+
+        if (str_starts_with($subject, 'mailto:')) {
+            $email = substr($subject, 7);
+            return filter_var($email, FILTER_VALIDATE_EMAIL) ? 'mailto:' . strtolower($email) : $subject;
+        }
+
+        $parts = parse_url($subject);
+        if ($parts === false) {
+            return $subject;
+        }
+        $scheme = strtolower((string)($parts['scheme'] ?? ''));
+        $host = strtolower((string)($parts['host'] ?? ''));
+        if (!in_array($scheme, ['http', 'https'], true) || $host === '') {
+            return $subject;
+        }
+
+        $origin = $scheme . '://' . $host;
+        if (isset($parts['port'])) {
+            $origin .= ':' . (int)$parts['port'];
+        }
+        return $origin;
     }
 }

@@ -11,6 +11,7 @@ const SettingsView = {
         { key: 'autoresponse', label: 'Auto-Response' },
         { key: 'imap', label: 'IMAP Polling' },
         { key: 'slack', label: 'Slack' },
+        { key: 'notifications', label: 'Notifications' },
         { key: 'support-form', label: 'Support Form' },
     ],
 
@@ -61,12 +62,14 @@ const SettingsView = {
                 API.get('/auth/me'),
                 API.get('/settings/public'),
                 API.get('/admin/settings'),
-                API.get('/agents')
+                API.get('/agents'),
+                API.get('/admin/settings/push-status')
             ]);
             this.currentAgent = (results[0].data && results[0].data.user) || {};
             this.settings = results[2].data || {};
             this.publicSettings = results[1].data || {};
             this.agents   = results[3].data || [];
+            this.pushStatus = results[4].data || {};
             this.renderTab(initialSection);
             this.bindTabSwitching();
         } catch (e) {
@@ -162,6 +165,93 @@ const SettingsView = {
                   placeholder: ':robot_face:',
                   hint_html: `<div class="mt-2 mb-1">Quick pick:</div>${emojiPicks}<div class="form-text mt-1">Or type any emoji code set up in your Slack workspace, e.g. <code>:paul:</code></div>` },
             ]);
+        } else if (tab === 'notifications') {
+            const status = this.pushStatus || {};
+            const diagnostics = status.diagnostics || {};
+            const extensions = diagnostics.php_extensions || {};
+            const statusClass = status.status === 'configured' ? 'success' : (status.status === 'invalid' ? 'danger' : 'secondary');
+            const statusLabel = status.message || 'Push notification status unknown.';
+            const extensionBadge = (label, ok) => `<span class="badge ${ok ? 'text-bg-success' : 'text-bg-danger'} me-1">${App.escapeHtml(label)} ${ok ? 'OK' : 'Missing'}</span>`;
+            html = `
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white fw-semibold py-2">
+                        <i class="bi bi-bell me-2"></i>Browser Push Notifications
+                    </div>
+                    <div class="card-body py-3">
+                        <div class="alert alert-${statusClass} py-2">
+                            <div class="fw-semibold">${App.escapeHtml(statusLabel)}</div>
+                            <div class="small mt-1">Public key: ${status.public_key_present ? 'present' : 'missing'} · Private key: ${status.private_key_present ? 'present' : 'missing'}</div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-sm-4">
+                                <div class="border rounded p-2 h-100 bg-light">
+                                    <div class="small text-muted">Active subscriptions</div>
+                                    <div class="fs-5 fw-semibold">${App.escapeHtml(String(diagnostics.subscription_count || 0))}</div>
+                                </div>
+                            </div>
+                            <div class="col-sm-4">
+                                <div class="border rounded p-2 h-100 bg-light">
+                                    <div class="small text-muted">Subscribed agents</div>
+                                    <div class="fs-5 fw-semibold">${App.escapeHtml(String(diagnostics.subscribed_agent_count || 0))}</div>
+                                </div>
+                            </div>
+                            <div class="col-sm-4">
+                                <div class="border rounded p-2 h-100 bg-light">
+                                    <div class="small text-muted">Last seen</div>
+                                    <div class="small fw-semibold">${diagnostics.last_subscription_seen_at ? App.escapeHtml(App.formatDate(diagnostics.last_subscription_seen_at)) : 'Never'}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="small fw-semibold mb-1">Server requirements</div>
+                            ${extensionBadge('curl', !!extensions.curl)}
+                            ${extensionBadge('mbstring', !!extensions.mbstring)}
+                            ${extensionBadge('openssl', !!extensions.openssl)}
+                            ${extensionBadge('prime256v1', !!diagnostics.openssl_prime256v1)}
+                        </div>
+
+                        ${diagnostics.last_send_failure ? `
+                            <div class="alert alert-warning py-2">
+                                <div class="fw-semibold small">Last push send failure ${diagnostics.last_send_failed_at ? App.escapeHtml(App.formatDate(diagnostics.last_send_failed_at)) : ''}</div>
+                                <div class="small font-monospace">${App.escapeHtml(diagnostics.last_send_failure)}</div>
+                            </div>
+                        ` : ''}
+
+                        <p class="text-muted small mb-3">
+                            VAPID keys identify this helpdesk to browser push services. The public key is sent to browsers; the private key is encrypted at rest and never exposed to frontend code.
+                        </p>
+
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">PUSH_VAPID_PUBLIC_KEY</label>
+                                <input type="text" class="form-control font-monospace" id="s-push_vapid_public_key" value="${App.escapeHtml(s.push_vapid_public_key || '')}">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">PUSH_VAPID_PRIVATE_KEY</label>
+                                <input type="password" class="form-control font-monospace" id="s-push_vapid_private_key" value="" placeholder="Leave blank to keep current">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">PUSH_VAPID_SUBJECT</label>
+                                <input type="text" class="form-control" id="s-push_vapid_subject" value="${App.escapeHtml(s.push_vapid_subject || '')}" placeholder="mailto:support@example.com or https://helpdesk.example.com">
+                                <div class="form-text">Use a contact email as <code>mailto:name@example.com</code> or this application's HTTPS origin.</div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2 flex-wrap mt-3">
+                            <button class="btn btn-primary btn-save-settings" data-tab="notifications">
+                                <i class="bi bi-save me-1"></i>Save Push Settings
+                            </button>
+                            <button class="btn btn-outline-secondary" id="btn-generate-push-keys">
+                                <i class="bi bi-key me-1"></i>Generate Keys
+                            </button>
+                            <button class="btn btn-outline-primary" id="btn-admin-test-push">
+                                <i class="bi bi-send me-1"></i>Send Test Push To Me
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
         } else if (tab === 'support-form') {
             const appUrl = (this.settings.app_url || window.location.origin || '').replace(/\/$/, '');
             const formUrl = `${appUrl}/#/login/support-form`;
@@ -251,6 +341,11 @@ const SettingsView = {
             $('#settings-content').on('click', '.slack-emoji-pick', function() {
                 $('#s-slack_icon_emoji').val($(this).data('code'));
             });
+        }
+
+        if (tab === 'notifications') {
+            $('#btn-generate-push-keys').on('click', () => this.generatePushKeys());
+            $('#btn-admin-test-push').on('click', () => this.sendTestPush('#btn-admin-test-push'));
         }
 
         // Add test SMTP button on email tab
@@ -954,28 +1049,6 @@ const SettingsView = {
                 </div>
 
                 <hr class="my-4">
-                <h6 class="mb-3">Browser Notifications</h6>
-                <div class="mb-4" style="max-width:520px;">
-                    <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
-                        <div>
-                            <div class="fw-semibold" id="profile-browser-notification-state">${this.browserNotificationStatusLabel(agent)}</div>
-                            <div class="form-text mt-1">When enabled, Andrea Helpdesk can show browser or OS notifications while the app is open for new tickets, customer replies, overdue tickets, and update alerts.</div>
-                        </div>
-                        <div class="d-flex gap-2 flex-wrap">
-                            <button class="btn btn-outline-primary btn-sm" id="btn-enable-browser-notifications">
-                                <i class="bi bi-bell me-1"></i>Enable
-                            </button>
-                            <button class="btn btn-outline-secondary btn-sm" id="btn-disable-browser-notifications">
-                                <i class="bi bi-bell-slash me-1"></i>Disable
-                            </button>
-                            <button class="btn btn-outline-secondary btn-sm" id="btn-test-browser-notifications">
-                                <i class="bi bi-send-check me-1"></i>Send Test
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <hr class="my-4">
                 <h6 class="mb-3">Change Password</h6>
                 <form autocomplete="off" onsubmit="return false">
                 <input type="text" autocomplete="username" style="display:none;">
@@ -1015,9 +1088,6 @@ const SettingsView = {
 
     bindProfileSave() {
         $('#btn-save-profile').on('click', () => this.saveProfile());
-        $('#btn-enable-browser-notifications').on('click', () => this.enableBrowserNotifications());
-        $('#btn-disable-browser-notifications').on('click', () => this.disableBrowserNotifications());
-        $('#btn-test-browser-notifications').on('click', () => this.testBrowserNotifications());
         $('#btn-clear-cache').on('click', async () => {
             // Preserve auth tokens across the wipe
             const accessToken  = localStorage.getItem('andrea_access_token');
@@ -1101,8 +1171,8 @@ const SettingsView = {
     },
 
     refreshBrowserNotificationUi() {
-        const supported = 'Notification' in window;
-        const permission = supported ? Notification.permission : 'unsupported';
+        const supported = 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
+        const permission = ('Notification' in window) ? Notification.permission : 'unsupported';
         $('#profile-browser-notification-state').text(this.browserNotificationStatusLabel());
         const enabled = !!(this.currentAgent && this.currentAgent.browser_notifications_enabled);
         $('#btn-enable-browser-notifications').prop('disabled', !supported || (enabled && permission === 'granted'));
@@ -1161,6 +1231,40 @@ const SettingsView = {
         }
     },
 
+    async generatePushKeys() {
+        const btn = $('#btn-generate-push-keys');
+        const original = btn.html();
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Generating…');
+        try {
+            const res = await API.post('/admin/settings/generate-push-keys', {});
+            const data = res.data || {};
+            this.settings.push_vapid_public_key = data.push_vapid_public_key || '';
+            this.settings.push_vapid_private_key = '***';
+            this.settings.push_vapid_subject = data.push_vapid_subject || this.settings.push_vapid_subject || '';
+            this.pushStatus = data.status || (await API.get('/admin/settings/push-status')).data || {};
+            this.renderTab('notifications');
+            App.toast('VAPID keys generated', 'success');
+        } catch (e) {
+            App.toast(e.message || 'Failed to generate VAPID keys', 'error');
+        } finally {
+            btn.prop('disabled', false).html(original);
+        }
+    },
+
+    async sendTestPush(selector = '#btn-admin-test-push') {
+        const btn = $(selector);
+        const original = btn.html();
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Sending…');
+        try {
+            const res = await API.post('/push/test', {});
+            App.toast(res.message || 'Test push sent', 'success');
+        } catch (e) {
+            App.toast(e.message || 'Test push failed', 'error');
+        } finally {
+            btn.prop('disabled', false).html(original);
+        }
+    },
+
     async save(tab) {
         const s = this.settings;
         const tabFields = {
@@ -1170,6 +1274,7 @@ const SettingsView = {
             autoresponse: ['auto_response_enabled','auto_response_subject','auto_response_body'],
             imap:         [],
             slack:        ['slack_enabled','slack_webhook_url','slack_channel','slack_on_new_ticket','slack_on_assign','slack_on_new_reply','slack_unfurl_links','slack_username','slack_icon_url','slack_icon_emoji'],
+            notifications: ['push_vapid_public_key','push_vapid_private_key','push_vapid_subject'],
             'support-form': ['support_form_recaptcha_site_key','support_form_recaptcha_secret_key','support_form_allowed_origins'],
         };
 
@@ -1213,6 +1318,13 @@ const SettingsView = {
                 App.applyAppName(App.settings.company_name || App.appName);
                 if (payload.favicon_url !== undefined) App.applyFavicon(payload.favicon_url);
             }
+            if (tab === 'notifications') {
+                this.pushStatus = (await API.get('/admin/settings/push-status')).data || {};
+                if (payload.push_vapid_public_key !== undefined) {
+                    App.settings.push_vapid_public_key = payload.push_vapid_public_key;
+                }
+                this.renderTab('notifications');
+            }
             App.toast('Settings saved');
         } catch (e) {
             App.toast(e.message, 'error');
@@ -1255,7 +1367,7 @@ const SettingsView = {
 
 const MyProfileView = {
     render(params) {
-        const section = params && params.section === 'notifications' ? 'notifications' : 'profile';
+        const section = this.resolveSection(params);
         return `
         <div class="container-fluid terminal-screen terminal-screen-settings p-4 terminal-compact">
             <h4 class="terminal-heading mb-3"><i class="bi bi-person-lines-fill me-2"></i>My Profile</h4>
@@ -1263,8 +1375,11 @@ const MyProfileView = {
                 <a class="btn btn-sm ${section === 'profile' ? 'btn-primary' : 'btn-outline-secondary'}" href="#/my-profile">
                     <i class="bi bi-person-lines-fill me-1"></i>Profile
                 </a>
-                <a class="btn btn-sm ${section === 'notifications' ? 'btn-primary' : 'btn-outline-secondary'}" href="#/my-profile/notifications">
-                    <i class="bi bi-bell me-1"></i>Notifications
+                <a class="btn btn-sm ${section === 'alerts' ? 'btn-primary' : 'btn-outline-secondary'}" href="#/my-profile/notifications">
+                    <i class="bi bi-layout-text-window-reverse me-1"></i>Alerts Panel
+                </a>
+                <a class="btn btn-sm ${section === 'notification-settings' ? 'btn-primary' : 'btn-outline-secondary'}" href="#/my-profile/settings/notifications">
+                    <i class="bi bi-sliders me-1"></i>Notification Settings
                 </a>
             </div>
             <div id="settings-content">
@@ -1273,6 +1388,13 @@ const MyProfileView = {
                 </div>
             </div>
         </div>`;
+    },
+
+    resolveSection(params) {
+        if (params && params.setting === 'notifications') return 'notification-settings';
+        if (params && params.section === 'settings' && params.setting === 'notifications') return 'notification-settings';
+        if (params && params.section === 'notifications') return 'alerts';
+        return 'profile';
     },
 
     async init(params) {
@@ -1284,12 +1406,14 @@ const MyProfileView = {
             SettingsView.currentAgent = (results[0].data && results[0].data.user) || {};
             SettingsView.publicSettings = results[1].data || {};
             SettingsView.settings = results[1].data || {};
-            if (params && params.section === 'notifications') {
-                await this.renderNotificationsOverview();
+            const section = this.resolveSection(params);
+            if (section === 'alerts') {
+                await this.renderAlertsPanel();
+            } else if (section === 'notification-settings') {
+                await this.renderNotificationSettings();
             } else {
                 $('#settings-content').html(SettingsView.renderProfilePanel());
                 SettingsView.bindProfileSave();
-                SettingsView.refreshBrowserNotificationUi();
                 RichEditor.init('profile-signature', { value: (SettingsView.currentAgent || {}).signature || '' });
             }
         } catch (e) {
@@ -1297,16 +1421,18 @@ const MyProfileView = {
         }
     },
 
-    async renderNotificationsOverview() {
+    async renderAlertsPanel() {
         $('#settings-content').html(`
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap mb-4">
                         <div>
-                            <h6 class="mb-1">Active Notifications</h6>
-                            <div class="text-muted small">This page keeps active issues visible even after you mark them read from the bell menu.</div>
+                            <h6 class="mb-1">Alerts Panel</h6>
+                            <div class="text-muted small">Current alerts stay here until the ticket is opened or the underlying overdue condition is cleared.</div>
                         </div>
-                        <div id="my-profile-browser-notification-controls" class="d-flex align-items-center gap-2 flex-wrap"></div>
+                        <a class="btn btn-sm btn-outline-secondary" href="#/my-profile/settings/notifications">
+                            <i class="bi bi-sliders me-1"></i>Notification Settings
+                        </a>
                     </div>
                     <div id="my-profile-notification-summary" class="terminal-notification-overview-summary mb-3"></div>
                     <div id="my-profile-notification-list">
@@ -1318,23 +1444,21 @@ const MyProfileView = {
             </div>
         `);
 
-        this.bindNotificationOverviewActions();
-        this.renderBrowserNotificationOverviewControls();
-        await Notifications.markAllRead();
-        await this.loadNotificationsOverview();
+        this.bindAlertPanelActions();
+        await this.loadAlertsPanel();
     },
 
     browserNotificationOverviewState() {
         const agent = SettingsView.currentAgent || {};
-        const supported = 'Notification' in window;
-        const permission = supported ? Notification.permission : 'unsupported';
+        const supported = 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
+        const permission = ('Notification' in window) ? Notification.permission : 'unsupported';
         const enabled = !!agent.browser_notifications_enabled;
 
         if (!supported) {
             return {
                 key: 'unsupported',
                 status: 'Not supported',
-                message: 'This browser does not support notifications.',
+                message: 'This browser does not support Web Push notifications.',
             };
         }
 
@@ -1363,9 +1487,9 @@ const MyProfileView = {
         }
 
         return {
-            key: 'subscribe',
-            status: 'Not subscribed',
-            message: 'Allow notifications in this browser to receive in-app alerts while the helpdesk is open.',
+                key: 'subscribe',
+                status: 'Not subscribed',
+                message: 'Allow notifications in this browser to receive alerts even when the helpdesk is not open.',
         };
     },
 
@@ -1382,6 +1506,9 @@ const MyProfileView = {
                 </button>
                 <button class="btn btn-outline-secondary btn-sm" id="btn-test-browser-notifications-overview">
                     <i class="bi bi-broadcast me-1"></i>Send Test
+                </button>
+                <button class="btn btn-outline-primary btn-sm" id="btn-test-push-notifications-overview">
+                    <i class="bi bi-send me-1"></i>Send Push Test
                 </button>
             `;
         } else if (state.key === 'enable') {
@@ -1407,9 +1534,94 @@ const MyProfileView = {
         `);
     },
 
-    bindNotificationOverviewActions() {
+    async renderNotificationSettings() {
+        let prefs = {};
+        try {
+            const res = await API.get('/notifications/preferences');
+            prefs = (res.data && res.data.preferences) || {};
+            SettingsView.currentAgent.browser_notifications_enabled = !!(res.data && res.data.browser_notifications_enabled);
+        } catch (e) {
+            $('#settings-content').html('<div class="alert alert-danger">' + App.escapeHtml(e.message) + '</div>');
+            return;
+        }
+
+        const rows = [
+            ['update_available', 'Update available', 'Only shown to admins.'],
+            ['ticket_created', 'New ticket', 'Cleared when the ticket is opened.'],
+            ['ticket_assigned', 'A ticket has been assigned to me', 'Cleared when the ticket is opened.'],
+            ['customer_reply', 'A ticket has received a reply', 'Cleared when the ticket is opened.'],
+            ['ticket_internal_note', 'A ticket has a new internal note', 'Cleared when the ticket is opened.'],
+            ['ticket_sla_overdue', 'A ticket is SLA Overdue', 'Cleared when priority moves away from overdue.'],
+            ['ticket_due_overdue', 'A ticket has a due date today or in the past', 'Cleared when the due date changes or priority moves away from overdue.'],
+        ].filter(([key]) => key !== 'update_available' || API.isAdmin());
+
+        $('#settings-content').html(`
+            <div class="row g-3">
+                <div class="col-lg-7">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <h6 class="mb-3">Notification Preferences</h6>
+                            <div class="list-group mb-3">
+                                ${rows.map(([key, label, hint]) => `
+                                    <label class="list-group-item d-flex gap-3 align-items-start">
+                                        <input class="form-check-input mt-1 notification-pref-check" type="checkbox" value="${key}" ${prefs[key] ? 'checked' : ''}>
+                                        <span>
+                                            <span class="d-block fw-semibold">${App.escapeHtml(label)}</span>
+                                            <span class="d-block text-muted small">${App.escapeHtml(hint)}</span>
+                                        </span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                            <button class="btn btn-primary" id="btn-save-notification-preferences">
+                                <i class="bi bi-save me-1"></i>Save Notification Preferences
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <h6 class="mb-3">Browser Notifications</h6>
+                            <div id="my-profile-browser-notification-controls" class="d-flex align-items-center justify-content-between gap-2 flex-wrap"></div>
+                        </div>
+                    </div>
+                    <div class="card border-0 shadow-sm mt-3">
+                        <div class="card-body">
+                            <h6 class="mb-2">Install Andrea Helpdesk</h6>
+                            <p class="text-muted small mb-3">Install the helpdesk as an app for faster access. On iPhone/iPad, open Safari, tap Share, then choose <strong>Add to Home Screen</strong>; iOS push notifications require the installed web app.</p>
+                            <div id="my-profile-install-controls" class="d-flex align-items-center justify-content-between gap-2 flex-wrap"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `);
+
+        this.bindNotificationSettingsActions();
+        this.renderBrowserNotificationOverviewControls();
+        this.renderInstallControls();
+    },
+
+    bindNotificationSettingsActions() {
         $('#settings-content')
             .off('.profileNotifications')
+            .on('click.profileNotifications', '#btn-save-notification-preferences', async () => {
+                const btn = $('#btn-save-notification-preferences');
+                const original = btn.html();
+                const preferences = {};
+                $('.notification-pref-check').each(function() {
+                    preferences[$(this).val()] = $(this).is(':checked');
+                });
+                btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Saving…');
+                try {
+                    await API.put('/notifications/preferences', { preferences });
+                    await Notifications.refreshSummary({ silent: true });
+                    App.toast('Notification preferences saved', 'success');
+                } catch (e) {
+                    App.toast(e.message, 'error');
+                } finally {
+                    btn.prop('disabled', false).html(original);
+                }
+            })
             .on('click.profileNotifications', '#btn-subscribe-browser-notifications', async () => {
                 const btn = $('#btn-subscribe-browser-notifications');
                 const original = btn.html();
@@ -1463,34 +1675,80 @@ const MyProfileView = {
                     App.toast(e.message, 'error');
                 }
             })
+            .on('click.profileNotifications', '#btn-test-push-notifications-overview', async () => {
+                const btn = $('#btn-test-push-notifications-overview');
+                const original = btn.html();
+                btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Sending…');
+                try {
+                    const res = await API.post('/push/test', {});
+                    App.toast(res.message || 'Test push sent', 'success');
+                } catch (e) {
+                    App.toast(e.message || 'Test push failed', 'error');
+                } finally {
+                    btn.prop('disabled', false).html(original);
+                }
+            })
+            .on('click.profileNotifications', '#btn-install-pwa', async () => {
+                const prompt = App.deferredInstallPrompt;
+                if (!prompt) {
+                    App.toast('Use your browser menu to install this app on this device', 'info');
+                    return;
+                }
+                prompt.prompt();
+                await prompt.userChoice.catch(() => null);
+                App.deferredInstallPrompt = null;
+                this.renderInstallControls();
+            });
+    },
+
+    renderInstallControls() {
+        const $container = $('#my-profile-install-controls');
+        if (!$container.length) return;
+
+        const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        if (standalone) {
+            $container.html(`
+                <div>
+                    <div class="small fw-semibold">Installed</div>
+                    <div class="text-muted small">This browser is running Andrea Helpdesk as an installed app.</div>
+                </div>
+            `);
+            return;
+        }
+
+        const canPrompt = !!App.deferredInstallPrompt;
+        $container.html(`
+            <div>
+                <div class="small fw-semibold">${canPrompt ? 'Ready to install' : 'Install from browser menu'}</div>
+                <div class="text-muted small">${canPrompt ? 'This browser can install Andrea Helpdesk now.' : 'If no install button is shown, use your browser menu or iOS Share sheet.'}</div>
+            </div>
+            <button class="btn btn-outline-primary btn-sm" id="btn-install-pwa" ${canPrompt ? '' : ''}>
+                <i class="bi bi-phone me-1"></i>Install App
+            </button>
+        `);
+    },
+
+    bindAlertPanelActions() {
+        $('#settings-content')
+            .off('.profileNotifications')
             .on('click.profileNotifications', '.profile-notification-link', async (e) => {
                 e.preventDefault();
-                const id = parseInt($(e.currentTarget).data('id'), 10) || 0;
                 const link = $(e.currentTarget).data('link') || '';
-                if (id) {
-                    await Notifications.markRead(id);
-                }
                 if (link) {
                     App.navigate(link);
                 }
             });
     },
 
-    async loadNotificationsOverview() {
+    async loadAlertsPanel() {
         try {
             const overview = await Notifications.fetchActiveOverview(150);
             const items = overview.items || [];
-            const allRead = overview.unreadCount === 0;
             $('#my-profile-notification-summary').html(`
                 <div class="terminal-notification-overview-chip">
                     <strong>${App.escapeHtml(String(overview.activeCount))}</strong>
                     <span>active</span>
                 </div>
-                <div class="terminal-notification-overview-chip">
-                    <strong>${App.escapeHtml(String(overview.unreadCount))}</strong>
-                    <span>unread</span>
-                </div>
-                ${allRead && overview.activeCount > 0 ? '<div class="terminal-notification-overview-chip attention"><strong>Attention</strong><span>All read, but active issues remain</span></div>' : ''}
             `);
 
             if (!items.length) {
@@ -1499,16 +1757,13 @@ const MyProfileView = {
             }
 
             $('#my-profile-notification-list').html(items.map((item) => {
-                const state = item.read_at ? 'Read' : 'Unread';
-                const stateClass = item.read_at ? 'is-read' : 'is-unread';
                 return `
-                    <article class="terminal-notification-card ${stateClass}">
+                    <article class="terminal-notification-card">
                         <div class="terminal-notification-card-head">
                             <div>
                                 <div class="terminal-notification-card-title">${App.escapeHtml(item.title || 'Notification')}</div>
                                 <div class="terminal-notification-card-meta">${App.escapeHtml(App.formatDate(item.created_at))}</div>
                             </div>
-                            <span class="terminal-notification-card-state">${App.escapeHtml(state)}</span>
                         </div>
                         ${item.body ? `<div class="terminal-notification-card-body">${App.escapeHtml(item.body)}</div>` : ''}
                         <div class="terminal-notification-card-actions">

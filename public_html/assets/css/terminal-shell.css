@@ -411,11 +411,6 @@ html[data-theme='dark'] .terminal-theme-btn.active {
     padding-inline: 0.28rem;
 }
 
-.terminal-notification-badge.attention {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--terminal-warn) 88%, #ffffff), color-mix(in srgb, var(--terminal-danger) 28%, var(--terminal-warn))) !important;
-    color: #102031 !important;
-}
-
 .terminal-notification-menu {
     min-width: 360px;
     max-width: min(92vw, 420px);
@@ -459,11 +454,6 @@ html[data-theme='dark'] .terminal-theme-btn.active {
     background: color-mix(in srgb, var(--terminal-surface) 76%, transparent);
     white-space: normal;
     overflow-wrap: anywhere;
-}
-
-.terminal-notification-item.unread {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--terminal-cyan) 14%, transparent), color-mix(in srgb, var(--terminal-surface-raised) 92%, transparent));
-    border-color: color-mix(in srgb, var(--terminal-cyan) 38%, transparent);
 }
 
 .terminal-notification-title-row {
@@ -539,22 +529,12 @@ html[data-theme='dark'] .terminal-theme-btn.active {
     font-size: 0.95rem;
 }
 
-.terminal-notification-overview-chip.attention {
-    border-color: color-mix(in srgb, var(--terminal-warn) 55%, transparent);
-    background: linear-gradient(135deg, color-mix(in srgb, var(--terminal-warn) 18%, transparent), color-mix(in srgb, var(--terminal-surface-raised) 92%, transparent));
-}
-
 .terminal-notification-card {
     border: 1px solid color-mix(in srgb, var(--terminal-border) 80%, transparent);
     border-radius: 16px;
     background: color-mix(in srgb, var(--terminal-surface-raised) 94%, transparent);
     padding: 0.95rem 1rem;
     margin-bottom: 0.8rem;
-}
-
-.terminal-notification-card.is-unread {
-    border-color: color-mix(in srgb, var(--terminal-cyan) 32%, transparent);
-    box-shadow: 0 10px 26px rgba(7, 18, 34, 0.08);
 }
 
 .terminal-notification-card-head {
@@ -574,16 +554,6 @@ html[data-theme='dark'] .terminal-theme-btn.active {
     margin-top: 0.18rem;
     font-size: 0.78rem;
     color: var(--terminal-text-muted);
-}
-
-.terminal-notification-card-state {
-    border-radius: 999px;
-    padding: 0.18rem 0.55rem;
-    font-size: 0.75rem;
-    border: 1px solid color-mix(in srgb, var(--terminal-border-strong) 62%, transparent);
-    color: var(--terminal-text-soft);
-    background: color-mix(in srgb, var(--terminal-bg-soft) 55%, transparent);
-    white-space: nowrap;
 }
 
 .terminal-notification-card-body {
@@ -1963,6 +1933,87 @@ html[data-theme='dark'] #app .btn-outline-success {
     #app h5,
     #app h6 {
         font-size: clamp(1rem, 1.8vw, 1.35rem);
+    }
+
+    #app .terminal-screen {
+        padding-left: 0.25rem !important;
+        padding-right: 0.25rem !important;
+    }
+
+    #app .card-body,
+    #app .card-header,
+    #app .list-group-item {
+        padding-left: 0.85rem;
+        padding-right: 0.85rem;
+    }
+
+    #app .table-responsive {
+        border-radius: 14px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #app .btn,
+    #app .form-control,
+    #app .form-select {
+        min-height: 42px;
+    }
+
+    #app .terminal-profile-nav,
+    #app .terminal-ticket-actions,
+    #app .terminal-notification-card-actions {
+        display: flex;
+        gap: 0.5rem;
+        overflow-x: auto;
+        padding-bottom: 0.2rem;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #app .terminal-profile-nav .btn,
+    #app .terminal-ticket-actions .btn,
+    #app .terminal-notification-card-actions a {
+        flex: 0 0 auto;
+    }
+
+    #app textarea.form-control,
+    #app .ql-container {
+        font-size: 16px;
+    }
+
+    #app .terminal-notification-menu {
+        max-height: calc(100vh - 5rem);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #app .terminal-notification-card {
+        overflow-wrap: anywhere;
+    }
+
+    #app .terminal-ticket-thread,
+    #app .terminal-ticket-panel,
+    #app .terminal-ticket-detail,
+    #app .terminal-reply-card {
+        min-width: 0;
+    }
+
+    #app .ql-toolbar.ql-snow {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #app .modal-dialog {
+        margin: 0.75rem;
+    }
+
+    #app .terminal-screen-settings .nav-tabs {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #app .terminal-screen-settings .nav-tabs .nav-link {
+        white-space: nowrap;
     }
 }
 .grecaptcha-badge { visibility: hidden; }

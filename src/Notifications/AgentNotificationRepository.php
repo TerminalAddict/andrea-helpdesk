@@ -13,8 +13,9 @@ class AgentNotificationRepository
         'customer_reply',
         'ticket_assigned',
         'agent_mentioned',
-        'sla_escalated',
-        'ticket_overdue',
+        'ticket_internal_note',
+        'ticket_sla_overdue',
+        'ticket_due_overdue',
     ];
 
     public function __construct()
@@ -22,11 +23,11 @@ class AgentNotificationRepository
         $this->db = Database::getInstance();
     }
 
-    public function createForAgents(array $agentIds, array $payload): void
+    public function createForAgents(array $agentIds, array $payload): array
     {
         $agentIds = array_values(array_unique(array_filter(array_map('intval', $agentIds), fn(int $id): bool => $id > 0)));
         if (!$agentIds) {
-            return;
+            return [];
         }
 
         $sql = "INSERT IGNORE INTO agent_notifications
@@ -34,11 +35,12 @@ class AgentNotificationRepository
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
         $dataJson = isset($payload['data']) ? json_encode($payload['data']) : null;
+        $createdAgentIds = [];
         foreach ($agentIds as $agentId) {
             $dedupeKey = isset($payload['dedupe_key']) && $payload['dedupe_key'] !== null
                 ? (string)$payload['dedupe_key']
                 : null;
-            $this->db->insert($sql, [
+            $notificationId = $this->db->insert($sql, [
                 $agentId,
                 (string)$payload['type'],
                 (string)($payload['severity'] ?? 'info'),
@@ -48,7 +50,12 @@ class AgentNotificationRepository
                 $dataJson,
                 $dedupeKey,
             ]);
+            if ($notificationId > 0) {
+                $createdAgentIds[] = $agentId;
+            }
         }
+
+        return $createdAgentIds;
     }
 
     public function listForAgent(int $agentId, int $limit = 12, ?int $afterId = null): array
@@ -56,9 +63,9 @@ class AgentNotificationRepository
         $limit = max(1, min(50, $limit));
         if ($afterId !== null && $afterId > 0) {
             return $this->db->fetchAll(
-                "SELECT id, type, severity, title, body, link, data_json, read_at, created_at
-                   FROM agent_notifications
-                  WHERE agent_id = ? AND id > ?
+            "SELECT id, type, severity, title, body, link, data_json, created_at
+               FROM agent_notifications
+              WHERE agent_id = ? AND id > ?
                ORDER BY id ASC
                   LIMIT {$limit}",
                 [$agentId, $afterId]
@@ -66,7 +73,7 @@ class AgentNotificationRepository
         }
 
         return $this->db->fetchAll(
-            "SELECT id, type, severity, title, body, link, data_json, read_at, created_at
+            "SELECT id, type, severity, title, body, link, data_json, created_at
                FROM agent_notifications
               WHERE agent_id = ?
            ORDER BY id DESC
@@ -78,8 +85,7 @@ class AgentNotificationRepository
     public function listActiveTicketNotificationsForAgent(
         int $agentId,
         int $limit = 50,
-        ?int $afterId = null,
-        bool $unreadOnly = false
+        ?int $afterId = null
     ): array {
         $limit = max(1, min(250, $limit));
         $params = [$agentId];
@@ -92,10 +98,6 @@ class AgentNotificationRepository
             '(' . $this->ticketActiveTypeClause('n', 't') . ')',
         ];
 
-        if ($unreadOnly) {
-            $where[] = 'n.read_at IS NULL';
-        }
-
         $order = 'n.id DESC';
         if ($afterId !== null && $afterId > 0) {
             $where[] = 'n.id > ?';
@@ -104,7 +106,7 @@ class AgentNotificationRepository
         }
 
         return $this->db->fetchAll(
-            "SELECT n.id, n.type, n.severity, n.title, n.body, n.link, n.data_json, n.read_at, n.created_at
+            "SELECT n.id, n.type, n.severity, n.title, n.body, n.link, n.data_json, n.created_at
                FROM agent_notifications n
                LEFT JOIN tickets t
                  ON t.id = CAST(JSON_UNQUOTE(JSON_EXTRACT(n.data_json, '$.ticket_id')) AS UNSIGNED)
@@ -115,7 +117,7 @@ class AgentNotificationRepository
         );
     }
 
-    public function countActiveTicketNotificationsForAgent(int $agentId, bool $unreadOnly = false): int
+    public function countActiveTicketNotificationsForAgent(int $agentId): int
     {
         $params = [$agentId];
         $where = [
@@ -127,10 +129,6 @@ class AgentNotificationRepository
             '(' . $this->ticketActiveTypeClause('n', 't') . ')',
         ];
 
-        if ($unreadOnly) {
-            $where[] = 'n.read_at IS NULL';
-        }
-
         return $this->db->count(
             "SELECT COUNT(*)
                FROM agent_notifications n
@@ -141,7 +139,7 @@ class AgentNotificationRepository
         );
     }
 
-    public function latestUpdateNotificationForAgent(int $agentId, bool $unreadOnly = false, ?int $afterId = null): ?array
+    public function latestUpdateNotificationForAgent(int $agentId, ?int $afterId = null): ?array
     {
         $params = [$agentId];
         $where = [
@@ -149,17 +147,13 @@ class AgentNotificationRepository
             "type = 'update_available'",
         ];
 
-        if ($unreadOnly) {
-            $where[] = 'read_at IS NULL';
-        }
-
         if ($afterId !== null && $afterId > 0) {
             $where[] = 'id > ?';
             $params[] = $afterId;
         }
 
         return $this->db->fetch(
-            "SELECT id, type, severity, title, body, link, data_json, read_at, created_at
+            "SELECT id, type, severity, title, body, link, data_json, created_at
                FROM agent_notifications
               WHERE " . implode(' AND ', $where) . "
            ORDER BY id DESC
@@ -168,40 +162,31 @@ class AgentNotificationRepository
         );
     }
 
-    public function unreadCount(int $agentId): int
-    {
-        return $this->db->count(
-            "SELECT COUNT(*) FROM agent_notifications WHERE agent_id = ? AND read_at IS NULL",
-            [$agentId]
-        );
-    }
-
-    public function markRead(int $agentId, int $notificationId): bool
+    public function deleteForAgent(int $agentId, int $notificationId): bool
     {
         return $this->db->execute(
-            "UPDATE agent_notifications
-                SET read_at = COALESCE(read_at, NOW())
-              WHERE id = ? AND agent_id = ?",
+            "DELETE FROM agent_notifications WHERE id = ? AND agent_id = ?",
             [$notificationId, $agentId]
         );
     }
 
-    public function markAllRead(int $agentId): bool
+    public function deleteOpenedTicketNotifications(int $agentId, int $ticketId): bool
     {
         return $this->db->execute(
-            "UPDATE agent_notifications
-                SET read_at = NOW()
-              WHERE agent_id = ? AND read_at IS NULL",
-            [$agentId]
+            "DELETE FROM agent_notifications
+              WHERE agent_id = ?
+                AND type IN ('ticket_created','customer_reply','ticket_assigned','ticket_internal_note','agent_mentioned')
+                AND CAST(JSON_UNQUOTE(JSON_EXTRACT(data_json, '$.ticket_id')) AS UNSIGNED) = ?",
+            [$agentId, $ticketId]
         );
     }
 
     private function ticketActiveTypeClause(string $notificationAlias, string $ticketAlias): string
     {
         return implode(' OR ', [
-            "{$notificationAlias}.type IN ('ticket_created','customer_reply','ticket_assigned','agent_mentioned')",
-            "({$notificationAlias}.type = 'sla_escalated' AND {$ticketAlias}.priority IN ('high', 'urgent', 'overdue'))",
-            "({$notificationAlias}.type = 'ticket_overdue' AND {$ticketAlias}.priority = 'overdue')",
+            "{$notificationAlias}.type IN ('ticket_created','customer_reply','ticket_assigned','ticket_internal_note','agent_mentioned')",
+            "({$notificationAlias}.type = 'ticket_sla_overdue' AND {$ticketAlias}.priority = 'overdue')",
+            "({$notificationAlias}.type = 'ticket_due_overdue' AND {$ticketAlias}.priority = 'overdue' AND {$ticketAlias}.due_at IS NOT NULL AND DATE(COALESCE({$ticketAlias}.due_end, {$ticketAlias}.due_at)) <= CURRENT_DATE())",
         ]);
     }
 }
