@@ -220,6 +220,23 @@
     bottom: 0;
     z-index: 10;
 }
+
+#reply-card.reply-internal-note .card-body {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    border-right: 4px solid #ffc107;
+}
+
+#reply-card.reply-internal-note .ql-toolbar,
+#reply-card.reply-internal-note .ql-container,
+#reply-card.reply-internal-note #reply-signature-preview {
+    background: #fff8df;
+}
+
+#reply-card.reply-internal-note .ql-container {
+    border-color: #ffc107;
+}
+
 #reply-card.reply-collapsed .card-body,
 #reply-card.reply-collapsed .card-footer {
     display: none !important;

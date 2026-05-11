@@ -754,6 +754,7 @@ const TicketDetailView = {
         // Reply type toggle
         $('input[name="replyType"]').on('change', function() {
             const isNote = $(this).val() === 'note';
+            $('#reply-card').toggleClass('reply-internal-note', isNote);
             $('#reply-to-label').toggle(!isNote);
             $('#reply-status-change').closest('.d-flex').toggle(!isNote);
             $('#reply-signature-toggle-wrap').toggle(!isNote);
