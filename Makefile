@@ -86,7 +86,7 @@ script: ## Bump CLI installer patch version, commit, and push only bin/install-c
 package: ## Build a clean release zip under build/ for FTP/browser installs
 	php bin/build-release-package.php
 
-release: ## Bump patch version, require changelog notes, commit, tag, and push current branch
+release: ## Bump patch version, update changelog, commit, tag, and push current branch
 	@NEW_VERSION=$$(php bin/release.php) && \
 	git add -A && \
 	git commit -m "Bump version to $$NEW_VERSION" && \

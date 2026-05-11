@@ -10,15 +10,23 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ## [1.4.7] — 2026-05-11
 
+### Changed
+- Internal note mode on ticket replies now highlights the entire reply editor area in warning yellow, making private notes visually distinct from public customer replies
+
 ---
 
 ## [1.4.6] — 2026-05-05
 
+### Added
+- Added a native self-hosted emoji picker to Quill rich-text editors without relying on the incompatible third-party `quill-emoji` plugin
 
 ---
 
 ## [1.4.5] — 2026-05-04
 
+### Added
+- Added drag-and-drop attachment upload support to ticket detail reply areas while keeping the existing `Attach Files` button
+- Added drag-and-drop attachment upload support to the new-ticket attachment section
 
 ---
 
