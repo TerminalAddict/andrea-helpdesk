@@ -21,6 +21,7 @@ The diagnostics panel also shows:
 - active push subscription count
 - number of subscribed agents
 - last subscription refresh time
+- Web Push Composer dependency availability
 - required PHP extensions: `curl`, `mbstring`, `openssl`
 - OpenSSL `prime256v1` curve support
 - most recent push send failure, if any
@@ -127,6 +128,16 @@ Confirm the site is served over HTTPS, `manifest.webmanifest` is reachable, `ser
 ### Why do I not receive push notifications after installing?
 
 Installing the PWA does not automatically subscribe the agent to push notifications. The agent must open `#/my-profile/settings/notifications`, enable browser notifications, and allow the browser permission prompt.
+
+### Why does VAPID key generation say the Web Push dependency is missing?
+
+The server is missing the Composer package used to generate VAPID keys and send Web Push messages. Run this from the application directory:
+
+```bash
+composer install --no-dev --optimize-autoloader
+```
+
+If you are on shared hosting without Composer, install from the full GitHub release package instead of the source zip. The full release package includes the `vendor/` dependencies. Current versions of the in-app updater also prefer the full release package and can repair missing PHP dependencies automatically if `vendor/` is writable by the PHP process.
 
 ### Why does iOS behave differently from Android?
 

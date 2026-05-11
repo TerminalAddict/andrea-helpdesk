@@ -107,6 +107,10 @@ class SettingsController
             || array_key_exists('push_vapid_private_key', $data)
             || array_key_exists('push_vapid_subject', $data)
         ) {
+            if (!class_exists(VAPID::class)) {
+                Response::error('Web Push dependency is missing. Run composer install --no-dev --optimize-autoloader on the server, or install from the full release package.', 503);
+                return;
+            }
             $publicKey = (string)($data['push_vapid_public_key'] ?? $this->repo->get('push_vapid_public_key', ''));
             $privateKey = (string)($data['push_vapid_private_key'] ?? $this->service->decrypt((string)$this->repo->get('push_vapid_private_key', '')));
             $subject = (string)($data['push_vapid_subject'] ?? $this->repo->get('push_vapid_subject', ''));
@@ -147,6 +151,10 @@ class SettingsController
     public function generatePushKeys(Request $request): void
     {
         try {
+            if (!class_exists(VAPID::class)) {
+                Response::error('Web Push dependency is missing. Run composer install --no-dev --optimize-autoloader on the server, or install from the full release package.', 503);
+                return;
+            }
             $keys = VAPID::createVapidKeys();
             $subject = $this->normalizeVapidSubject(
                 (string)$this->repo->get('push_vapid_subject', '')

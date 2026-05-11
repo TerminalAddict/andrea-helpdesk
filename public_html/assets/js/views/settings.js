@@ -206,6 +206,7 @@ const SettingsView = {
 
                         <div class="mb-3">
                             <div class="small fw-semibold mb-1">Server requirements</div>
+                            ${extensionBadge('web-push', !!diagnostics.web_push_dependency)}
                             ${extensionBadge('curl', !!extensions.curl)}
                             ${extensionBadge('mbstring', !!extensions.mbstring)}
                             ${extensionBadge('openssl', !!extensions.openssl)}

@@ -7,6 +7,7 @@ class UpdateController
 {
     private const DEFAULT_REPO_ZIP_URL = 'https://github.com/TerminalAddict/andrea-helpdesk/archive/refs/heads/main.zip';
     private const DEFAULT_REPO_PREFIX  = 'andrea-helpdesk-main'; // top-level dir inside the zip
+    private const RELEASE_ZIP_TEMPLATE = 'https://github.com/TerminalAddict/andrea-helpdesk/releases/download/v%s/andrea-helpdesk-%s-full.zip';
 
     /** Dirs relative to root that must be writable for an update */
     private const WRITE_PATHS = [
@@ -16,11 +17,12 @@ class UpdateController
         'config'    => '/config/',
         'bin'       => '/bin/',
         'database'  => '/database/',
+        'vendor'    => '/vendor/ (PHP dependencies)',
     ];
 
     /** Paths relative to root excluded when copying new files */
-    private const EXCLUDE = [
-        '.env', 'storage', 'vendor', '.git',
+    private const BASE_EXCLUDE = [
+        '.env', 'storage', '.git',
         'install.lock', 'Makefile.local',
         'docs/videos',
     ];
@@ -50,6 +52,17 @@ class UpdateController
             $ok,
             $hasCurl ? 'cURL available' : ($hasUrl ? 'allow_url_fopen enabled' : 'Neither available'),
             'Install php-curl (sudo apt install php-curl) or set allow_url_fopen = On in php.ini / MultiPHP INI Editor.'
+        );
+
+        [$composerOk, $composerDetail] = $this->composerAvailable();
+        $defaultPackage = $this->usingDefaultUpdatePackage();
+        $checks[] = $this->check(
+            'PHP dependency update path',
+            $defaultPackage || $composerOk,
+            $defaultPackage
+                ? ($composerOk ? 'Full release package preferred; Composer also available' : 'Full release package preferred; Composer not required for normal updates')
+                : ($composerOk ? $composerDetail : $composerDetail),
+            'The updater must be able to update PHP dependencies. Use the default full release package, or install Composer and ensure the PHP process can run: composer install --no-dev --optimize-autoloader'
         );
 
         // Write permissions
@@ -122,13 +135,7 @@ class UpdateController
             }
 
             // 1. Download zip
-            $log[] = 'Downloading update from GitHub…';
-            $zipPath = sys_get_temp_dir() . '/andrea-helpdesk-' . time() . '.zip';
-            $bytes = $this->downloadToFile($this->repoZipUrl(), $zipPath);
-            if ($bytes === false || $bytes < 1024) {
-                throw new \RuntimeException('Failed to download update package from GitHub.');
-            }
-            $log[] = 'Downloaded ' . round($bytes / 1024) . ' KB.';
+            [$zipPath, $source] = $this->downloadUpdatePackage($log);
 
             // 2. Extract
             $log[] = 'Extracting…';
@@ -142,30 +149,44 @@ class UpdateController
             unlink($zipPath);
             $zipPath = null;
 
-            $srcDir = $tmpDir . '/' . $this->repoPrefix();
-            if (!is_dir($srcDir)) {
-                throw new \RuntimeException('Unexpected zip structure — directory "' . $this->repoPrefix() . '" not found inside archive.');
-            }
-            $log[] = 'Extracted successfully.';
+            $srcDir = $this->findExtractedRoot($tmpDir, $source['prefix']);
+            $log[] = 'Extracted successfully from ' . $source['label'] . '.';
 
             // 3. Copy files
+            $hasPackagedVendor = is_file($srcDir . '/vendor/autoload.php');
+            [$composerOk] = $this->composerAvailable();
+            if (!$hasPackagedVendor && !$composerOk) {
+                throw new \RuntimeException('This update archive does not include vendor dependencies and Composer is not available. No files were copied. Use the full GitHub release package or install Composer before updating.');
+            }
+
+            $exclude = self::BASE_EXCLUDE;
+            if (!$hasPackagedVendor) {
+                $exclude[] = 'vendor';
+            }
+
             $log[] = 'Copying files…';
-            $copied = $this->copyDir($srcDir, $root, self::EXCLUDE);
+            $copied = $this->copyDir($srcDir, $root, $exclude);
             $log[] = "Copied {$copied} file(s).";
 
-            // 4. Clean up temp
+            // 4. Update Composer dependencies before database work so new PHP classes exist.
+            $log[] = 'Updating PHP dependencies…';
+            foreach ($this->updateDependencies($root, $hasPackagedVendor) as $line) {
+                $log[] = $line;
+            }
+
+            // 5. Clean up temp
             $this->removeDir($tmpDir);
             $tmpDir = null;
 
-            // 5. Schema (idempotent)
+            // 6. Schema (idempotent)
             $log[] = 'Updating database schema…';
             foreach ($this->runSchema($root) as $line) $log[] = $line;
 
-            // 6. Migrations
+            // 7. Migrations
             $log[] = 'Checking for new migrations…';
             foreach ($this->runMigrations($root) as $line) $log[] = $line;
 
-            // 7. Flush opcode cache if available
+            // 8. Flush opcode cache if available
             if (function_exists('opcache_reset')) {
                 opcache_reset();
                 $log[] = 'Opcode cache cleared.';
@@ -201,6 +222,162 @@ class UpdateController
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
+
+    private function usingDefaultUpdatePackage(): bool
+    {
+        return trim((string)(getenv('UPDATE_REPO_ZIP_URL') ?: '')) === '';
+    }
+
+    private function downloadUpdatePackage(array &$log): array
+    {
+        $zipPath = sys_get_temp_dir() . '/andrea-helpdesk-' . time() . '.zip';
+        $errors = [];
+
+        foreach ($this->updateSources() as $source) {
+            $log[] = 'Downloading update from ' . $source['label'] . '…';
+            $bytes = $this->downloadToFile($source['url'], $zipPath);
+            if ($bytes !== false && $bytes >= 1024) {
+                $log[] = 'Downloaded ' . round($bytes / 1024) . ' KB.';
+                return [$zipPath, $source];
+            }
+
+            $errors[] = $source['label'];
+            @unlink($zipPath);
+        }
+
+        throw new \RuntimeException('Failed to download update package from GitHub. Tried: ' . implode(', ', $errors));
+    }
+
+    private function updateSources(): array
+    {
+        if (!$this->usingDefaultUpdatePackage()) {
+            return [[
+                'url' => $this->repoZipUrl(),
+                'prefix' => $this->repoPrefix(),
+                'label' => 'configured update zip',
+            ]];
+        }
+
+        $sources = [];
+        try {
+            $latest = (new VersionService())->getLatest();
+            $version = (string)($latest['version'] ?? '');
+            if (preg_match('/^\d+\.\d+\.\d+(?:[-+][A-Za-z0-9._-]+)?$/', $version) === 1) {
+                $sources[] = [
+                    'url' => sprintf(self::RELEASE_ZIP_TEMPLATE, $version, $version),
+                    'prefix' => 'andrea-helpdesk-' . $version,
+                    'label' => 'GitHub full release package v' . $version,
+                ];
+            }
+        } catch (\Throwable) {
+            // Fall back to the source archive below.
+        }
+
+        $sources[] = [
+            'url' => self::DEFAULT_REPO_ZIP_URL,
+            'prefix' => self::DEFAULT_REPO_PREFIX,
+            'label' => 'GitHub source archive',
+        ];
+
+        return $sources;
+    }
+
+    private function findExtractedRoot(string $tmpDir, string $expectedPrefix): string
+    {
+        $expected = $tmpDir . '/' . $expectedPrefix;
+        if (is_dir($expected)) {
+            return $expected;
+        }
+
+        $dirs = array_values(array_filter(glob($tmpDir . '/*') ?: [], 'is_dir'));
+        if (count($dirs) === 1) {
+            return $dirs[0];
+        }
+
+        throw new \RuntimeException('Unexpected zip structure — directory "' . $expectedPrefix . '" not found inside archive.');
+    }
+
+    private function updateDependencies(string $root, bool $hasPackagedVendor): array
+    {
+        $log = [];
+
+        if ($hasPackagedVendor) {
+            $log[] = 'Vendor dependencies were included in the update package.';
+        }
+
+        [$composerOk, $composerDetail] = $this->composerAvailable();
+        if (!$composerOk) {
+            if ($hasPackagedVendor) {
+                $log[] = 'Composer not available; using packaged vendor dependencies.';
+            } else {
+                throw new \RuntimeException('The update package did not include vendor dependencies and Composer is not available. Install Composer, or update from the full GitHub release package instead of a source archive.');
+            }
+        } else {
+            $log[] = $composerDetail;
+            try {
+                foreach ($this->runComposerInstall($root) as $line) {
+                    $log[] = $line;
+                }
+            } catch (\Throwable $e) {
+                if (!$hasPackagedVendor) {
+                    throw $e;
+                }
+                $log[] = 'Composer dependency refresh failed, continuing with packaged vendor dependencies: ' . $e->getMessage();
+            }
+        }
+
+        if (!is_file($root . '/vendor/autoload.php')) {
+            throw new \RuntimeException('Composer autoload file is missing after dependency update: vendor/autoload.php');
+        }
+
+        return $log;
+    }
+
+    private function composerAvailable(): array
+    {
+        if (!function_exists('exec')) {
+            return [false, 'PHP exec() is disabled, so Composer cannot be run by the updater'];
+        }
+
+        $output = [];
+        $code = 1;
+        @exec('command -v composer 2>&1', $output, $code);
+        if ($code !== 0 || empty($output[0])) {
+            return [false, 'Composer command not found'];
+        }
+
+        return [true, 'Composer available: ' . trim((string)$output[0])];
+    }
+
+    private function runComposerInstall(string $root): array
+    {
+        if (!is_file($root . '/composer.json')) {
+            throw new \RuntimeException('composer.json is missing after update copy; cannot update PHP dependencies.');
+        }
+
+        $command = 'cd ' . escapeshellarg($root) . ' && composer install --no-dev --optimize-autoloader --no-interaction 2>&1';
+        $output = [];
+        $code = 1;
+        @exec($command, $output, $code);
+
+        $log = [];
+        foreach ($output as $line) {
+            $line = trim((string)$line);
+            if ($line !== '') {
+                $log[] = '  composer: ' . $line;
+            }
+        }
+
+        if ($code !== 0) {
+            throw new \RuntimeException('Composer dependency update failed. Run this manually from the application directory: composer install --no-dev --optimize-autoloader');
+        }
+
+        if (empty($log)) {
+            $log[] = '  composer: dependencies are already up to date.';
+        }
+
+        return $log;
+    }
 
     private function check(string $name, bool $pass, string $detail, string $fix): array
     {

@@ -1885,7 +1885,7 @@ Fetch `version.json` from the GitHub `main` branch server-side (via cURL / `file
 
 ### `GET /api/update/preflight`
 
-Run prerequisite checks before attempting an in-app update. Returns a list of checks with pass/fail status and fix instructions for any failures, including checks for overwriting existing files as well as writable directories.
+Run prerequisite checks before attempting an in-app update. Returns a list of checks with pass/fail status and fix instructions for any failures, including checks for dependency-update capability and overwriting existing files as well as writable directories.
 
 **Response `200`**
 
@@ -1897,6 +1897,7 @@ Run prerequisite checks before attempting an in-app update. Returns a list of ch
     "checks": [
       { "name": "PHP ZipArchive extension", "pass": true,  "detail": "Available",    "fix": "" },
       { "name": "HTTP download (cURL or allow_url_fopen)", "pass": true, "detail": "cURL available", "fix": "" },
+      { "name": "PHP dependency update path", "pass": true, "detail": "Full release package preferred; Composer not required for normal updates", "fix": "" },
       { "name": "Write permission: /public_html/", "pass": false, "detail": "Not writable", "fix": "chmod 755 ..." },
       ...
     ]
@@ -1907,7 +1908,9 @@ Run prerequisite checks before attempting an in-app update. Returns a list of ch
 Checks performed:
 - PHP `zip` extension loaded
 - HTTP download capability (`curl_exec` or `allow_url_fopen`)
-- Write permission on `/` (app root), `/public_html/`, `/src/`, `/config/`, `/bin/`, `/database/`
+- PHP dependency update path, either the default full release package or an executable Composer install
+- Write permission on `/` (app root), `/public_html/`, `/src/`, `/config/`, `/bin/`, `/database/`, `/vendor/`
+- Overwriteability of sample existing files in those paths
 - System temp directory writable
 - ≥ 50 MB free disk space
 
@@ -1920,12 +1923,13 @@ Download the latest release from GitHub and apply it to the installation. Requir
 **Request body** — empty `{}`.
 
 **Steps performed:**
-1. Download `main` branch zip from GitHub
+1. Prefer the full GitHub release package for the latest version; fall back to the configured/source zip if needed
 2. Extract to temp directory
-3. Copy files over the installation (preserving `.env`, `storage/`, `vendor/`, `.git`, `install.lock`, `Makefile.local`)
-4. Run `database/schema.sql` (idempotent — all `CREATE TABLE IF NOT EXISTS`)
-5. Apply any new numbered migration files from `database/migrations/`, tracked in `schema_migrations` table (created automatically if absent); `001_initial.sql` is skipped as it is covered by `schema.sql`
-6. Reset opcode cache (`opcache_reset()`) if available
+3. Copy files over the installation (preserving `.env`, `storage/`, `.git`, `install.lock`, `Makefile.local`, and excluding large `docs/videos`)
+4. Update PHP dependencies from packaged `vendor/` files, or run `composer install --no-dev --optimize-autoloader --no-interaction` if Composer is available
+5. Run `database/schema.sql` (idempotent — all `CREATE TABLE IF NOT EXISTS`)
+6. Apply any new numbered migration files from `database/migrations/`, tracked in `schema_migrations` table (created automatically if absent); `001_initial.sql` is skipped as it is covered by `schema.sql`
+7. Reset opcode cache (`opcache_reset()`) if available
 
 **Response `200`**
 
@@ -1937,9 +1941,11 @@ Download the latest release from GitHub and apply it to the installation. Requir
       "Downloading update from GitHub…",
       "Downloaded 1234 KB.",
       "Extracting…",
-      "Extracted successfully.",
+      "Extracted successfully from GitHub full release package v1.4.9.",
       "Copying files…",
       "Copied 312 file(s).",
+      "Updating PHP dependencies…",
+      "Vendor dependencies were included in the update package.",
       "Updating database schema…",
       "Schema: 28 statement(s) executed.",
       "Checking for new migrations…",

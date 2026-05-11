@@ -8,6 +8,15 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
+## [1.4.9] — 2026-05-11
+
+### Changed
+- In-app updates now prefer the full GitHub release package, copy packaged `vendor/` dependencies when present, and run Composer as a fallback so new PHP dependencies such as Web Push are installed during the update instead of failing later at runtime
+- Updater preflight now checks for a PHP dependency update path and verifies `vendor/` writability because Composer/package dependency repair requires the PHP process to overwrite dependency files
+
+
+---
+
 ## [1.4.8] — 2026-05-11
 
 ### Added
@@ -29,6 +38,7 @@ All notable changes to Andrea Helpdesk are documented here.
 - SLA and due-date overdue notifications now remain until the overdue condition is cleared, instead of being dismissed by opening the ticket
 - Browser notifications now use service-worker push subscriptions when VAPID keys are configured, rather than only showing notifications while the app is open
 - Service-worker static caches are now versioned with the app release so browser assets refresh reliably after deployment
+- VAPID key generation and push diagnostics now report a clear missing Composer dependency message instead of exposing a PHP class-loading error
 
 ### Removed
 - Removed the Mark as read / Mark all read workflow and the orange read-but-still-active notification state

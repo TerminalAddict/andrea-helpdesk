@@ -620,9 +620,11 @@ Some shared-hosting environments behave differently from VPS installs:
 
 That usually means:
 
-- upload `vendor/` yourself
+- use the full GitHub release package for FTP/SFTP installs because it includes `vendor/`
 - use `/install/` for setup
 - use manual FTP/SFTP deployment for upgrades if the in-app updater preflight reports overwrite or permission failures
+
+The in-app updater now prefers the full GitHub release package and can update packaged PHP dependencies, including Web Push libraries, without Composer. If you override the updater to use a source ZIP without `vendor/`, Composer must be available and executable by PHP.
 
 Do not solve updater problems by making the app tree world-writable.
 

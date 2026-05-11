@@ -21,6 +21,10 @@ class PushNotificationService
 
     public function isConfigured(): bool
     {
+        if (!$this->isDependencyAvailable()) {
+            return false;
+        }
+
         $config = $this->getConfig();
         return $config['public_key'] !== '' && $config['private_key'] !== '' && $config['subject'] !== '';
     }
@@ -40,8 +44,14 @@ class PushNotificationService
         $config = $this->getConfig();
         $status = 'not_configured';
         $message = 'Push notifications are not configured.';
+        $dependencyAvailable = $this->isDependencyAvailable();
 
-        if ($config['public_key'] !== '' || $config['private_key'] !== '' || $config['subject'] !== '') {
+        if (!$dependencyAvailable) {
+            $status = 'dependency_missing';
+            $message = 'Web Push dependency is missing. Run composer install --no-dev --optimize-autoloader on the server, or install from the full release package.';
+        }
+
+        if ($dependencyAvailable && ($config['public_key'] !== '' || $config['private_key'] !== '' || $config['subject'] !== '')) {
             try {
                 VAPID::validate([
                     'subject' => $config['subject'],
@@ -65,6 +75,7 @@ class PushNotificationService
             'subject' => $config['subject'],
             'diagnostics' => [
                 ...$this->subscriptions->diagnostics(),
+                'web_push_dependency' => $dependencyAvailable,
                 'php_extensions' => [
                     'curl' => extension_loaded('curl'),
                     'mbstring' => extension_loaded('mbstring'),
@@ -79,6 +90,11 @@ class PushNotificationService
 
     public function sendToAgents(array $agentIds, array $payload): void
     {
+        if (!$this->isDependencyAvailable()) {
+            $this->recordFailure('Web Push dependency is missing. Run composer install --no-dev --optimize-autoloader.');
+            return;
+        }
+
         if (!$this->isConfigured()) {
             return;
         }
@@ -148,6 +164,13 @@ class PushNotificationService
             'private_key' => $includePrivate ? $this->settings->decrypt((string)$this->settings->get('push_vapid_private_key', '')) : '',
             'subject' => (string)$this->settings->get('push_vapid_subject', ''),
         ];
+    }
+
+    private function isDependencyAvailable(): bool
+    {
+        return class_exists(VAPID::class)
+            && class_exists(WebPush::class)
+            && class_exists(Subscription::class);
     }
 
     private function safeText(string $value, int $maxLength): string
