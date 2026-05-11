@@ -139,7 +139,7 @@ composer install --no-dev --optimize-autoloader
 
 If you are on shared hosting without Composer, install from the full GitHub release package instead of the source zip. The full release package includes the `vendor/` dependencies. Current versions of the in-app updater also prefer the full release package and can repair missing PHP dependencies automatically if `vendor/` is writable by the PHP process.
 
-If an install was already updated by an older updater that skipped `vendor/`, the VAPID key actions will try one Composer repair automatically when Composer is available. If Composer is disabled or unavailable, upload the full release package or run Composer manually from the application directory.
+If an install was already updated by an older updater that skipped `vendor/`, the VAPID key actions will try to repair dependencies automatically. The repair first uses Composer when available; if Composer is missing, it downloads the full GitHub release package for the installed version and copies `vendor/` from that package. If both repair paths fail, upload the full release package or run Composer manually from the application directory.
 
 ### Why does iOS behave differently from Android?
 
