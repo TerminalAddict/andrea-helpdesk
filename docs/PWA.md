@@ -107,7 +107,7 @@ iOS Web Push requires the app to be installed on the Home Screen. A normal Safar
 - Old static caches are removed on service-worker activation.
 - Static app assets are cached; API and attachment routes are always network-only.
 - If the network is unavailable during a page navigation, the service worker shows a small offline page instead of a browser error.
-- If automatic update activation cannot complete, the SPA shows a refresh prompt so the user can switch to the latest assets.
+- Waiting service workers are activated automatically; if a version mismatch remains after one reload, the SPA shows a single hard-refresh prompt.
 - Notification clicks focus an existing Andrea Helpdesk window when possible, otherwise they open the linked app route.
 - If the browser rotates a push subscription, the service worker attempts to re-subscribe and the authenticated SPA refreshes the server-side subscription on the next app load.
 

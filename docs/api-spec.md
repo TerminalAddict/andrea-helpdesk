@@ -1971,7 +1971,7 @@ Fetch `version.json` from the GitHub `main` branch server-side (via cURL / `file
 
 ### `GET /api/update/preflight`
 
-Run prerequisite checks before attempting an in-app update. Returns a list of checks with pass/fail status and fix instructions for any failures, including upgrade-path compatibility, dependency-update capability, overwriting existing files, and writable directories.
+Run prerequisite checks before attempting an in-app update. Returns a list of checks with pass/fail status and fix instructions for any failures, including upgrade-path compatibility, dependency-update capability, full release package availability when Composer is unavailable, overwriting existing files, and writable directories.
 
 **Response `200`**
 
@@ -1985,6 +1985,7 @@ Run prerequisite checks before attempting an in-app update. Returns a list of ch
       { "name": "Upgrade path compatibility", "pass": true, "detail": "Upgrade path is supported from 1.4.9 to 1.4.12.", "fix": "" },
       { "name": "HTTP download (cURL or allow_url_fopen)", "pass": true, "detail": "cURL available", "fix": "" },
       { "name": "PHP dependency update path", "pass": true, "detail": "Full release package preferred; Composer not required for normal updates", "fix": "" },
+      { "name": "Full release package availability", "pass": true, "detail": "Full release package v1.4.14 is available.", "fix": "" },
       { "name": "Write permission: /public_html/", "pass": false, "detail": "Not writable", "fix": "chmod 755 ..." },
       ...
     ]
@@ -1997,6 +1998,7 @@ Checks performed:
 - PHP `zip` extension loaded
 - HTTP download capability (`curl_exec` or `allow_url_fopen`)
 - PHP dependency update path, either the default full release package or an executable Composer install
+- Full release package availability when Composer is unavailable. Without Composer, the updater will not fall back to the GitHub source archive because source archives do not contain `vendor/`.
 - Write permission on `/` (app root), `/public_html/`, `/src/`, `/config/`, `/bin/`, `/database/`, `/vendor/`
 - Overwriteability of sample existing files in those paths
 - System temp directory writable
@@ -2006,7 +2008,7 @@ Checks performed:
 
 ### `POST /api/update/run`
 
-Download the latest release from GitHub and apply it to the installation. Requires all preflight checks to be passing and aborts before download/copy if release metadata requires a bridge version newer than the installed version. Uses a file lock to prevent concurrent runs.
+Download the latest release from GitHub and apply it to the installation. Requires all preflight checks to be passing and aborts before download/copy if release metadata requires a bridge version newer than the installed version. On hosts without Composer, only the full release package is accepted. Uses a file lock to prevent concurrent runs.
 
 **Request body** — empty `{}`.
 

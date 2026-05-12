@@ -98,7 +98,7 @@ const App = {
                 if (!worker) return;
                 worker.addEventListener('statechange', () => {
                     if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-                        this.showServiceWorkerUpdatePrompt(worker);
+                        this.activateServiceWorkerUpdate(worker);
                     }
                 });
             });
@@ -180,26 +180,6 @@ const App = {
                 worker.postMessage({ type: 'ANDREA_SKIP_WAITING' });
             }
         });
-    },
-
-    showServiceWorkerUpdatePrompt(worker) {
-        const id = 'toast-sw-update';
-        if (document.getElementById(id)) return;
-        const html = `
-            <div id="${id}" class="toast align-items-center bg-dark text-white border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="false">
-                <div class="d-flex">
-                    <div class="toast-body">A new ${this.escapeHtml(this.appName || 'Andrea Helpdesk')} version is ready.</div>
-                    <button type="button" class="btn btn-sm btn-light my-2 me-2" id="btn-reload-service-worker">Refresh</button>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-                </div>
-            </div>`;
-        $('#toast-container').append(html);
-        const toastEl = document.getElementById(id);
-        const toast = new bootstrap.Toast(toastEl, { autohide: false });
-        $('#btn-reload-service-worker').on('click', () => {
-            this.activateServiceWorkerUpdate(worker);
-        });
-        toast.show();
     },
 
     showHardReloadUpdatePrompt(serverVersion) {

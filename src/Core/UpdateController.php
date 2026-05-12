@@ -65,14 +65,28 @@ class UpdateController
 
         [$composerOk, $composerDetail] = $this->composerAvailable();
         $defaultPackage = $this->usingDefaultUpdatePackage();
+        $releasePackageAvailable = null;
+        $releasePackageDetail = '';
+        $releasePackageFix = '';
+        if ($defaultPackage && !$composerOk) {
+            [$releasePackageAvailable, $releasePackageDetail, $releasePackageFix] = $this->latestReleasePackageAvailability();
+        }
         $checks[] = $this->check(
             'PHP dependency update path',
-            $defaultPackage || $composerOk,
-            $defaultPackage
+            ($defaultPackage && ($composerOk || $releasePackageAvailable === true)) || $composerOk,
+            $defaultPackage && $releasePackageAvailable !== false
                 ? ($composerOk ? 'Full release package preferred; Composer also available' : 'Full release package preferred; Composer not required for normal updates')
                 : ($composerOk ? $composerDetail : $composerDetail),
             'The updater must be able to update PHP dependencies. Use the default full release package, or install Composer and ensure the PHP process can run: composer install --no-dev --optimize-autoloader'
         );
+        if ($defaultPackage && !$composerOk) {
+            $checks[] = $this->check(
+                'Full release package availability',
+                $releasePackageAvailable === true,
+                $releasePackageDetail,
+                $releasePackageFix
+            );
+        }
 
         // Write permissions
         foreach (self::WRITE_PATHS as $rel => $label) {
@@ -246,8 +260,12 @@ class UpdateController
     {
         $zipPath = sys_get_temp_dir() . '/andrea-helpdesk-' . time() . '.zip';
         $errors = [];
+        $sources = $this->updateSources();
+        if (!$sources) {
+            throw new \RuntimeException('No compatible update package is available. Wait for the full GitHub release package to finish building, or install Composer and try again.');
+        }
 
-        foreach ($this->updateSources() as $source) {
+        foreach ($sources as $source) {
             $log[] = 'Downloading update from ' . $source['label'] . '…';
             $bytes = $this->downloadToFile($source['url'], $zipPath);
             if ($bytes !== false && $bytes >= 1024) {
@@ -287,6 +305,11 @@ class UpdateController
             // Fall back to the source archive below.
         }
 
+        [$composerOk] = $this->composerAvailable();
+        if (!$composerOk) {
+            return $sources;
+        }
+
         $sources[] = [
             'url' => self::DEFAULT_REPO_ZIP_URL,
             'prefix' => self::DEFAULT_REPO_PREFIX,
@@ -294,6 +317,71 @@ class UpdateController
         ];
 
         return $sources;
+    }
+
+    private function latestReleasePackageAvailability(): array
+    {
+        try {
+            $latest = (new VersionService())->getLatest();
+            $version = (string)($latest['version'] ?? '');
+            if (preg_match('/^\d+\.\d+\.\d+(?:[-+][A-Za-z0-9._-]+)?$/', $version) !== 1) {
+                return [
+                    false,
+                    'Latest version metadata did not contain a valid version number.',
+                    'Check version.json or update manually.',
+                ];
+            }
+            $url = sprintf(self::RELEASE_ZIP_TEMPLATE, $version, $version);
+            if ($this->remoteFileAvailable($url)) {
+                return [
+                    true,
+                    "Full release package v{$version} is available.",
+                    '',
+                ];
+            }
+
+            return [
+                false,
+                "Full release package v{$version} is not available yet.",
+                'Wait for the GitHub release package workflow to complete, then run the updater again. Do not use the source archive on hosts without Composer.',
+            ];
+        } catch (\Throwable $e) {
+            return [
+                false,
+                'Could not verify the full release package: ' . $e->getMessage(),
+                'Check the update metadata URL and try again.',
+            ];
+        }
+    }
+
+    private function remoteFileAvailable(string $url): bool
+    {
+        if (function_exists('curl_init')) {
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_NOBODY         => true,
+                CURLOPT_TIMEOUT        => 20,
+                CURLOPT_USERAGENT      => 'Andrea-Helpdesk-Updater/1.0',
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_FAILONERROR    => false,
+            ]);
+            curl_exec($ch);
+            $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            return $status >= 200 && $status < 300;
+        }
+
+        $headers = @get_headers($url, true, stream_context_create(['http' => [
+            'method' => 'HEAD',
+            'timeout' => 20,
+            'header' => "User-Agent: Andrea-Helpdesk-Updater/1.0\r\n",
+            'follow_location' => 1,
+        ]]));
+        if (!is_array($headers) || empty($headers[0])) {
+            return false;
+        }
+        $statusLine = is_array($headers[0]) ? end($headers[0]) : $headers[0];
+        return is_string($statusLine) && preg_match('/\s2\d\d\s/', $statusLine) === 1;
     }
 
     private function upgradePathCompatibility(): array

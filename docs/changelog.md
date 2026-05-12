@@ -12,6 +12,8 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ### Changed
 - Improved installed PWA update behaviour by versioning static asset URLs, registering the service worker with cache bypass, checking `/api/version` while the app is visible, and automatically reloading when the server version changes
+- Improved updater handling on hosts without Composer so it verifies the full release package is available and no longer falls back to the source archive, which cannot update PHP dependencies without `vendor/`
+- Removed the repeated service-worker “new version ready” toast path; waiting workers now activate automatically and only the fallback hard-refresh prompt remains
 
 
 ---
