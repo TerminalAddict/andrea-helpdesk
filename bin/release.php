@@ -38,12 +38,6 @@ updateFile(
 );
 
 updateFile(
-    $root . '/public_html/index.php',
-    "/version: '\\d+\\.\\d+\\.\\d+'/",
-    "version: '{$newVersion}'"
-);
-
-updateFile(
     $root . '/public_html/service-worker.js',
     "/const APP_VERSION = '\\d+\\.\\d+\\.\\d+';/",
     "const APP_VERSION = '{$newVersion}';"

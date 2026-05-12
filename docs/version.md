@@ -1,6 +1,6 @@
 # Version
 
-Current release: **1.4.13** (2026-05-12)
+Current release: **1.4.14** (2026-05-12)
 
 See [changelog.md](changelog.md) for full history.
 
@@ -14,7 +14,7 @@ See [changelog.md](changelog.md) for full history.
 - The preflight now checks both writable directories and whether existing files are actually overwriteable by the PHP process. This matters on shared hosting, where PHP often cannot replace files owned by your account even if the directory itself appears writable.
 - Release metadata may declare `minimum_update_from`. When set, the updater blocks direct upgrades from older installs to newer releases and tells the admin which bridge version to install first.
 - The version metadata source can be overridden with `UPDATE_VERSION_URL`. The updater package source can be overridden with `UPDATE_REPO_ZIP_URL` and `UPDATE_REPO_PREFIX`; otherwise it uses the public GitHub metadata to prefer the full release package for the latest version, falling back to the GitHub source zip if the package is unavailable.
-- When a new release is ready, prepare the `docs/changelog.md` `Unreleased` section with the relevant notes, then run `make release`. That target bumps `version.json`, updates `docs/version.md`, updates the client version in `public_html/index.php`, converts the prepared `Unreleased` notes into the new versioned changelog section, stages the current worktree, commits, and pushes.
+- When a new release is ready, prepare the `docs/changelog.md` `Unreleased` section with the relevant notes, then run `make release`. That target bumps `version.json`, updates `docs/version.md`, updates `public_html/service-worker.js`, converts the prepared `Unreleased` notes into the new versioned changelog section, stages the current worktree, commits, and pushes.
 - `make deploy` now runs `php bin/migrate.php` on the remote host after `composer install`, so numbered DB migrations are applied during normal rsync deployments as well as in-app updates.
 
 ## In-app updater
