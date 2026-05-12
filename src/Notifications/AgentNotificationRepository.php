@@ -139,6 +139,43 @@ class AgentNotificationRepository
         );
     }
 
+    public function listActiveChatNotificationsForAgent(int $agentId, int $limit = 50, ?int $afterId = null): array
+    {
+        $limit = max(1, min(250, $limit));
+        $params = [$agentId];
+        $where = [
+            'agent_id = ?',
+            "type IN ('chat_mention','chat_direct_message','chat_channel_message')",
+        ];
+        $order = 'id DESC';
+
+        if ($afterId !== null && $afterId > 0) {
+            $where[] = 'id > ?';
+            $params[] = $afterId;
+            $order = 'id ASC';
+        }
+
+        return $this->db->fetchAll(
+            "SELECT id, type, severity, title, body, link, data_json, created_at
+               FROM agent_notifications
+              WHERE " . implode(' AND ', $where) . "
+           ORDER BY {$order}
+              LIMIT {$limit}",
+            $params
+        );
+    }
+
+    public function countActiveChatNotificationsForAgent(int $agentId): int
+    {
+        return $this->db->count(
+            "SELECT COUNT(*)
+               FROM agent_notifications
+              WHERE agent_id = ?
+                AND type IN ('chat_mention','chat_direct_message','chat_channel_message')",
+            [$agentId]
+        );
+    }
+
     public function latestUpdateNotificationForAgent(int $agentId, ?int $afterId = null): ?array
     {
         $params = [$agentId];

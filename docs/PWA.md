@@ -45,6 +45,8 @@ The VAPID private key is encrypted at rest and masked in the admin UI. The publi
 
 Push notifications are still governed by the agent's notification preferences. If an agent disables a notification type, Andrea Helpdesk does not create or push that notification for that agent.
 
+Chat notifications use the same PWA/browser push system. Agents can opt into `@mention` alerts, private-message alerts, and selected channel-message alerts from `#/my-profile/settings/notifications`.
+
 ---
 
 ## Installing The App
@@ -111,6 +113,7 @@ iOS Web Push requires the app to be installed on the Home Screen. A normal Safar
 ## Security Notes
 
 - Push payloads are deliberately small: title, short body, internal route, tag, and icon.
+- Chat push payloads include only the notification title, a short preview, and a route to the chat channel/thread; full message history is fetched after the authenticated app opens.
 - Ticket bodies, HTML content, customer records, attachments, JWTs, and secrets are not sent in push payloads.
 - Push subscription endpoints are stored with a SHA-256 endpoint hash for unique lookup.
 - Expired push subscriptions are removed when providers return `404` or `410`.

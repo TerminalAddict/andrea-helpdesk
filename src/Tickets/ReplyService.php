@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Andrea\Helpdesk\Tickets;
 
 use Andrea\Helpdesk\Core\Database;
+use Andrea\Helpdesk\Core\EmoticonNormalizer;
 use Andrea\Helpdesk\Core\Sanitizer;
 use Andrea\Helpdesk\Notifications\NotificationService;
 
@@ -28,7 +29,7 @@ class ReplyService
         $agent = $this->db->fetch("SELECT * FROM agents WHERE id = ?", [$agentId]);
         if (!$agent) throw new \InvalidArgumentException('Agent not found');
 
-        $safeHtml = Sanitizer::html($bodyHtml);
+        $safeHtml = Sanitizer::html(EmoticonNormalizer::html($bodyHtml));
 
         $replyId = $this->replyRepo->create([
             'ticket_id'   => $ticketId,

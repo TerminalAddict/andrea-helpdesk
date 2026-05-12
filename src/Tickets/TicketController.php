@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Andrea\Helpdesk\Tickets;
 
 use Andrea\Helpdesk\Core\Database;
+use Andrea\Helpdesk\Core\EmoticonNormalizer;
 use Andrea\Helpdesk\Core\Request;
 use Andrea\Helpdesk\Core\Response;
 use Andrea\Helpdesk\Core\Exceptions\NotFoundException;
@@ -63,10 +64,10 @@ class TicketController
             $request->input('customer_name', '')
         );
 
-        $body     = $request->input('body', '');
+        $body     = EmoticonNormalizer::text($request->input('body', ''));
         $rawHtml  = $request->input('body_html');
         $bodyHtml = $rawHtml
-            ? \Andrea\Helpdesk\Core\Sanitizer::html($rawHtml)
+            ? \Andrea\Helpdesk\Core\Sanitizer::html(EmoticonNormalizer::html($rawHtml))
             : nl2br(htmlspecialchars($body, ENT_QUOTES, 'UTF-8'));
 
         $data = [
@@ -292,14 +293,15 @@ class TicketController
             throw new HttpException('You can only edit your own replies', 403);
         }
 
-        $body     = trim($request->input('body', ''));
+        $body     = EmoticonNormalizer::text(trim($request->input('body', '')));
         $rawHtml  = $request->input('body_html');
         $bodyHtml = $rawHtml
-            ? \Andrea\Helpdesk\Core\Sanitizer::html($rawHtml)
+            ? \Andrea\Helpdesk\Core\Sanitizer::html(EmoticonNormalizer::html($rawHtml))
             : nl2br(htmlspecialchars($body, ENT_QUOTES, 'UTF-8'));
+        $bodyText = trim(strip_tags($bodyHtml)) !== '' ? strip_tags($bodyHtml) : $body;
         $this->db->execute(
-            "UPDATE replies SET body_html = ?, updated_at = NOW() WHERE id = ?",
-            [$bodyHtml, $replyId]
+            "UPDATE replies SET body_html = ?, body_text = ?, updated_at = NOW() WHERE id = ?",
+            [$bodyHtml, $bodyText, $replyId]
         );
         $this->repo->touchAttention($ticketId);
 
@@ -428,7 +430,7 @@ class TicketController
 
         $data = $request->validate(['subject' => 'required']);
         $data['priority']    = $request->input('priority', 'normal');
-        $data['body_html']   = $request->input('body_html', '');
+        $data['body_html']   = EmoticonNormalizer::html($request->input('body_html', ''));
         $data['customer_id'] = $request->input('customer_id') ?? $ticket['customer_id'];
 
         $result = $this->service->createChildTicket($ticket['id'], $data, $request->agent->id);

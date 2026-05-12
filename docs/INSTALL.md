@@ -94,7 +94,7 @@ Minimum server requirements:
 - Recommended / optional:
   - `imap` for inbound email polling
   - `curl` or `allow_url_fopen` for installer asset downloads and update checks
-  - cron access for IMAP polling and SLA checks
+  - cron access for the Andrea background runner (`bin/cron.php`), which handles IMAP/SLA polling, chat WebSocket supervision, and retention pruning
 
 Directory layout requirements:
 
@@ -370,18 +370,20 @@ You can also run the script directly:
 php bin/reset-admin-password.php
 ```
 
-#### Step 9: Add cron for IMAP polling and SLA checks
+#### Step 9: Add cron for background jobs
 
 Recommended cron:
 
 ```cron
-* * * * * php /var/www/andrea-helpdesk/bin/imap-poll.php >> /var/www/andrea-helpdesk-storage/logs/imap.log 2>&1
+* * * * * php /var/www/andrea-helpdesk/bin/cron.php >> /var/www/andrea-helpdesk-storage/logs/cron.log 2>&1
 ```
 
 This handles:
 
 - inbound email polling
 - SLA escalation checks
+- internal chat WebSocket supervision when chat is set to cron-managed mode
+- daily internal chat retention pruning
 - log trimming
 
 #### What The CLI Installer Verifies At The End
@@ -626,6 +628,8 @@ That usually means:
 
 The in-app updater now prefers the full GitHub release package and can update packaged PHP dependencies, including Web Push libraries, without Composer. If you override the updater to use a source ZIP without `vendor/`, Composer must be available and executable by PHP.
 
+Installs older than `1.4.9` must update to `1.4.9` before updating to newer releases. Version `1.4.9` is the updater bridge release that adds full release package and packaged `vendor/` dependency support.
+
 Do not solve updater problems by making the app tree world-writable.
 
 ---
@@ -637,8 +641,9 @@ After any install method:
 1. Log in as the admin user.
 2. Set branding, SMTP, and IMAP settings.
 3. Confirm `APP_URL` is correct in **Admin → Settings → General**.
-4. Configure cron for `bin/imap-poll.php`.
+4. Configure cron for `bin/cron.php`.
 5. Send a test SMTP message.
 6. Add an IMAP account and run **Poll Now**.
 7. Configure browser push notifications and PWA install behaviour from **Admin → Settings → Notifications** if you want desktop/mobile OS alerts. The PWA uses the configured **Application Name** and optional **PWA / Notification Icon URL**; when that icon is empty it falls back to Branding → **Favicon URL**.
-8. Remove or restrict `public_html/install/`.
+8. If you enable internal chat, configure channels and the WebSocket service from **Admin → Settings → Chat Service**. If this server hosts multiple Andrea Helpdesk installs, give each install a unique WebSocket listen port and update each vhost `/ws/chat` proxy to match. For production external service mode, see `docs/chat-websocket-systemd.md`.
+9. Remove or restrict `public_html/install/`.

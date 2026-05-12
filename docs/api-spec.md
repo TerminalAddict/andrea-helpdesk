@@ -16,6 +16,8 @@ All API endpoints are served under the `/api` prefix. The API returns JSON for a
 - [Tag endpoints](#tag-endpoints)
 - [Customer endpoints](#customer-endpoints)
 - [Agent endpoints](#agent-endpoints)
+- [Chat endpoints](#chat-endpoints)
+- [Notification endpoints](#notification-endpoints)
 - [Settings endpoints](#settings-endpoints)
 - [IMAP account endpoints](#imap-account-endpoints)
 - [Report endpoints](#report-endpoints)
@@ -264,8 +266,8 @@ Create a new ticket on behalf of a customer. The customer is upserted by email.
 | `customer_email` | string | yes | Customer email (upserted if not found) |
 | `customer_name` | string | no | Customer display name |
 | `subject` | string | yes | Ticket subject (max 255) |
-| `body` | string | no | Initial message plain text (used for validation and email plain-text part) |
-| `body_html` | string | no | Rich HTML body from the editor. When present, stored after server-side sanitisation. Falls back to `nl2br(htmlspecialchars($body))` if omitted. |
+| `body` | string | no | Initial message plain text (used for validation and email plain-text part). Common emoticons such as `:)`, `:P`, `<3`, and `:+1:` are normalised to Unicode emoji for agent-created tickets. |
+| `body_html` | string | no | Rich HTML body from the editor. When present, stored after server-side sanitisation and text-node emoticon normalisation. Falls back to `nl2br(htmlspecialchars($body))` if omitted. |
 | `priority` | string | no | Default: `normal` |
 | `channel` | string | no | Default: `phone` |
 | `assigned_agent_id` | int | no | Assign immediately |
@@ -489,8 +491,8 @@ Post a reply to a ticket. Emails the customer and CC participants (unless `is_pr
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `body` | string | yes | Plain text body (used for validation and email plain-text part) |
-| `body_html` | string | no | Rich HTML body from the editor. Stored after server-side sanitisation. Falls back to `nl2br(htmlspecialchars($body))` if omitted. |
+| `body` | string | yes | Plain text body (used for validation and email plain-text part). Common emoticons such as `:)`, `:P`, `<3`, and `:+1:` are normalised to Unicode emoji before storage. |
+| `body_html` | string | no | Rich HTML body from the editor. Stored after server-side sanitisation and text-node emoticon normalisation. Falls back to `nl2br(htmlspecialchars($body))` if omitted. |
 | `type` | string | no | `reply` (default) or `internal` |
 | `is_private` | bool | no | `true` = internal note, not sent to customer |
 | `cc_emails` | string[] | no | Additional email addresses to CC on this reply |
@@ -512,8 +514,8 @@ Edit the body of an existing reply. Agents may only edit their own replies; admi
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `body` | string | yes | Updated plain text body |
-| `body_html` | string | no | Updated rich HTML body. Stored after server-side sanitisation. Falls back to `nl2br(htmlspecialchars($body))` if omitted. |
+| `body` | string | yes | Updated plain text body. Common emoticons are normalised to Unicode emoji before storage. |
+| `body_html` | string | no | Updated rich HTML body. Stored after server-side sanitisation and text-node emoticon normalisation. Falls back to `nl2br(htmlspecialchars($body))` if omitted. |
 
 **Response `200`** — `data: null`, `message: "Reply updated"`.
 
@@ -816,6 +818,7 @@ Create a new agent.
 | `can_manage_kb` | bool | no | `false` |
 | `can_manage_tags` | bool | no | `false` |
 | `signature` | string | no | — |
+| `chat_handle` | string | no | Lowercase `@mention` handle for internal chat |
 
 **Response `201`** — agent object.
 
@@ -900,6 +903,75 @@ Update the currently authenticated agent's own profile. Requires current passwor
 | `new_password` | string | Min 8 chars |
 
 **Response `200`** — updated agent object.
+
+---
+
+## Chat endpoints
+
+All chat endpoints require an active agent token. Chat messages are plain text and emoji only. Common emoticons such as `:)`, `:P`, `<3`, and `:+1:` are normalised to Unicode emoji before storage. The server escapes message text before rendering safe links for external URLs, internal ticket references such as `#123`, KB references such as `kb:printer-reset`, and `@chat_handle` mentions.
+
+### Agent chat API
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/chat/channels` | `auth:agent` | List active channels the agent belongs to, including unread counts |
+| `GET` | `/api/chat/channels/:channel_id/messages` | `auth:agent` | List channel messages. Query: `limit`, `after_id` |
+| `POST` | `/api/chat/channels/:channel_id/messages` | `auth:agent` | Send a channel message. Body: `{ "body": "Hello @paul" }` |
+| `GET` | `/api/chat/direct` | `auth:agent` | List this agent's direct-message threads |
+| `POST` | `/api/chat/direct` | `auth:agent` | Idempotently start or return a direct-message thread. Body: `{ "agent_id": 4 }` |
+| `GET` | `/api/chat/direct/:thread_id/messages` | `auth:agent` | List direct messages. Query: `limit`, `after_id` |
+| `POST` | `/api/chat/direct/:thread_id/messages` | `auth:agent` | Send a direct message. Disabled recipients are rejected |
+| `POST` | `/api/chat/read` | `auth:agent` | Update read cursor and remove current chat notifications |
+| `GET` | `/api/chat/events?after_id=12345` | `auth:agent` | HTTP fallback/recovery feed for missed chat message events |
+| `GET` | `/api/chat/agents` | `auth:agent` | List active agents for mentions and direct messages |
+
+`POST /api/chat/read` accepts either `{ "scope": "channel", "channel_id": 1, "last_read_message_id": 123 }` or `{ "scope": "direct", "thread_id": 9, "last_read_message_id": 123 }`.
+
+### Admin chat API
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/admin/chat/channels` | `role:admin` | List channels with member counts |
+| `POST` | `/api/admin/chat/channels` | `role:admin` | Create a channel and set members |
+| `PUT` | `/api/admin/chat/channels/:id` | `role:admin` | Update channel metadata, status, retention, or members |
+| `POST` | `/api/admin/chat/channels/:id/deactivate` | `role:admin` | Disable a channel without deleting history |
+| `DELETE` | `/api/admin/chat/channels/:id` | `role:admin` | Delete a channel and its messages |
+| `GET` | `/api/admin/chat/direct-threads` | `role:admin` | List direct-message threads |
+| `GET` | `/api/admin/chat/direct-threads/:thread_id/messages` | `role:admin` | Read direct-message history; access is audit logged |
+| `POST` | `/api/admin/chat/prune/preview` | `role:admin` | Preview retention prune counts |
+| `POST` | `/api/admin/chat/prune` | `role:admin` | Soft-delete messages outside retention; action is audit logged |
+| `GET` | `/api/admin/chat/websocket/status` | `role:admin` | Show daemon status, PID, heartbeat, management mode, configured host/port, and diagnostics |
+| `POST` | `/api/admin/chat/websocket/start` | `role:admin` | Request cron supervisor start |
+| `POST` | `/api/admin/chat/websocket/stop` | `role:admin` | Request cron supervisor stop |
+| `POST` | `/api/admin/chat/websocket/restart` | `role:admin` | Request cron supervisor restart |
+| `PUT` | `/api/admin/chat/websocket/settings` | `role:admin` | Save WebSocket management settings |
+
+Channel create/update body:
+
+```json
+{
+  "name": "Support",
+  "slug": "support",
+  "description": "Support desk coordination",
+  "retention_days": 90,
+  "members": [
+    { "agent_id": 1, "can_post": true },
+    { "agent_id": 2, "can_post": true }
+  ]
+}
+```
+
+### WebSocket transport
+
+The WebSocket daemon listens behind a reverse proxy at `/ws/chat`. The SPA authenticates using the existing agent JWT.
+
+The daemon listen host and port are configured from `#/admin/settings/chatservice` using `chat_websocket_host` and `chat_websocket_port`. The default is `127.0.0.1:8090`; multi-install servers should assign a different port per install and point each vhost's `/ws/chat` proxy to the matching port.
+
+Incoming event types: `auth`, `chat.channel.message.send`, `chat.direct.message.send`, `chat.typing`, `chat.read`, `ping`.
+
+Outgoing event types: `auth.ok`, `auth.failed`, `chat.channel.message.created`, `chat.direct.message.created`, `chat.typing`, `chat.read.updated`, `presence.updated`, `error`, `pong`.
+
+WebSocket handshakes reject cross-origin browser requests when an `Origin` header is present. Typing/read/message events are authorised against the sender's channel membership or direct-message thread before broadcast.
 
 ---
 
@@ -992,8 +1064,14 @@ Return the current agent's notification preferences.
       "customer_reply": true,
       "ticket_internal_note": true,
       "ticket_sla_overdue": true,
-      "ticket_due_overdue": true
+      "ticket_due_overdue": true,
+      "chat_mention": true,
+      "chat_direct_message": true,
+      "chat_channel_message": false
     },
+    "chat_channels": [
+      { "id": 1, "name": "Support", "slug": "support", "notify_enabled": 1 }
+    ],
     "browser_notifications_enabled": true
   }
 }
@@ -1010,7 +1088,14 @@ Update the current agent's notification preferences.
   "preferences": {
     "ticket_created": true,
     "customer_reply": false,
-    "ticket_sla_overdue": true
+    "ticket_sla_overdue": true,
+    "chat_mention": true,
+    "chat_direct_message": true,
+    "chat_channel_message": false
+  },
+  "chat_channel_preferences": {
+    "1": true,
+    "2": false
   }
 }
 ```
@@ -1886,7 +1971,7 @@ Fetch `version.json` from the GitHub `main` branch server-side (via cURL / `file
 
 ### `GET /api/update/preflight`
 
-Run prerequisite checks before attempting an in-app update. Returns a list of checks with pass/fail status and fix instructions for any failures, including checks for dependency-update capability and overwriting existing files as well as writable directories.
+Run prerequisite checks before attempting an in-app update. Returns a list of checks with pass/fail status and fix instructions for any failures, including upgrade-path compatibility, dependency-update capability, overwriting existing files, and writable directories.
 
 **Response `200`**
 
@@ -1897,6 +1982,7 @@ Run prerequisite checks before attempting an in-app update. Returns a list of ch
     "ready": true,
     "checks": [
       { "name": "PHP ZipArchive extension", "pass": true,  "detail": "Available",    "fix": "" },
+      { "name": "Upgrade path compatibility", "pass": true, "detail": "Upgrade path is supported from 1.4.9 to 1.4.12.", "fix": "" },
       { "name": "HTTP download (cURL or allow_url_fopen)", "pass": true, "detail": "cURL available", "fix": "" },
       { "name": "PHP dependency update path", "pass": true, "detail": "Full release package preferred; Composer not required for normal updates", "fix": "" },
       { "name": "Write permission: /public_html/", "pass": false, "detail": "Not writable", "fix": "chmod 755 ..." },
@@ -1907,6 +1993,7 @@ Run prerequisite checks before attempting an in-app update. Returns a list of ch
 ```
 
 Checks performed:
+- Upgrade path compatibility from installed version to latest version. Release metadata can require a bridge version such as `1.4.9`.
 - PHP `zip` extension loaded
 - HTTP download capability (`curl_exec` or `allow_url_fopen`)
 - PHP dependency update path, either the default full release package or an executable Composer install
@@ -1919,7 +2006,7 @@ Checks performed:
 
 ### `POST /api/update/run`
 
-Download the latest release from GitHub and apply it to the installation. Requires all preflight checks to be passing. Uses a file lock to prevent concurrent runs.
+Download the latest release from GitHub and apply it to the installation. Requires all preflight checks to be passing and aborts before download/copy if release metadata requires a bridge version newer than the installed version. Uses a file lock to prevent concurrent runs.
 
 **Request body** — empty `{}`.
 

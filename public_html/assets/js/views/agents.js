@@ -45,6 +45,14 @@ const AgentsView = {
                                 <label class="form-label">Email <span class="text-danger">*</span></label>
                                 <input type="email" class="form-control" id="agent-email" required autocomplete="username">
                             </div>
+                            <div class="mb-3">
+                                <label class="form-label">Chat @handle</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">@</span>
+                                    <input type="text" class="form-control" id="agent-chat-handle" placeholder="paulwillard" maxlength="80">
+                                </div>
+                                <div class="form-text">Lowercase letters, numbers, hyphen, and underscore. Used for internal chat mentions.</div>
+                            </div>
                             <div class="mb-3" id="agent-password-wrap">
                                 <label class="form-label">Password <span class="text-danger" id="pw-required">*</span></label>
                                 <input type="password" class="form-control" id="agent-password" placeholder="Leave blank to keep unchanged" autocomplete="new-password">
@@ -120,6 +128,7 @@ const AgentsView = {
                 <td>
                     <div class="fw-semibold">${App.escapeHtml(a.name)}</div>
                     <div class="small text-muted">${App.escapeHtml(a.email)}</div>
+                    <div class="small text-muted">${a.chat_handle ? '@' + App.escapeHtml(a.chat_handle) : 'No chat handle'}</div>
                 </td>
                 <td>
                     <span class="badge ${a.role === 'admin' ? 'bg-danger' : 'bg-primary'}">${a.role}</span>
@@ -195,6 +204,7 @@ const AgentsView = {
         $('#agent-id').val(agent.id);
         $('#agent-name').val(agent.name);
         $('#agent-email').val(agent.email);
+        $('#agent-chat-handle').val(agent.chat_handle || '');
         $('#agent-password').val('');
         $('#agent-role').val(agent.role);
         $('#pw-required').hide();
@@ -219,10 +229,11 @@ const AgentsView = {
         const id       = $('#agent-id').val();
         const name     = $('#agent-name').val().trim();
         const email    = $('#agent-email').val().trim();
+        const chatHandle = $('#agent-chat-handle').val().trim();
         const password = $('#agent-password').val();
         const role     = $('#agent-role').val();
 
-        const payload = { name, email, role };
+        const payload = { name, email, role, chat_handle: chatHandle };
         if (password) payload.password = password;
 
         $('.agent-perm').each(function() {

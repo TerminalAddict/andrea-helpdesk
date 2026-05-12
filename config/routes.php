@@ -19,6 +19,8 @@ use Andrea\Helpdesk\Reports\ReportController;
 use Andrea\Helpdesk\KnowledgeBase\KbController;
 use Andrea\Helpdesk\Notifications\NotificationController;
 use Andrea\Helpdesk\Notifications\PushController;
+use Andrea\Helpdesk\Chat\ChatController;
+use Andrea\Helpdesk\Chat\ChatAdminController;
 
 // Route format: [METHOD, /path, ControllerClass, 'method', ['middleware', ...]]
 return [
@@ -102,6 +104,16 @@ return [
     ['POST', '/api/push/subscriptions',       PushController::class, 'subscribe',   ['auth:agent']],
     ['DELETE', '/api/push/subscriptions',     PushController::class, 'unsubscribe', ['auth:agent']],
     ['POST', '/api/push/test',                PushController::class, 'test',        ['auth:agent']],
+    ['GET',  '/api/chat/channels',            ChatController::class, 'channels',    ['auth:agent']],
+    ['GET',  '/api/chat/channels/:channel_id/messages', ChatController::class, 'channelMessages', ['auth:agent']],
+    ['POST', '/api/chat/channels/:channel_id/messages', ChatController::class, 'sendChannelMessage', ['auth:agent']],
+    ['GET',  '/api/chat/direct',              ChatController::class, 'directThreads', ['auth:agent']],
+    ['POST', '/api/chat/direct',              ChatController::class, 'startDirectThread', ['auth:agent']],
+    ['GET',  '/api/chat/direct/:thread_id/messages', ChatController::class, 'directMessages', ['auth:agent']],
+    ['POST', '/api/chat/direct/:thread_id/messages', ChatController::class, 'sendDirectMessage', ['auth:agent']],
+    ['POST', '/api/chat/read',                ChatController::class, 'markRead',    ['auth:agent']],
+    ['GET',  '/api/chat/events',              ChatController::class, 'events',      ['auth:agent']],
+    ['GET',  '/api/chat/agents',              ChatController::class, 'agents',      ['auth:agent']],
     ['GET',  '/api/agents',                   AgentController::class, 'index',         ['auth:agent']],
     ['POST', '/api/agents',                   AgentController::class, 'store',         ['role:admin']],
     ['GET',  '/api/agents/:id',               AgentController::class, 'show',          ['auth:agent']],
@@ -128,6 +140,20 @@ return [
     ['POST', '/api/admin/settings/test-slack',  SettingsController::class, 'testSlack', ['role:admin']],
     ['GET',  '/api/admin/settings/push-status', SettingsController::class, 'pushStatus', ['role:admin']],
     ['POST', '/api/admin/settings/generate-push-keys', SettingsController::class, 'generatePushKeys', ['role:admin']],
+    ['GET',  '/api/admin/chat/channels',              ChatAdminController::class, 'channels', ['role:admin']],
+    ['POST', '/api/admin/chat/channels',              ChatAdminController::class, 'createChannel', ['role:admin']],
+    ['PUT',  '/api/admin/chat/channels/:id',          ChatAdminController::class, 'updateChannel', ['role:admin']],
+    ['POST', '/api/admin/chat/channels/:id/deactivate', ChatAdminController::class, 'deactivateChannel', ['role:admin']],
+    ['DELETE', '/api/admin/chat/channels/:id',        ChatAdminController::class, 'deleteChannel', ['role:admin']],
+    ['GET',  '/api/admin/chat/direct-threads',        ChatAdminController::class, 'directThreads', ['role:admin']],
+    ['GET',  '/api/admin/chat/direct-threads/:thread_id/messages', ChatAdminController::class, 'directMessages', ['role:admin']],
+    ['POST', '/api/admin/chat/prune/preview',         ChatAdminController::class, 'prunePreview', ['role:admin']],
+    ['POST', '/api/admin/chat/prune',                 ChatAdminController::class, 'prune', ['role:admin']],
+    ['GET',  '/api/admin/chat/websocket/status',      ChatAdminController::class, 'websocketStatus', ['role:admin']],
+    ['POST', '/api/admin/chat/websocket/start',       ChatAdminController::class, 'startWebsocket', ['role:admin']],
+    ['POST', '/api/admin/chat/websocket/stop',        ChatAdminController::class, 'stopWebsocket', ['role:admin']],
+    ['POST', '/api/admin/chat/websocket/restart',     ChatAdminController::class, 'restartWebsocket', ['role:admin']],
+    ['PUT',  '/api/admin/chat/websocket/settings',    ChatAdminController::class, 'websocketSettings', ['role:admin']],
 
     // ── Version & updates ─────────────────────────────────────────────────────
     ['GET',  '/api/version',          VersionController::class, 'index',     ['role:admin']],

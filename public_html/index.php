@@ -85,7 +85,7 @@ try {
 <script>
 window.AppConfig = {
     apiBase: '/api',
-    version: '1.4.12',
+    version: '1.4.13',
     initialHash: ''
 };
 </script>
@@ -116,6 +116,7 @@ window.AppConfig = {
 <script src="/assets/js/views/reports.js"></script>
 <script src="/assets/js/views/calendar.js"></script>
 <script src="/assets/js/views/knowledge-base.js"></script>
+<script src="/assets/js/views/chat.js"></script>
 <script src="/assets/js/views/portal.js"></script>
 
 <!-- Main app router (must load last) -->

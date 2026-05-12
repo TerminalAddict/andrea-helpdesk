@@ -8,6 +8,7 @@ class UpdateController
     private const DEFAULT_REPO_ZIP_URL = 'https://github.com/TerminalAddict/andrea-helpdesk/archive/refs/heads/main.zip';
     private const DEFAULT_REPO_PREFIX  = 'andrea-helpdesk-main'; // top-level dir inside the zip
     private const RELEASE_ZIP_TEMPLATE = 'https://github.com/TerminalAddict/andrea-helpdesk/releases/download/v%s/andrea-helpdesk-%s-full.zip';
+    private const FULL_PACKAGE_BRIDGE_VERSION = '1.4.9';
 
     /** Dirs relative to root that must be writable for an update */
     private const WRITE_PATHS = [
@@ -33,6 +34,14 @@ class UpdateController
     {
         $root   = dirname(__DIR__, 2);
         $checks = [];
+
+        [$upgradePathOk, $upgradePathDetail, $upgradePathFix] = $this->upgradePathCompatibility();
+        $checks[] = $this->check(
+            'Upgrade path compatibility',
+            $upgradePathOk,
+            $upgradePathDetail,
+            $upgradePathFix
+        );
 
         // PHP ZipArchive
         $ok = extension_loaded('zip');
@@ -132,6 +141,11 @@ class UpdateController
             $lock = fopen($lockFile, 'c');
             if (!$lock || !flock($lock, LOCK_EX | LOCK_NB)) {
                 throw new \RuntimeException('Another update is already in progress. Please wait and try again.');
+            }
+
+            [$upgradePathOk, $upgradePathDetail, $upgradePathFix] = $this->upgradePathCompatibility();
+            if (!$upgradePathOk) {
+                throw new \RuntimeException($upgradePathDetail . ' ' . $upgradePathFix);
             }
 
             // 1. Download zip
@@ -280,6 +294,63 @@ class UpdateController
         ];
 
         return $sources;
+    }
+
+    private function upgradePathCompatibility(): array
+    {
+        if (!$this->usingDefaultUpdatePackage()) {
+            return [
+                true,
+                'Custom update package configured; compatibility is managed by the installer administrator.',
+                '',
+            ];
+        }
+
+        try {
+            $versions = new VersionService();
+            $installed = (string)($versions->getInstalled()['version'] ?? 'unknown');
+            $latestData = $versions->getLatest();
+            $latest = (string)($latestData['version'] ?? 'unknown');
+            $minimumFrom = (string)($latestData['minimum_update_from'] ?? self::FULL_PACKAGE_BRIDGE_VERSION);
+            $minimumReason = trim((string)($latestData['minimum_update_reason'] ?? ''));
+        } catch (\Throwable $e) {
+            return [
+                false,
+                'Could not verify update compatibility: ' . $e->getMessage(),
+                'Check the update metadata URL and try again before running the update.',
+            ];
+        }
+
+        if (!$this->isComparableVersion($installed) || !$this->isComparableVersion($latest) || !$this->isComparableVersion($minimumFrom)) {
+            return [
+                false,
+                "Could not verify update compatibility from installed version '{$installed}' to latest version '{$latest}' with minimum bridge '{$minimumFrom}'.",
+                'Update manually or correct version.json before using the in-app updater.',
+            ];
+        }
+
+        if (
+            $versions->compare($installed, $minimumFrom) < 0
+            && $versions->compare($latest, $minimumFrom) > 0
+        ) {
+            $reason = $minimumReason !== '' ? ' ' . $minimumReason : '';
+            return [
+                false,
+                "Installed version {$installed} is older than the required updater bridge release {$minimumFrom}.{$reason}",
+                "Update to {$minimumFrom} first, then run the updater again for newer releases.",
+            ];
+        }
+
+        return [
+            true,
+            "Upgrade path is supported from {$installed} to {$latest}.",
+            '',
+        ];
+    }
+
+    private function isComparableVersion(string $version): bool
+    {
+        return preg_match('/^\d+\.\d+\.\d+(?:[-+][A-Za-z0-9._-]+)?$/', $version) === 1;
     }
 
     private function findExtractedRoot(string $tmpDir, string $expectedPrefix): string

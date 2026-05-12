@@ -29,7 +29,7 @@ class SettingsController
      */
     public function publicSettings(Request $request): void
     {
-        $keys = ['company_name', 'logo_url', 'primary_color', 'date_format', 'favicon_url', 'pwa_icon_url', 'global_signature', 'imap_poll_mode', 'support_form_recaptcha_site_key', 'push_vapid_public_key'];
+        $keys = ['company_name', 'logo_url', 'primary_color', 'date_format', 'favicon_url', 'pwa_icon_url', 'global_signature', 'imap_poll_mode', 'support_form_recaptcha_site_key', 'push_vapid_public_key', 'chat_enabled'];
         $data = [];
         foreach ($keys as $key) {
             $data[$key] = $this->repo->get($key);
@@ -102,6 +102,21 @@ class SettingsController
         }
         if (array_key_exists('push_vapid_subject', $data)) {
             $data['push_vapid_subject'] = $this->normalizeVapidSubject((string)$data['push_vapid_subject']);
+        }
+        if (array_key_exists('chat_websocket_host', $data)) {
+            $data['chat_websocket_host'] = trim((string)$data['chat_websocket_host']) ?: '127.0.0.1';
+            if (!$this->isValidWebsocketHost($data['chat_websocket_host'])) {
+                Response::error('WebSocket listen host must be a hostname or IP address, not a URL or path', 422);
+                return;
+            }
+        }
+        if (array_key_exists('chat_websocket_port', $data)) {
+            $port = (int)$data['chat_websocket_port'];
+            if ($port < 1 || $port > 65535) {
+                Response::error('WebSocket listen port must be between 1 and 65535', 422);
+                return;
+            }
+            $data['chat_websocket_port'] = $port;
         }
         if (
             array_key_exists('push_vapid_public_key', $data)
@@ -303,5 +318,19 @@ class SettingsController
             $origin .= ':' . (int)$parts['port'];
         }
         return $origin;
+    }
+
+    private function isValidWebsocketHost(string $host): bool
+    {
+        if ($host === '' || strlen($host) > 255) {
+            return false;
+        }
+        if (preg_match('/[\s\/\\\\]/', $host) || str_contains($host, '://')) {
+            return false;
+        }
+        if (str_contains($host, ':')) {
+            return (bool)preg_match('/^\[[0-9a-f:.]+\]$/i', $host);
+        }
+        return (bool)preg_match('/^[a-z0-9._-]+$/i', $host);
     }
 }

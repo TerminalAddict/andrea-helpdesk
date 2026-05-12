@@ -37,6 +37,7 @@ class AgentService
             'can_manage_kb'      => (int)($data['can_manage_kb'] ?? 0),
             'can_manage_tags'    => (int)($data['can_manage_tags'] ?? 0),
             'signature'          => isset($data['signature']) ? Sanitizer::html((string)$data['signature']) : null,
+            'chat_handle'        => $this->normaliseChatHandle((string)($data['chat_handle'] ?? $data['name'] ?? '')),
         ];
 
         $id    = $this->repo->create($createData);
@@ -49,7 +50,7 @@ class AgentService
     {
         $updateData = [];
         $fields     = ['name', 'email', 'role', 'can_close_tickets', 'can_delete_tickets',
-                       'can_edit_customers', 'can_view_reports', 'can_manage_kb', 'can_manage_tags', 'signature', 'is_active'];
+                       'can_edit_customers', 'can_view_reports', 'can_manage_kb', 'can_manage_tags', 'signature', 'chat_handle', 'is_active'];
 
         foreach ($fields as $field) {
             if (array_key_exists($field, $data)) {
@@ -59,6 +60,10 @@ class AgentService
 
         if (array_key_exists('signature', $updateData)) {
             $updateData['signature'] = Sanitizer::html((string)$updateData['signature']);
+        }
+
+        if (array_key_exists('chat_handle', $updateData)) {
+            $updateData['chat_handle'] = $this->normaliseChatHandle((string)$updateData['chat_handle']);
         }
 
         if (!empty($data['password'])) {
@@ -93,5 +98,14 @@ class AgentService
         $hash        = $this->passwordService->hash($newPassword);
         $this->repo->update($agentId, ['password_hash' => $hash]);
         return $newPassword;
+    }
+
+    private function normaliseChatHandle(string $value): ?string
+    {
+        $handle = strtolower(trim($value));
+        $handle = preg_replace('/[^a-z0-9_-]+/', '', $handle) ?? '';
+        $handle = substr($handle, 0, 80);
+
+        return $handle === '' ? null : $handle;
     }
 }

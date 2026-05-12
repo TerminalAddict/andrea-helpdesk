@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Andrea\Helpdesk\Tickets;
 
 use Andrea\Helpdesk\Core\Database;
+use Andrea\Helpdesk\Core\EmoticonNormalizer;
 use Andrea\Helpdesk\Core\Sanitizer;
 use Andrea\Helpdesk\Customers\CustomerRepository;
 use Andrea\Helpdesk\Notifications\NotificationService;
@@ -113,12 +114,13 @@ class TicketService
 
         // Create initial message
         if (!empty($data['body_html'])) {
+            $safeHtml = Sanitizer::html(EmoticonNormalizer::html((string)$data['body_html']));
             $this->replyRepo->create([
                 'ticket_id'   => $ticketId,
                 'author_type' => 'agent',
                 'agent_id'    => $agentId,
-                'body_html'   => $data['body_html'],
-                'body_text'   => strip_tags($data['body_html']),
+                'body_html'   => $safeHtml,
+                'body_text'   => strip_tags($safeHtml),
                 'is_private'  => 0,
                 'direction'   => 'outbound',
             ]);

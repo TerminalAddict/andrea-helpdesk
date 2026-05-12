@@ -31,6 +31,7 @@ $excludes = [
     'docs/videos',
     'storage/attachments',
     'storage/logs',
+    'storage/runtime',
     '.env',
     'Makefile.local',
     'install-cli.log',
@@ -42,8 +43,12 @@ copyTree($root, $releaseDir, $root, $excludes);
 
 @mkdir($releaseDir . '/storage/attachments', 0775, true);
 @mkdir($releaseDir . '/storage/logs', 0775, true);
+@mkdir($releaseDir . '/storage/runtime', 0775, true);
 @touch($releaseDir . '/storage/logs/app.log');
 @touch($releaseDir . '/storage/logs/imap.log');
+@touch($releaseDir . '/storage/logs/cron.log');
+@touch($releaseDir . '/storage/logs/chat-supervisor.log');
+@touch($releaseDir . '/storage/logs/chat-websocket.log');
 
 ensureExists($releaseDir . '/vendor/autoload.php', 'vendor/autoload.php is missing. Run composer install --no-dev --optimize-autoloader before packaging.');
 ensureExists($releaseDir . '/public_html/assets/vendor/bootstrap/bootstrap.min.css', 'Bootstrap asset is missing. Ensure frontend assets are present before packaging.');

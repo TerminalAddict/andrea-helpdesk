@@ -12,6 +12,7 @@ const SettingsView = {
         { key: 'imap', label: 'IMAP Polling' },
         { key: 'slack', label: 'Slack' },
         { key: 'notifications', label: 'Notifications' },
+        { key: 'chatservice', label: 'Chat Service' },
         { key: 'support-form', label: 'Support Form' },
     ],
 
@@ -258,6 +259,10 @@ const SettingsView = {
                         </div>
                     </div>
                 </div>`;
+        } else if (tab === 'chatservice') {
+            $('#settings-content').html('<div class="text-center py-5 text-muted"><div class="spinner-border"></div><p class="mt-2">Loading chat service…</p></div>');
+            this.loadChatServicePanel();
+            return;
         } else if (tab === 'support-form') {
             const appUrl = (this.settings.app_url || window.location.origin || '').replace(/\/$/, '');
             const formUrl = `${appUrl}/#/login/support-form`;
@@ -365,15 +370,15 @@ const SettingsView = {
         // Add IMAP poll mode instructions on general tab
         if (tab === 'general') {
         const appUrl  = this.settings.app_url || window.location.origin;
-        const cronCmd = `* * * * * php /path/to/helpdesk/bin/imap-poll.php >> /path/to/helpdesk/storage/logs/imap.log 2>&1`;
+        const cronCmd = `* * * * * php /path/to/helpdesk/bin/cron.php >> /path/to/helpdesk/storage/logs/cron.log 2>&1`;
         $('.btn-save-settings').closest('.card-body').find('#s-imap_poll_mode').closest('.mb-3').after(`
                 <div id="imap-poll-info-cron" class="mb-3 d-none">
                     <div class="alert alert-secondary py-2 mb-0">
                         <div class="fw-semibold small mb-1"><i class="bi bi-terminal me-1"></i>Cron Job Setup</div>
                         <p class="small mb-2">Add the following line to your server crontab (<code>crontab -e</code> as the web server user, or use <code>make cron-install-production</code> from your local machine):</p>
                         <pre class="imap-cron-sample user-select-all mb-2">${App.escapeHtml(cronCmd)}</pre>
-                        <p class="small mb-1"><i class="bi bi-folder2-open me-1"></i>Example app path: <code>${App.escapeHtml(appUrl)}/bin/imap-poll.php</code> (adjust for your install)</p>
-                        <p class="small mt-2 mb-0 text-muted">Replace <code>/path/to/helpdesk/</code> with the actual path to this application on your server. The script uses a file lock so overlapping runs are safe.</p>
+                        <p class="small mb-1"><i class="bi bi-folder2-open me-1"></i>Example app path: <code>${App.escapeHtml(appUrl)}/bin/cron.php</code> (adjust for your install)</p>
+                        <p class="small mt-2 mb-0 text-muted">Replace <code>/path/to/helpdesk/</code> with the actual path to this application on your server. <code>bin/cron.php</code> runs IMAP/SLA polling, chat WebSocket supervision, and daily chat retention pruning. The individual jobs use locks so overlapping runs are safe.</p>
                     </div>
                 </div>
                 <div id="imap-poll-info-web" class="mb-3 d-none">
@@ -415,6 +420,9 @@ const SettingsView = {
                             </div>
                             <div class="small text-muted mb-0">
                                 If preflight reports overwrite or permission failures, use SFTP/rsync/file-manager deployment instead of the web updater. Avoid making the app tree world-writable.
+                            </div>
+                            <div class="small text-muted mt-2">
+                                Installs older than <code>1.4.9</code> must update to <code>1.4.9</code> first. That bridge release upgrades the updater so newer releases can install packaged PHP dependencies safely.
                             </div>
                         </div>
                         <div id="update-result" class="mt-2"></div>
@@ -1271,6 +1279,514 @@ const SettingsView = {
         }
     },
 
+    async loadChatServicePanel() {
+        try {
+            const [channelsRes, statusRes, threadsRes] = await Promise.all([
+                API.get('/admin/chat/channels'),
+                API.get('/admin/chat/websocket/status'),
+                API.get('/admin/chat/direct-threads'),
+            ]);
+            this.chatChannels = (channelsRes.data && channelsRes.data.channels) || [];
+            this.chatWebsocketStatus = statusRes.data || {};
+            this.chatDirectThreads = (threadsRes.data && threadsRes.data.threads) || [];
+            document.querySelectorAll('#chatSetupModal').forEach(el => el.remove());
+            $('#settings-content').html(this.renderChatServicePanel());
+            this.bindChatServicePanel();
+        } catch (e) {
+            $('#settings-content').html('<div class="alert alert-danger">' + App.escapeHtml(e.message) + '</div>');
+        }
+    },
+
+    renderChatServicePanel() {
+        const s = this.settings;
+        const status = this.chatWebsocketStatus || {};
+        const channels = this.chatChannels || [];
+        const activeAgents = this.agents.filter(agent => agent.is_active !== 0);
+        const wsHost = status.host || s.chat_websocket_host || '127.0.0.1';
+        const wsPort = status.port || s.chat_websocket_port || 8090;
+
+        return `
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                    <div>
+                        <h5 class="mb-1">Internal Chat Service</h5>
+                        <div class="text-muted small">
+                            Configure channels, retention, and live WebSocket delivery. Cron setup is managed from <strong>Settings &rarr; General</strong>.
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-refresh-chatservice">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="btn-chat-setup-modal">
+                            <i class="bi bi-question-circle me-1"></i>WebSocket Setup
+                        </button>
+                    </div>
+                </div>
+            </div>
+            ${this.renderChatDiagnostics(status)}
+            ${this.renderChatSetupModal(status)}
+            <div class="row g-3">
+                <div class="col-xl-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-white fw-semibold">Chat Settings</div>
+                        <div class="card-body">
+                            ${this.form('chatservice', [
+                                { key: 'chat_enabled', label: 'Enable internal chat', type: 'checkbox', value: s.chat_enabled },
+                                { key: 'chat_default_channel_retention_days', label: 'Default channel retention days', type: 'number', value: s.chat_default_channel_retention_days ?? 90 },
+                                { key: 'chat_direct_retention_days', label: 'Direct message retention days', type: 'number', value: s.chat_direct_retention_days ?? 90 },
+                                { key: 'chat_max_message_length', label: 'Maximum message length', type: 'number', value: s.chat_max_message_length ?? 4000 },
+                                { key: 'chat_allow_external_links', label: 'Allow external links in chat messages', type: 'checkbox', value: s.chat_allow_external_links !== false },
+                                { key: 'chat_websocket_enabled', label: 'Enable WebSocket chat service', type: 'checkbox', value: s.chat_websocket_enabled !== false },
+                                { key: 'chat_websocket_autostart', label: 'Autostart WebSocket service from cron', type: 'checkbox', value: s.chat_websocket_autostart !== false },
+                                { key: 'chat_websocket_management_mode', label: 'WebSocket management mode', type: 'select', value: s.chat_websocket_management_mode || 'cron', options: [['cron','Built-in cron supervisor'],['external','External system service']] },
+                                { key: 'chat_websocket_host', label: 'WebSocket listen host', type: 'text', value: wsHost },
+                                { key: 'chat_websocket_port', label: 'WebSocket listen port', type: 'number', value: wsPort },
+                            ])}
+                            <div class="form-text">
+                                Use a different port for each Andrea Helpdesk install on the same server, then update the vhost proxy to match.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-white fw-semibold">WebSocket Service</div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <span class="badge text-bg-${status.status === 'running' ? 'success' : (status.status === 'stale' ? 'warning' : 'secondary')}">${App.escapeHtml(status.status || 'unknown')}</span>
+                                <div class="small text-muted mt-2">Mode: ${App.escapeHtml(status.management_mode || 'cron')}</div>
+                                <div class="small text-muted">PID: ${App.escapeHtml(status.pid || 'none')}</div>
+                                <div class="small text-muted">PID alive: ${status.pid_alive ? 'Yes' : 'No / unavailable'}</div>
+                                <div class="small text-muted">Heartbeat age: ${status.heartbeat_age_seconds !== null && status.heartbeat_age_seconds !== undefined ? App.escapeHtml(String(status.heartbeat_age_seconds)) + 's' : 'Unknown'}</div>
+                                <div class="small text-muted">Last heartbeat: ${status.last_seen_at ? App.escapeHtml(App.formatDate(status.last_seen_at)) : 'Never'}</div>
+                                <div class="small text-muted">Last started: ${status.last_started_at ? App.escapeHtml(App.formatDate(status.last_started_at)) : 'Never'}</div>
+                            </div>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <button class="btn btn-sm btn-outline-success chat-ws-action" data-action="start">Start</button>
+                                <button class="btn btn-sm btn-outline-warning chat-ws-action" data-action="restart">Restart</button>
+                                <button class="btn btn-sm btn-outline-danger chat-ws-action" data-action="stop">Stop</button>
+                            </div>
+                            <div class="alert alert-secondary small mt-3 mb-0">
+                                In cron mode these buttons set database flags; <code>bin/chat-supervisor.php</code> performs the actual process action from cron.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-white fw-semibold">Create Channel</div>
+                        <div class="card-body">
+                            <div class="mb-2">
+                                <label class="form-label">Name</label>
+                                <input class="form-control" id="chat-channel-name" placeholder="general">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Retention days</label>
+                                <input class="form-control" id="chat-channel-retention" type="number" placeholder="${App.escapeHtml(String(s.chat_default_channel_retention_days || 90))}">
+                            </div>
+                            <label class="form-label">Members</label>
+                            <div class="border rounded p-2 chat-member-picker">
+                                ${activeAgents.map(agent => `
+                                    <label class="d-flex align-items-center gap-2 small mb-1">
+                                        <input class="form-check-input chat-channel-member" type="checkbox" value="${agent.id}">
+                                        <span>${App.escapeHtml(agent.name)}</span>
+                                        <span class="text-muted ms-auto">${App.escapeHtml(agent.chat_handle ? '@' + agent.chat_handle : '')}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                            <button class="btn btn-primary btn-sm mt-3" id="btn-create-chat-channel">Create Channel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card border-0 shadow-sm mt-3">
+                <div class="card-header bg-white fw-semibold">Channels</div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead><tr><th>Name</th><th>Slug</th><th>Members</th><th>Retention</th><th>Status</th><th></th></tr></thead>
+                        <tbody>
+                            ${channels.map(channel => `
+                                <tr>
+                                    <td class="fw-semibold">${App.escapeHtml(channel.name)}</td>
+                                    <td><code>${App.escapeHtml(channel.slug)}</code></td>
+                                    <td>${App.escapeHtml(String(channel.member_count || 0))}</td>
+                                    <td>${channel.retention_days ? App.escapeHtml(String(channel.retention_days)) : 'Default'}</td>
+                                    <td>${channel.is_active == 1 ? '<span class="badge text-bg-success">Active</span>' : '<span class="badge text-bg-secondary">Inactive</span>'}</td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-outline-secondary btn-chat-channel-deactivate" data-id="${channel.id}">Deactivate</button>
+                                    </td>
+                                </tr>
+                            `).join('') || '<tr><td colspan="6" class="text-muted">No chat channels yet.</td></tr>'}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card border-0 shadow-sm mt-3">
+                <div class="card-header bg-white fw-semibold">Direct Message History</div>
+                <div class="card-body">
+                    <div class="alert alert-warning small py-2">
+                        Private message history is read-only. Admin access to a thread is recorded in the audit log.
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead><tr><th>Agents</th><th>Messages</th><th>Last Message</th><th></th></tr></thead>
+                            <tbody>
+                                ${this.chatDirectThreads.map(thread => `
+                                    <tr>
+                                        <td>${App.escapeHtml(thread.agent_one_name)} &lt;-&gt; ${App.escapeHtml(thread.agent_two_name)}</td>
+                                        <td>${App.escapeHtml(String(thread.message_count || 0))}</td>
+                                        <td>${thread.last_message_at ? App.escapeHtml(App.formatDate(thread.last_message_at)) : 'Never'}</td>
+                                        <td class="text-end"><button class="btn btn-sm btn-outline-secondary btn-chat-history-view" data-id="${thread.id}">View</button></td>
+                                    </tr>
+                                `).join('') || '<tr><td colspan="4" class="text-muted">No direct-message history.</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="chat-history-preview" class="mt-3"></div>
+                </div>
+            </div>
+        `;
+    },
+
+    renderChatDiagnostics(status) {
+        const diagnostics = status.diagnostics || {};
+        const local = diagnostics.local_socket || {};
+        const web = diagnostics.web_server || {};
+        const apacheModules = (web.apache && web.apache.modules) || {};
+        const apacheConfig = (web.apache && web.apache.config) || {};
+        const nginxConfig = (web.nginx && web.nginx.config) || {};
+        const processHint = status.process_hint || {};
+        const wsHost = local.host || status.host || '127.0.0.1';
+        const wsPort = local.port || status.port || 8090;
+
+        return `
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                    <span class="fw-semibold"><i class="bi bi-activity me-2"></i>WebSocket Diagnostics</span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-run-chat-browser-test">Run Browser Test</button>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-lg-3">
+                            <div class="border rounded p-3 h-100">
+                                <div class="small text-muted mb-1">Daemon</div>
+                                <div class="mb-2">${this.chatDiagnosticBadge(status.status || 'unknown')}</div>
+                                <div class="small">Mode: <strong>${App.escapeHtml(status.management_mode || 'cron')}</strong></div>
+                                <div class="small">PID: <strong>${App.escapeHtml(status.pid || 'none')}</strong></div>
+                                <div class="small">Heartbeat: <strong>${status.heartbeat_age_seconds !== null && status.heartbeat_age_seconds !== undefined ? App.escapeHtml(String(status.heartbeat_age_seconds)) + 's ago' : 'unknown'}</strong></div>
+                                <div class="small text-muted mt-2">Manager hint: ${App.escapeHtml(processHint.manager_guess || 'unknown')}</div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3">
+                            <div class="border rounded p-3 h-100">
+                                <div class="small text-muted mb-1">Local Socket</div>
+                                <div class="mb-2">${this.chatDiagnosticBadge(local.status || 'unknown')}</div>
+                                <div class="small"><code>${App.escapeHtml(wsHost)}:${App.escapeHtml(String(wsPort))}</code></div>
+                                <div class="small text-muted mt-2">${App.escapeHtml(local.message || 'Not checked')}</div>
+                                ${local.latency_ms !== undefined ? `<div class="small text-muted">Latency: ${App.escapeHtml(String(local.latency_ms))}ms</div>` : ''}
+                            </div>
+                        </div>
+                        <div class="col-lg-3">
+                            <div class="border rounded p-3 h-100">
+                                <div class="small text-muted mb-1">Browser WebSocket</div>
+                                <div id="chat-browser-diagnostic-badge" class="mb-2">${this.chatDiagnosticBadge('pending')}</div>
+                                <div class="small"><code id="chat-browser-diagnostic-url">${App.escapeHtml((window.location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + window.location.host + '/ws/chat')}</code></div>
+                                <div id="chat-browser-diagnostic-message" class="small text-muted mt-2">Not checked yet.</div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3">
+                            <div class="border rounded p-3 h-100">
+                                <div class="small text-muted mb-1">Web Server</div>
+                                <div class="small">Server: <strong>${App.escapeHtml(web.server_software || 'unknown')}</strong></div>
+                                <div class="small mt-2">Apache modules: ${this.chatDiagnosticBadge(apacheModules.status || 'unable')}</div>
+                                <div class="small mt-2">Apache config: ${this.chatDiagnosticBadge(apacheConfig.status || 'unable')}</div>
+                                <div class="small mt-2">Nginx config: ${this.chatDiagnosticBadge(nginxConfig.status || 'unable')}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row g-3 mt-1">
+                        <div class="col-lg-4">
+                            <div class="small fw-semibold mb-1">Apache module check</div>
+                            <div class="small text-muted">${App.escapeHtml(apacheModules.message || 'Unable to check Apache modules.')}</div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="small fw-semibold mb-1">Apache config check</div>
+                            <div class="small text-muted">${App.escapeHtml(apacheConfig.message || 'Unable to check Apache config.')}</div>
+                            ${this.chatMatchedConfigFiles(apacheConfig)}
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="small fw-semibold mb-1">Nginx config check</div>
+                            <div class="small text-muted">${App.escapeHtml(nginxConfig.message || 'Unable to check Nginx config.')}</div>
+                            ${this.chatMatchedConfigFiles(nginxConfig)}
+                        </div>
+                    </div>
+                    <div id="chat-proxy-hints" class="alert alert-warning small mt-3 ${local.reachable ? 'd-none' : 'd-none'}">
+                        <div class="fw-semibold mb-2">The daemon is reachable locally, but the browser cannot connect to <code>/ws/chat</code>. Add one of these reverse proxy configs to the site vhost.</div>
+                        <div class="row g-3">
+                            <div class="col-lg-6">
+                                <div class="fw-semibold">Apache</div>
+                                <pre class="small bg-light p-2 rounded mb-2"><code>ProxyPreserveHost On
+ProxyPass "/ws/chat" "ws://${App.escapeHtml(wsHost)}:${App.escapeHtml(String(wsPort))}/ws/chat"
+ProxyPassReverse "/ws/chat" "ws://${App.escapeHtml(wsHost)}:${App.escapeHtml(String(wsPort))}/ws/chat"</code></pre>
+                                <pre class="small bg-light p-2 rounded mb-0"><code>sudo a2enmod proxy proxy_wstunnel rewrite
+sudo apachectl configtest
+sudo systemctl reload apache2</code></pre>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="fw-semibold">Nginx</div>
+                                <pre class="small bg-light p-2 rounded mb-0"><code>location /ws/chat {
+    proxy_pass http://${App.escapeHtml(wsHost)}:${App.escapeHtml(String(wsPort))}/ws/chat;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "Upgrade";
+    proxy_set_header Host $host;
+    proxy_read_timeout 3600;
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    renderChatSetupModal(status = {}) {
+        const diagnostics = status.diagnostics || {};
+        const local = diagnostics.local_socket || {};
+        const wsHost = local.host || status.host || '127.0.0.1';
+        const wsPort = local.port || status.port || 8090;
+        return `
+            <div class="modal fade" id="chatSetupModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <div>
+                                <h5 class="modal-title"><i class="bi bi-chat-dots me-2"></i>Chat WebSocket Setup</h5>
+                                <div class="small text-muted">Use this when diagnostics show the local daemon is reachable but browser WebSocket is failing.</div>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-warning small">
+                                WebSocket proxying is normally configured in the Apache/Nginx virtual host, not in <code>.htaccess</code>.
+                                Shared hosting may not allow this; in that case use HTTP recovery/polling or ask the host to add the proxy.
+                                Current daemon target: <code>${App.escapeHtml(wsHost)}:${App.escapeHtml(String(wsPort))}</code>.
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-lg-6">
+                                    <h6>Apache VirtualHost</h6>
+                                    <p class="small text-muted mb-2">Requires the module <code>proxy</code> and the module <code>proxy_wstunnel</code>.</p>
+                                    <pre class="small bg-light p-2 rounded"><code>ProxyPreserveHost On
+ProxyPass "/ws/chat" "ws://${App.escapeHtml(wsHost)}:${App.escapeHtml(String(wsPort))}/ws/chat"
+ProxyPassReverse "/ws/chat" "ws://${App.escapeHtml(wsHost)}:${App.escapeHtml(String(wsPort))}/ws/chat"</code></pre>
+                                    <pre class="small bg-light p-2 rounded mb-0"><code>sudo a2enmod proxy proxy_wstunnel rewrite
+sudo apachectl configtest
+sudo systemctl reload apache2</code></pre>
+                                </div>
+                                <div class="col-lg-6">
+                                    <h6>Nginx Server Block</h6>
+                                    <p class="small text-muted mb-2">Add this inside the server block that serves Andrea Helpdesk.</p>
+                                    <pre class="small bg-light p-2 rounded"><code>location /ws/chat {
+    proxy_pass http://${App.escapeHtml(wsHost)}:${App.escapeHtml(String(wsPort))}/ws/chat;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "Upgrade";
+    proxy_set_header Host $host;
+    proxy_read_timeout 3600;
+}</code></pre>
+                                </div>
+                                <div class="col-12">
+                                    <h6>systemd Service Example</h6>
+                                    <p class="small text-muted mb-2">Use external mode when systemd manages the daemon. Adjust paths and user/group for your install.</p>
+                                    <pre class="small bg-light p-2 rounded"><code>[Unit]
+Description=Andrea Helpdesk Chat WebSocket Server
+After=network.target mysql.service
+
+[Service]
+Type=simple
+WorkingDirectory=/var/www/andrea-helpdesk
+ExecStart=/usr/bin/php bin/chat-websocket-server.php
+Restart=always
+RestartSec=5
+User=www-data
+Group=www-data
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+                                    <pre class="small bg-light p-2 rounded mb-0"><code>sudo systemctl daemon-reload
+sudo systemctl enable andrea-chat-websocket
+sudo systemctl start andrea-chat-websocket
+sudo systemctl status andrea-chat-websocket</code></pre>
+                                </div>
+                            </div>
+                            <div class="small text-muted mt-3">
+                                In external mode, set <strong>WebSocket management mode</strong> to <strong>External system service</strong>. Andrea Helpdesk will show status but will not start or stop the daemon.
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    chatDiagnosticBadge(status) {
+        const normalized = String(status || 'unknown');
+        const map = {
+            running: 'success',
+            verified: 'success',
+            pending: 'secondary',
+            stale: 'warning',
+            not_verified: 'warning',
+            stopped: 'secondary',
+            unable: 'secondary',
+            failed: 'danger',
+            unknown: 'secondary',
+        };
+        const label = normalized.replace(/_/g, ' ');
+        return `<span class="badge text-bg-${map[normalized] || 'secondary'}">${App.escapeHtml(label)}</span>`;
+    },
+
+    chatMatchedConfigFiles(config) {
+        const files = (config && config.matched_files) || [];
+        if (!files.length) return '';
+        return `<div class="small text-muted mt-1">Matched: ${files.map(file => `<code>${App.escapeHtml(file)}</code>`).join(', ')}</div>`;
+    },
+
+    bindChatServicePanel() {
+        $('.btn-save-settings[data-tab="chatservice"]').on('click', () => this.save('chatservice'));
+        const setupModalEl = App.detachModal(document.getElementById('chatSetupModal'));
+        $('#btn-chat-setup-modal').on('click', () => {
+            if (!setupModalEl) return;
+            App.clearModalArtifacts();
+            bootstrap.Modal.getOrCreateInstance(setupModalEl).show();
+        });
+        $('#btn-refresh-chatservice').on('click', () => this.loadChatServicePanel());
+        $('#btn-run-chat-browser-test').on('click', () => this.runChatBrowserDiagnostic());
+        this.runChatBrowserDiagnostic();
+        $('.chat-ws-action').on('click', async (e) => {
+            const action = $(e.currentTarget).data('action');
+            try {
+                const res = await API.post('/admin/chat/websocket/' + action, {});
+                App.toast(res.message || 'WebSocket request saved');
+                await this.loadChatServicePanel();
+            } catch (err) {
+                App.toast(err.message, 'error');
+            }
+        });
+        $('#btn-create-chat-channel').on('click', async () => {
+            const members = $('.chat-channel-member:checked').map((_, el) => ({ agent_id: parseInt(el.value, 10), can_post: true })).get();
+            try {
+                await API.post('/admin/chat/channels', {
+                    name: $('#chat-channel-name').val(),
+                    retention_days: $('#chat-channel-retention').val() || null,
+                    members,
+                });
+                App.toast('Chat channel created');
+                await this.loadChatServicePanel();
+            } catch (err) {
+                App.toast(err.message, 'error');
+            }
+        });
+        $('.btn-chat-channel-deactivate').on('click', async (e) => {
+            try {
+                await API.post('/admin/chat/channels/' + $(e.currentTarget).data('id') + '/deactivate', {});
+                App.toast('Chat channel deactivated');
+                await this.loadChatServicePanel();
+            } catch (err) {
+                App.toast(err.message, 'error');
+            }
+        });
+        $('.btn-chat-history-view').on('click', async (e) => {
+            const id = $(e.currentTarget).data('id');
+            $('#chat-history-preview').html('<div class="text-muted"><span class="spinner-border spinner-border-sm me-1"></span>Loading history…</div>');
+            try {
+                const res = await API.get('/admin/chat/direct-threads/' + id + '/messages', { limit: 100 });
+                const messages = ((res.data && res.data.messages) || []).reverse();
+                $('#chat-history-preview').html(`
+                    <div class="border rounded p-3 bg-light">
+                        <div class="fw-semibold mb-2">Thread #${App.escapeHtml(String(id))}</div>
+                        ${messages.map(message => `
+                            <div class="mb-2 pb-2 border-bottom">
+                                <div class="small text-muted">${App.escapeHtml(message.sender_name || 'Agent')} · ${App.escapeHtml(App.formatDate(message.created_at))}</div>
+                                <div>${DOMPurify.sanitize(message.body_rendered_html || App.escapeHtml(message.body_text || ''))}</div>
+                            </div>
+                        `).join('') || '<div class="text-muted small">No messages.</div>'}
+                    </div>
+                `);
+            } catch (err) {
+                $('#chat-history-preview').html('<div class="alert alert-danger">' + App.escapeHtml(err.message) + '</div>');
+            }
+        });
+    },
+
+    runChatBrowserDiagnostic() {
+        if (!('WebSocket' in window)) {
+            this.updateChatBrowserDiagnostic('failed', 'This browser does not support WebSockets.');
+            return;
+        }
+        const token = API._getItem('andrea_access_token');
+        if (!token) {
+            this.updateChatBrowserDiagnostic('failed', 'No agent access token is available for the WebSocket auth test.');
+            return;
+        }
+
+        const scheme = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const url = `${scheme}//${window.location.host}/ws/chat`;
+        $('#chat-browser-diagnostic-url').text(url);
+        this.updateChatBrowserDiagnostic('pending', 'Testing browser connection...');
+
+        let completed = false;
+        let socket = null;
+        const finish = (status, message) => {
+            if (completed) return;
+            completed = true;
+            window.clearTimeout(timeout);
+            try { socket && socket.close(); } catch (e) {}
+            this.updateChatBrowserDiagnostic(status, message);
+        };
+
+        const timeout = window.setTimeout(() => {
+            finish('failed', 'Timed out connecting to /ws/chat. If the local socket is verified, this is usually a reverse proxy/vhost issue.');
+        }, 6000);
+
+        try {
+            socket = new WebSocket(url);
+            socket.addEventListener('open', () => {
+                socket.send(JSON.stringify({ type: 'auth', token }));
+            });
+            socket.addEventListener('message', (event) => {
+                let payload = {};
+                try {
+                    payload = JSON.parse(event.data || '{}');
+                } catch (e) {}
+                if (payload.type === 'auth.ok') {
+                    finish('verified', 'Browser WebSocket connection and JWT auth succeeded.');
+                } else if (payload.type === 'auth.failed') {
+                    finish('failed', payload.message || 'Browser connected, but WebSocket auth failed.');
+                }
+            });
+            socket.addEventListener('error', () => {
+                finish('failed', 'Browser could not connect to /ws/chat.');
+            });
+            socket.addEventListener('close', () => {
+                finish('failed', 'Browser WebSocket closed before auth completed.');
+            });
+        } catch (e) {
+            finish('failed', e.message || 'Browser WebSocket test failed.');
+        }
+    },
+
+    updateChatBrowserDiagnostic(status, message) {
+        $('#chat-browser-diagnostic-badge').html(this.chatDiagnosticBadge(status));
+        $('#chat-browser-diagnostic-message').text(message);
+        const localReachable = !!(this.chatWebsocketStatus && this.chatWebsocketStatus.diagnostics && this.chatWebsocketStatus.diagnostics.local_socket && this.chatWebsocketStatus.diagnostics.local_socket.reachable);
+        $('#chat-proxy-hints').toggleClass('d-none', !(status === 'failed' && localReachable));
+    },
+
     async save(tab) {
         const s = this.settings;
         const tabFields = {
@@ -1281,6 +1797,7 @@ const SettingsView = {
             imap:         [],
             slack:        ['slack_enabled','slack_webhook_url','slack_channel','slack_on_new_ticket','slack_on_assign','slack_on_new_reply','slack_unfurl_links','slack_username','slack_icon_url','slack_icon_emoji'],
             notifications: ['push_vapid_public_key','push_vapid_private_key','push_vapid_subject','pwa_icon_url'],
+            chatservice:  ['chat_enabled','chat_default_channel_retention_days','chat_direct_retention_days','chat_max_message_length','chat_allow_external_links','chat_websocket_enabled','chat_websocket_autostart','chat_websocket_management_mode','chat_websocket_host','chat_websocket_port'],
             'support-form': ['support_form_recaptcha_site_key','support_form_recaptcha_secret_key','support_form_allowed_origins'],
         };
 
@@ -1334,6 +1851,11 @@ const SettingsView = {
                     App.applyManifest();
                 }
                 this.renderTab('notifications');
+            }
+            if (tab === 'chatservice') {
+                App.settings.chat_enabled = !!payload.chat_enabled;
+                Navbar.init();
+                await this.loadChatServicePanel();
             }
             App.toast('Settings saved');
         } catch (e) {
@@ -1546,9 +2068,11 @@ const MyProfileView = {
 
     async renderNotificationSettings() {
         let prefs = {};
+        let chatChannels = [];
         try {
             const res = await API.get('/notifications/preferences');
             prefs = (res.data && res.data.preferences) || {};
+            chatChannels = (res.data && res.data.chat_channels) || [];
             SettingsView.currentAgent.browser_notifications_enabled = !!(res.data && res.data.browser_notifications_enabled);
         } catch (e) {
             $('#settings-content').html('<div class="alert alert-danger">' + App.escapeHtml(e.message) + '</div>');
@@ -1563,7 +2087,12 @@ const MyProfileView = {
             ['ticket_internal_note', 'A ticket has a new internal note', 'Cleared when the ticket is opened.'],
             ['ticket_sla_overdue', 'A ticket is SLA Overdue', 'Cleared when priority moves away from overdue.'],
             ['ticket_due_overdue', 'A ticket has a due date today or in the past', 'Cleared when the due date changes or priority moves away from overdue.'],
+            ['chat_mention', 'I am @mentioned in chat', 'Creates an alert and browser push notification when another agent mentions your chat handle.'],
+            ['chat_direct_message', 'New private chat messages', 'Creates an alert and browser push notification for direct messages.'],
+            ['chat_channel_message', 'Selected chat channel messages', 'Only channels selected below will notify you.'],
         ].filter(([key]) => key !== 'update_available' || API.isAdmin());
+
+        const appName = App.appName || 'Andrea Helpdesk';
 
         $('#settings-content').html(`
             <div class="row g-3">
@@ -1582,6 +2111,18 @@ const MyProfileView = {
                                     </label>
                                 `).join('')}
                             </div>
+                            ${chatChannels.length ? `
+                                <div class="border rounded p-3 mb-3">
+                                    <div class="fw-semibold mb-2">Chat Channels</div>
+                                    <div class="text-muted small mb-2">Choose which channels can notify you when “Selected chat channel messages” is enabled.</div>
+                                    ${chatChannels.map(channel => `
+                                        <label class="d-flex align-items-center gap-2 mb-1">
+                                            <input class="form-check-input chat-channel-pref-check" type="checkbox" value="${channel.id}" ${parseInt(channel.notify_enabled || 0, 10) ? 'checked' : ''}>
+                                            <span># ${App.escapeHtml(channel.name)}</span>
+                                        </label>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
                             <button class="btn btn-primary" id="btn-save-notification-preferences">
                                 <i class="bi bi-save me-1"></i>Save Notification Preferences
                             </button>
@@ -1597,7 +2138,7 @@ const MyProfileView = {
                     </div>
                     <div class="card border-0 shadow-sm mt-3">
                         <div class="card-body">
-                            <h6 class="mb-2">Install Andrea Helpdesk</h6>
+                            <h6 class="mb-2">Install ${App.escapeHtml(appName)}</h6>
                             <p class="text-muted small mb-3">Install the helpdesk as an app for faster access. On iPhone/iPad, open Safari, tap Share, then choose <strong>Add to Home Screen</strong>; iOS push notifications require the installed web app.</p>
                             <div id="my-profile-install-controls" class="d-flex align-items-center justify-content-between gap-2 flex-wrap"></div>
                         </div>
@@ -1618,12 +2159,16 @@ const MyProfileView = {
                 const btn = $('#btn-save-notification-preferences');
                 const original = btn.html();
                 const preferences = {};
+                const chatChannelPreferences = {};
                 $('.notification-pref-check').each(function() {
                     preferences[$(this).val()] = $(this).is(':checked');
                 });
+                $('.chat-channel-pref-check').each(function() {
+                    chatChannelPreferences[$(this).val()] = $(this).is(':checked');
+                });
                 btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Saving…');
                 try {
-                    await API.put('/notifications/preferences', { preferences });
+                    await API.put('/notifications/preferences', { preferences, chat_channel_preferences: chatChannelPreferences });
                     await Notifications.refreshSummary({ silent: true });
                     App.toast('Notification preferences saved', 'success');
                 } catch (e) {
@@ -1715,12 +2260,13 @@ const MyProfileView = {
         const $container = $('#my-profile-install-controls');
         if (!$container.length) return;
 
+        const appName = App.appName || 'Andrea Helpdesk';
         const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
         if (standalone) {
             $container.html(`
                 <div>
                     <div class="small fw-semibold">Installed</div>
-                    <div class="text-muted small">This browser is running Andrea Helpdesk as an installed app.</div>
+                    <div class="text-muted small">This browser is running ${App.escapeHtml(appName)} as an installed app.</div>
                 </div>
             `);
             return;
@@ -1730,7 +2276,7 @@ const MyProfileView = {
         $container.html(`
             <div>
                 <div class="small fw-semibold">${canPrompt ? 'Ready to install' : 'Install from browser menu'}</div>
-                <div class="text-muted small">${canPrompt ? 'This browser can install Andrea Helpdesk now.' : 'If no install button is shown, use your browser menu or iOS Share sheet.'}</div>
+                <div class="text-muted small">${canPrompt ? `This browser can install ${App.escapeHtml(appName)} now.` : 'If no install button is shown, use your browser menu or iOS Share sheet.'}</div>
             </div>
             <button class="btn btn-outline-primary btn-sm" id="btn-install-pwa" ${canPrompt ? '' : ''}>
                 <i class="bi bi-phone me-1"></i>Install App

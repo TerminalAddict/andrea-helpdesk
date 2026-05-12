@@ -17,6 +17,9 @@ class NotificationService
         'ticket_internal_note',
         'ticket_sla_overdue',
         'ticket_due_overdue',
+        'chat_mention',
+        'chat_direct_message',
+        'chat_channel_message',
     ];
 
     private EmailNotifier $emailNotifier;
@@ -374,6 +377,59 @@ class NotificationService
         ]);
     }
 
+    public function onChatMention(array $agentIds, array $message): void
+    {
+        $agentIds = array_values(array_unique(array_filter(array_map('intval', $agentIds), fn(int $id): bool => $id > 0)));
+        if (!$agentIds) {
+            return;
+        }
+
+        $this->createInAppNotifications($agentIds, [
+            'type'       => 'chat_mention',
+            'severity'   => 'info',
+            'title'      => 'You were mentioned in chat',
+            'body'       => $this->chatPreview($message),
+            'link'       => $this->chatLink($message),
+            'dedupe_key' => 'chat:mention:' . (int)$message['id'],
+            'data'       => $this->chatData($message),
+        ]);
+    }
+
+    public function onChatDirectMessage(int $agentId, array $message): void
+    {
+        if ($agentId <= 0) {
+            return;
+        }
+
+        $this->createInAppNotifications([$agentId], [
+            'type'       => 'chat_direct_message',
+            'severity'   => 'info',
+            'title'      => 'New private chat message',
+            'body'       => $this->chatPreview($message),
+            'link'       => $this->chatLink($message),
+            'dedupe_key' => 'chat:direct:' . (int)$message['id'],
+            'data'       => $this->chatData($message),
+        ]);
+    }
+
+    public function onChatChannelMessage(array $agentIds, array $message): void
+    {
+        $agentIds = array_values(array_unique(array_filter(array_map('intval', $agentIds), fn(int $id): bool => $id > 0)));
+        if (!$agentIds) {
+            return;
+        }
+
+        $this->createInAppNotifications($agentIds, [
+            'type'       => 'chat_channel_message',
+            'severity'   => 'info',
+            'title'      => 'New chat channel message',
+            'body'       => $this->chatPreview($message),
+            'link'       => $this->chatLink($message),
+            'dedupe_key' => 'chat:channel:' . (int)$message['id'],
+            'data'       => $this->chatData($message),
+        ]);
+    }
+
     private function createInAppNotifications(array $agentIds, array $payload): void
     {
         $createdAgentIds = $this->inbox->createForAgents(
@@ -427,7 +483,11 @@ class NotificationService
 
         $defaults = [];
         foreach (self::PREFERENCE_KEYS as $key) {
-            $defaults[$key] = $key === 'update_available' ? $role === 'admin' : true;
+            $defaults[$key] = match ($key) {
+                'update_available' => $role === 'admin',
+                'chat_channel_message' => false,
+                default => true,
+            };
         }
 
         foreach ($defaults as $key => $default) {
@@ -450,6 +510,32 @@ class NotificationService
             'high' => 'warning',
             default => 'info',
         };
+    }
+
+    private function chatPreview(array $message): string
+    {
+        $sender = trim((string)($message['sender_name'] ?? 'An agent'));
+        $body = trim(preg_replace('/\s+/', ' ', (string)($message['body_text'] ?? '')) ?? '');
+        $preview = mb_substr($body, 0, 140);
+        return trim($sender . ($preview !== '' ? ' · ' . $preview : ''));
+    }
+
+    private function chatLink(array $message): string
+    {
+        return (string)($message['message_scope'] ?? '') === 'direct'
+            ? '/chat/direct/' . (int)($message['thread_id'] ?? 0)
+            : '/chat/channels/' . (int)($message['channel_id'] ?? 0);
+    }
+
+    private function chatData(array $message): array
+    {
+        return [
+            'message_id' => (int)($message['id'] ?? 0),
+            'scope' => (string)($message['message_scope'] ?? ''),
+            'channel_id' => isset($message['channel_id']) ? (int)$message['channel_id'] : null,
+            'thread_id' => isset($message['thread_id']) ? (int)$message['thread_id'] : null,
+            'sender_agent_id' => (int)($message['sender_agent_id'] ?? 0),
+        ];
     }
 
     private function log(string $message): void

@@ -163,7 +163,7 @@ function terminalMock() {
     <text x="152" y="650" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" fill="#f2f6fb">CLI Install Highlights</text>
     <text x="152" y="686" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#c7d3e0">• Set APP_URL, JWT_SECRET, DB_* and STORAGE_PATH in .env before seeding the admin account.</text>
     <text x="152" y="714" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#c7d3e0">• STORAGE_PATH should be outside public_html so attachments and logs are never web-accessible.</text>
-    <text x="152" y="742" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#c7d3e0">• After install, add bin/imap-poll.php to cron if you want inbound email polling and SLA checks.</text>
+    <text x="152" y="742" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#c7d3e0">• After install, add bin/cron.php to cron for email polling, SLA checks, chat supervision, and retention.</text>
   `);
 }
 

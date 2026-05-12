@@ -7,6 +7,7 @@ use Andrea\Helpdesk\Core\Request;
 use Andrea\Helpdesk\Core\Response;
 use Andrea\Helpdesk\Core\VersionService;
 use Andrea\Helpdesk\Agents\AgentRepository;
+use Andrea\Helpdesk\Chat\ChatService;
 
 class NotificationController
 {
@@ -14,6 +15,7 @@ class NotificationController
     private UpdateCheckService $updateChecks;
     private VersionService $versions;
     private AgentRepository $agents;
+    private ChatService $chat;
 
     public function __construct()
     {
@@ -21,6 +23,7 @@ class NotificationController
         $this->updateChecks = new UpdateCheckService();
         $this->versions     = new VersionService();
         $this->agents       = new AgentRepository();
+        $this->chat         = new ChatService();
     }
 
     public function index(Request $request): void
@@ -30,6 +33,7 @@ class NotificationController
         $afterId = (int)$request->input('after_id', 0);
 
         $items = $this->repo->listActiveTicketNotificationsForAgent($agentId, max($limit, 50), $afterId > 0 ? $afterId : null);
+        $items = array_merge($items, $this->repo->listActiveChatNotificationsForAgent($agentId, max($limit, 50), $afterId > 0 ? $afterId : null));
         $updateItem = $this->activeUpdateNotification($agentId, $afterId > 0 ? $afterId : null);
         if ($updateItem) {
             $items[] = $updateItem;
@@ -49,6 +53,7 @@ class NotificationController
         $limit   = max(1, min(250, (int)$request->input('limit', 100)));
 
         $items = $this->repo->listActiveTicketNotificationsForAgent($agentId, $limit);
+        $items = array_merge($items, $this->repo->listActiveChatNotificationsForAgent($agentId, $limit));
         $updateItem = $this->activeUpdateNotification($agentId);
         if ($updateItem) {
             $items[] = $updateItem;
@@ -92,6 +97,7 @@ class NotificationController
                 $agent['notification_preferences_json'] ?? null,
                 (string)($agent['role'] ?? 'agent')
             ),
+            'chat_channels' => $this->chat->channelNotificationPreferences((int)$request->agent->id),
             'browser_notifications_enabled' => !empty($agent['browser_notifications_enabled']),
         ]);
     }
@@ -109,7 +115,15 @@ class NotificationController
             'notification_preferences_json' => json_encode($prefs),
         ]);
 
-        Response::success(['preferences' => $prefs], 'Notification preferences saved');
+        $channelPreferences = $request->input('chat_channel_preferences', []);
+        if (is_array($channelPreferences)) {
+            $this->chat->saveChannelNotificationPreferences((int)$request->agent->id, $channelPreferences);
+        }
+
+        Response::success([
+            'preferences' => $prefs,
+            'chat_channels' => $this->chat->channelNotificationPreferences((int)$request->agent->id),
+        ], 'Notification preferences saved');
     }
 
     private function normaliseItems(array $items, int $limit, bool $ascending, bool $forMenu): array
@@ -176,7 +190,8 @@ class NotificationController
         if ($updateItem) {
             $items[] = $updateItem;
         }
-        return count($this->normaliseItems($items, 1000, false, false));
+        return count($this->normaliseItems($items, 1000, false, false))
+            + $this->repo->countActiveChatNotificationsForAgent($agentId);
     }
 
     private function activeUpdateNotification(int $agentId, ?int $afterId = null): ?array

@@ -14,6 +14,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 | [docs/api-spec.md](docs/api-spec.md) | Full REST API reference — every endpoint, request/response shape, required headers, auth middleware, and error codes. Essential if you're building an integration, a mobile client, or working in the backend without reading the PHP source. |
 | [docs/db-schema.md](docs/db-schema.md) | Complete database schema — all tables, columns, indexes, foreign keys, and the default settings reference. Essential for understanding the data model, writing migrations, or debugging unexpected query behaviour. |
 | [docs/PWA.md](docs/PWA.md) | PWA install guidance, Web Push setup, service-worker behaviour, diagnostics, and security notes. |
+| [docs/chat-websocket-systemd.md](docs/chat-websocket-systemd.md) | Production systemd service and reverse-proxy guidance for the internal chat WebSocket daemon. |
 | [docs/screenshots.md](docs/screenshots.md) | Annotated screenshots of every screen in the agent UI — useful for evaluating the product or understanding what each feature looks like before diving into the code. |
 ## Features
 
@@ -64,6 +65,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 ### Agent Features
 - **Role-based access** — `admin` and `agent` roles; admins bypass all permission checks
 - **Granular permissions** — per-agent toggles for: close tickets, delete tickets, edit customers, view reports, manage knowledge base, manage tags
+- **Internal chat** — agents can use `#/chat` for channel chat and direct messages, with emoji/plain-text messages, common emoticon conversion, safe link rendering, `@chat_handle` mentions, browser/PWA notifications, read cursors, and HTTP recovery when WebSockets reconnect
 - **Inactive-agent visibility** — the admin **Agents** screen shows both active and inactive agents so historical ownership remains visible and former agents can be reactivated when needed
 - **Agent assignment** — assign tickets to specific agents; filter by assigned agent
 - **Rich text composer** — Quill 2.x editor (self-hosted, no CDN) in every body input: new tickets, replies, internal notes, edit ticket body, global signature, personal signature, auto-response body, and knowledge base articles; agents get a full toolbar (bold, italic, underline, lists, link, blockquote, clean), portal customers get a simplified toolbar
@@ -114,7 +116,9 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Support form embedding** — `/support-form/embed` sends a `Content-Security-Policy: frame-ancestors ...` header generated from the saved allowlist of origins, while the rest of the app continues to send `X-Frame-Options: SAMEORIGIN`
 - **Notification push settings** — configure or generate VAPID keys from **Settings → Notifications** so browser push subscriptions can be created securely; optionally set a dedicated PWA / notification icon, otherwise the PWA manifest and push notifications use the Branding favicon
 - **Version & update check** — the General tab shows the currently installed version and a **Check for Updates** button; the server fetches `version.json` from `UPDATE_VERSION_URL` when set, otherwise from the public GitHub `main` branch, and reports whether an update is available; when an update is found, an **Update Now** button opens a preflight checklist (directory writability, overwriteability of existing files, PHP extensions, disk space) with fix instructions for any failures, then a one-click updater that downloads, extracts, copies files, and runs database migrations automatically. On shared hosting, if PHP cannot overwrite application files owned by your account, use SFTP/rsync/file-manager deployment instead of the in-app updater.
+- **Bridge release enforcement** — release metadata can require a minimum installed bridge version before the in-app updater will continue; installs older than `1.4.9` must update to `1.4.9` before moving to newer releases because that release upgrades packaged `vendor/` dependency handling.
 - **Notification preferences** — `#/my-profile/settings/notifications` includes browser push subscription controls and app install guidance so each agent can enable or disable browser / OS alerts independently
+- **Chat service settings** — `#/admin/settings/chatservice` enables/disables internal chat, manages channels and membership, sets retention, and controls WebSocket daemon mode/status
 - **Admin password recovery** — `make reset-admin-password` lists admin accounts only, lets you choose one, resets the password interactively, and revokes that admin’s existing refresh-token sessions
 
 Route structure:
@@ -135,6 +139,7 @@ Route structure:
 - **JWT authentication** — short-lived access tokens (15 min) + long-lived refresh tokens (30 days, hashed in DB)
 - **Refresh token rotation** — every refresh issues a new token and revokes the old one
 - **XSS protection** — dual-layer sanitisation: client-side via [DOMPurify](https://github.com/cure53/DOMPurify) before submission; server-side via `Sanitizer::html()` (DOMDocument, allowlist of safe tags/attributes, and strict `http/https/mailto/tel` or relative-link enforcement) before storage. Replies, knowledge base articles, agent signatures, and HTML email settings are sanitised on write. Plain text fields are `htmlspecialchars()`-escaped throughout.
+- **Chat transport hardening** — chat WebSocket connections require active-agent JWT authentication, same-origin browser handshakes, and per-event membership checks before channel/direct typing, read, or message broadcasts.
 - **Support-form abuse controls** — the public website support form supports reCAPTCHA v3 when configured, falls back to a signed human-verification challenge when not configured, and enforces server-side submission throttles per IP address and per email address
 - **SQL injection prevention** — all queries use PDO prepared statements with parameterised placeholders
 - **Config hardening** — DB charset/collation values are validated before interpolation, and proxy IP headers are ignored unless `TRUST_PROXY_HEADERS=true`
@@ -143,8 +148,9 @@ Route structure:
 - **Signed attachment tokens** — HMAC-SHA256 download tokens with 24-hour expiry
 
 ### Operations
-- **Log rotation** — `imap.log` and `app.log` automatically trimmed to 3 days retention on every poll run
-- **Cron overlap prevention** — `flock()` ensures only one IMAP poller runs at a time
+- **Background cron runner** — `bin/cron.php` runs IMAP/SLA polling, chat WebSocket supervision, and daily chat retention pruning from one cron entry
+- **Log rotation** — `imap.log` and `app.log` automatically trimmed to 3 days retention during background runs
+- **Cron overlap prevention** — locks prevent overlapping IMAP poller and chat supervisor runs
 - **Rsync deployment** — single `make deploy` command; vendor and storage directories excluded; remote `composer install` and `php bin/migrate.php` run automatically
 - **Safe in-app updates** — the updater lock remains held through file copy, schema update, and migrations so concurrent update runs cannot overlap mid-upgrade
 - **No build step** — frontend uses Bootstrap 5, Bootstrap Icons, and jQuery loaded from local vendor files; no Node.js or bundler required
@@ -171,7 +177,7 @@ Route structure:
 - PHP 8.1+ with extensions: `pdo_mysql`, `imap`, `mbstring`, `openssl`
 - MySQL 8.0+
 - Apache with `mod_rewrite` (or Nginx equivalent)
-- Cron access for IMAP polling
+- Cron access for the Andrea background runner (`bin/cron.php`)
 
 ---
 

@@ -76,6 +76,29 @@ class SettingsService
         ];
     }
 
+    public function getChatConfig(): array
+    {
+        $managementMode = (string)$this->repo->get('chat_websocket_management_mode', 'cron');
+        $host = trim((string)$this->repo->get('chat_websocket_host', '127.0.0.1'));
+        if (!$this->isValidWebsocketHost($host)) {
+            $host = '127.0.0.1';
+        }
+        $port = max(1, min(65535, (int)$this->repo->get('chat_websocket_port', 8090)));
+
+        return [
+            'enabled' => (bool)$this->repo->get('chat_enabled', false),
+            'default_channel_retention_days' => max(1, (int)$this->repo->get('chat_default_channel_retention_days', 90)),
+            'direct_retention_days' => max(1, (int)$this->repo->get('chat_direct_retention_days', 90)),
+            'max_message_length' => max(1, (int)$this->repo->get('chat_max_message_length', 4000)),
+            'allow_external_links' => (bool)$this->repo->get('chat_allow_external_links', true),
+            'websocket_enabled' => (bool)$this->repo->get('chat_websocket_enabled', true),
+            'websocket_autostart' => (bool)$this->repo->get('chat_websocket_autostart', true),
+            'websocket_management_mode' => in_array($managementMode, ['cron', 'external'], true) ? $managementMode : 'cron',
+            'websocket_host' => $host,
+            'websocket_port' => $port,
+        ];
+    }
+
     public function getSupportFormConfig(): array
     {
         return [
@@ -226,5 +249,19 @@ class SettingsService
         }
 
         return $origins;
+    }
+
+    private function isValidWebsocketHost(string $host): bool
+    {
+        if ($host === '' || strlen($host) > 255) {
+            return false;
+        }
+        if (preg_match('/[\s\/\\\\]/', $host) || str_contains($host, '://')) {
+            return false;
+        }
+        if (str_contains($host, ':')) {
+            return (bool)preg_match('/^\[[0-9a-f:.]+\]$/i', $host);
+        }
+        return (bool)preg_match('/^[a-z0-9._-]+$/i', $host);
     }
 }

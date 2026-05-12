@@ -14,6 +14,9 @@ const App = {
         '/tickets':        'TicketsView',
         '/tickets/new':    'TicketNewView',
         '/tickets/:id':    'TicketDetailView',
+        '/chat':           'ChatView',
+        '/chat/channels/:channel_id': 'ChatView',
+        '/chat/direct/:thread_id':    'ChatView',
         '/calendar':       'CalendarView',
         '/customers':      'CustomersView',
         '/customers/:id':  'CustomerDetailView',
@@ -69,7 +72,7 @@ const App = {
         });
         window.addEventListener('appinstalled', () => {
             this.deferredInstallPrompt = null;
-            this.toast('Andrea Helpdesk has been installed', 'success');
+            this.toast(`${this.appName || 'Andrea Helpdesk'} has been installed`, 'success');
         });
         this.route();
 
@@ -109,7 +112,7 @@ const App = {
         const html = `
             <div id="${id}" class="toast align-items-center bg-dark text-white border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="false">
                 <div class="d-flex">
-                    <div class="toast-body">A new Andrea Helpdesk version is ready.</div>
+                    <div class="toast-body">A new ${this.escapeHtml(this.appName || 'Andrea Helpdesk')} version is ready.</div>
                     <button type="button" class="btn btn-sm btn-light my-2 me-2" id="btn-reload-service-worker">Refresh</button>
                     <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
                 </div>
@@ -225,7 +228,7 @@ const App = {
                 window.location.hash = '#/';
                 return;
             }
-            if (!['general', 'branding', 'email', 'autoresponse', 'imap', 'slack', 'support-form', 'notifications'].includes(params.section)) {
+            if (!['general', 'branding', 'email', 'autoresponse', 'imap', 'slack', 'support-form', 'notifications', 'chatservice'].includes(params.section)) {
                 window.location.hash = '#/admin/settings/general';
                 return;
             }
@@ -244,7 +247,7 @@ const App = {
         // Get view from registry (const declarations don't attach to window)
         const viewRegistry = {
             DashboardView, LoginView, TicketsView, TicketNewView,
-            TicketDetailView, CalendarView, CustomersView, CustomerDetailView,
+            TicketDetailView, ChatView, CalendarView, CustomersView, CustomerDetailView,
             AgentsView, SettingsView, MyProfileView, TagsView, ReportsView,
             KnowledgeBaseView, KbArticleView,
             PortalLoginView, PortalSetPasswordView, PortalView, PortalTicketView,

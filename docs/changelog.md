@@ -8,6 +8,28 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
+## [1.4.13] — 2026-05-12
+
+### Added
+- Added the internal agent chat foundation with channel chat, direct-message threads, safe plain-text rendering, `@chat_handle` mentions, read cursors, retention metadata, and per-channel notification preferences
+- Added chat REST APIs for agent channels/direct messages, HTTP cursor recovery, admin channel management, admin direct-message history viewing, retention prune preview/run, and WebSocket status/action flags
+- Added a PHP chat WebSocket daemon, cron supervisor, combined `bin/cron.php` runner, PID/heartbeat/log files, and systemd/reverse-proxy documentation
+- Added the `#/chat` SPA screen plus `#/admin/settings/chatservice` controls for enabling chat, creating channels, viewing service status, and setting retention/WebSocket options
+- Added chat notification preference controls to `#/my-profile/settings/notifications` and integrated chat mentions/direct/channel alerts with the existing in-app and PWA push notification system
+- Added configurable chat WebSocket listen host/port settings so multiple Andrea Helpdesk installs can run on the same server without port conflicts
+- Added an emoji picker to the chat composer and predictable conversion from common emoticons such as `:)`, `:P`, `:O`, and `<3` into Unicode emoji before messages are stored
+- Added the same common emoticon-to-emoji conversion for agent ticket replies, internal notes, edited replies, and agent-created ticket messages
+
+### Changed
+- Agent records now include an optional chat `@handle`, editable from the admin Agents screen
+- Hardened the chat WebSocket transport with same-origin handshake checks, authorised typing broadcasts, stricter listen host/port validation, and safer supervisor restart handling
+- Direct-message thread creation is now idempotent under concurrent requests, avoiding duplicate-key race failures while preserving one thread per agent pair
+- Edited ticket replies now update their plain-text body alongside the sanitised HTML body after emoticon normalisation
+- The in-app updater now enforces release bridge metadata, blocking direct upgrades from installs older than `1.4.9` to newer releases until `1.4.9` has been installed first
+
+
+---
+
 ## [1.4.12] — 2026-05-11
 
 ### Added

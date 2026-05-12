@@ -18,7 +18,7 @@ REMOTE_PATH ?= /var/www/html/andrea-helpdesk
 RSYNC_OPTS  = -avz --delete
 RSYNC_EXCLUDE = --exclude=/vendor --exclude=.env --exclude=storage --exclude=.git --exclude=/demo --exclude=*.swp
 
-CRON_ENTRY  = "* * * * * php $(REMOTE_PATH)/bin/imap-poll.php >> $(REMOTE_PATH)/storage/logs/imap.log 2>&1"
+CRON_ENTRY  = * * * * * php $(REMOTE_PATH)/bin/cron.php >> $(REMOTE_PATH)/storage/logs/cron.log 2>&1
 
 .PHONY: help install install-dev db-migrate db-seed reset-admin-password update fetch-assets \
         script \
@@ -96,22 +96,23 @@ release: ## Bump patch version, update changelog, commit, tag, and push current 
 
 storage-setup: ## Create storage directory structure
 	mkdir -p storage/attachments storage/logs
-	touch storage/logs/app.log storage/logs/imap.log
+	mkdir -p storage/runtime
+	touch storage/logs/app.log storage/logs/imap.log storage/logs/cron.log storage/logs/chat-supervisor.log storage/logs/chat-websocket.log
 	@echo "Storage directories created."
 
 deploy: script ## Release installer changes first, then deploy to production server
 	rsync $(RSYNC_OPTS) $(RSYNC_EXCLUDE) ./ $(REMOTE_USER)@$(PROD_HOST):$(REMOTE_PATH)/
 	ssh $(REMOTE_USER)@$(PROD_HOST) "cd $(REMOTE_PATH) && composer install --no-dev --optimize-autoloader"
 	ssh $(REMOTE_USER)@$(PROD_HOST) "cd $(REMOTE_PATH) && php bin/migrate.php"
-	ssh $(REMOTE_USER)@$(PROD_HOST) "mkdir -p $(REMOTE_PATH)/storage/attachments $(REMOTE_PATH)/storage/logs"
+	ssh $(REMOTE_USER)@$(PROD_HOST) "mkdir -p $(REMOTE_PATH)/storage/attachments $(REMOTE_PATH)/storage/logs $(REMOTE_PATH)/storage/runtime"
 	@echo "Deployed to $(PROD_HOST)"
 
-cron-install-local: ## Install IMAP poll crontab on local server
-	@(crontab -l 2>/dev/null | grep -v imap-poll; printf '%s\n' "* * * * * php $(REMOTE_PATH)/bin/imap-poll.php >> $(REMOTE_PATH)/storage/logs/imap.log 2>&1") | crontab -
+cron-install-local: ## Install Andrea background cron on local server
+	@(crontab -l 2>/dev/null | grep -vE 'bin/(imap-poll|cron)\.php|chat-supervisor'; printf '%s\n' "* * * * * php $(REMOTE_PATH)/bin/cron.php >> $(REMOTE_PATH)/storage/logs/cron.log 2>&1") | crontab -
 	@echo "Cron installed locally"
 
-cron-install-production: ## Install IMAP poll crontab on production server
-	ssh $(REMOTE_USER)@$(PROD_HOST) "(crontab -l 2>/dev/null | grep -v imap-poll; echo $(CRON_ENTRY)) | crontab -"
+cron-install-production: ## Install Andrea background cron on production server
+	ssh $(REMOTE_USER)@$(PROD_HOST) '(crontab -l 2>/dev/null | grep -vE '\''bin/(imap-poll|cron)\.php|chat-supervisor'\''; printf '\''%s\n'\'' '\''$(CRON_ENTRY)'\'') | crontab -'
 	@echo "Cron installed on $(PROD_HOST)"
 
 logs-local: ## Tail app log on local server

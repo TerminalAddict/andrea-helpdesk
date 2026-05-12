@@ -22,11 +22,12 @@ Andrea Helpdesk uses MySQL (InnoDB, utf8mb4_unicode_ci throughout). All tables u
 14. [agent_push_subscriptions](#14-agent_push_subscriptions)
 15. [knowledge_base_categories](#15-knowledge_base_categories)
 16. [knowledge_base_articles](#16-knowledge_base_articles)
-17. [refresh_tokens](#17-refresh_tokens)
-18. [audit_log](#18-audit_log)
-19. [Default Settings Reference](#19-default-settings-reference)
-20. [Entity Relationship Summary](#20-entity-relationship-summary)
-21. [Indexes and Performance Notes](#21-indexes-and-performance-notes)
+17. [Internal chat tables](#17-internal-chat-tables)
+18. [refresh_tokens](#18-refresh_tokens)
+19. [audit_log](#19-audit_log)
+20. [Default Settings Reference](#20-default-settings-reference)
+21. [Entity Relationship Summary](#21-entity-relationship-summary)
+22. [Indexes and Performance Notes](#22-indexes-and-performance-notes)
 
 ---
 
@@ -52,13 +53,14 @@ Stores staff members who log in to the helpdesk to manage tickets.
 | `theme` | VARCHAR(20) | NO | 'light' | UI theme preference: `light` or `dark` |
 | `browser_notifications_enabled` | TINYINT(1) | NO | 0 | Whether this agent wants browser notifications while the app is open |
 | `notification_preferences_json` | TEXT | YES | NULL | Per-agent notification type preferences as JSON |
+| `chat_handle` | VARCHAR(80) | YES | NULL | Stable lowercase `@handle` used for internal chat mentions |
 | `is_active` | TINYINT(1) | NO | 1 | Soft-disable without deleting; inactive agents cannot log in |
 | `last_login_at` | DATETIME | YES | NULL | Updated on successful login |
 | `last_update_check_at` | DATETIME | YES | NULL | Last successful silent background update check for this admin |
 | `created_at` | DATETIME | NO | CURRENT_TIMESTAMP | |
 | `updated_at` | DATETIME | NO | CURRENT_TIMESTAMP ON UPDATE | |
 
-**Unique keys:** `uq_agents_email` on `email`
+**Unique keys:** `uq_agents_email` on `email`, `uq_agents_chat_handle` on `chat_handle`
 
 **Indexes:** `idx_agents_active` on `is_active` (used when listing assignable agents)
 
@@ -68,6 +70,7 @@ Stores staff members who log in to the helpdesk to manage tickets.
 - `signature` is sanitised server-side before storage and rendered in the compose UI.
 - `browser_notifications_enabled` controls whether browser / OS push notifications are enabled for this agent.
 - `notification_preferences_json` controls which notification types the agent receives. Admin update notifications default on for admins only; ticket and overdue notifications default on for all agents.
+- `chat_handle` is optional but required for another agent to mention this agent in chat. Admins edit it from the Agents screen.
 
 ---
 
@@ -397,7 +400,7 @@ Configuration for inbound email accounts polled by `bin/imap-poll.php`.
 **Notes:**
 - `password` is encrypted at rest using `SettingsService::encrypt()` (AES-256-CBC, key derived from `JWT_SECRET`). It is never returned in plain text via the API.
 - The legacy `settings` table also has `imap_*` keys for a single account. Multi-account support uses this table.
-- `bin/imap-poll.php` uses PHP's native `imap_*` extension. It uses `flock()` on a lock file to prevent overlapping runs.
+- `bin/imap-poll.php` uses PHP's native `imap_*` extension. Normal scheduling should call `bin/cron.php`, which runs the poller alongside other background jobs. The poller uses `flock()` on a lock file to prevent overlapping runs.
 - `bin/imap-test.php` is a CLI script used by the Settings UI "Test Connection" and "Browse Folders" buttons. It is invoked as a subprocess via `proc_open` so that DNS resolution and network access run in the CLI context (same as the cron poller), avoiding DNS issues that occur when making outbound connections from within the Apache web process.
 
 ---
@@ -411,7 +414,7 @@ Runtime-configurable key/value store for application settings that don't require
 | `key_name` | VARCHAR(100) | NO | | Setting key (primary key) |
 | `value` | TEXT | YES | NULL | Setting value (stored as string regardless of `type`) |
 | `type` | ENUM('string','integer','boolean','json') | NO | 'string' | Hint for how to cast the value when reading |
-| `group_name` | VARCHAR(60) | NO | 'general' | Logical grouping for the settings UI (`general`, `branding`, `email`, `imap`, `slack`, `notifications`, `support-form`) |
+| `group_name` | VARCHAR(60) | NO | 'general' | Logical grouping for the settings UI (`general`, `branding`, `email`, `imap`, `slack`, `notifications`, `support-form`, `chat`) |
 | `label` | VARCHAR(120) | NO | | Human-readable label shown in the settings UI |
 | `updated_at` | DATETIME | NO | CURRENT_TIMESTAMP ON UPDATE | Last modification time |
 
@@ -423,7 +426,7 @@ Runtime-configurable key/value store for application settings that don't require
 - Values with `type = 'json'` are stored as JSON strings.
 - Sensitive values (`smtp_password`, `imap_password`) are AES-256-CBC encrypted. `SettingsService` transparently encrypts on write and decrypts on read.
 - The INSERT in `schema.sql` uses `ON DUPLICATE KEY UPDATE label = VALUES(label)` so re-running the migration preserves customised values while updating label text.
-- See [Default Settings Reference](#18-default-settings-reference) for the full list of keys.
+- See [Default Settings Reference](#20-default-settings-reference) for the full list of keys.
 
 ---
 
@@ -435,7 +438,7 @@ Per-agent in-app notification inbox entries shown in the navbar bell menu.
 |--------|------|----------|---------|-------------|
 | `id` | INT UNSIGNED | NO | AUTO_INCREMENT | Primary key |
 | `agent_id` | INT UNSIGNED | NO | | FK → agents.id |
-| `type` | VARCHAR(60) | NO | | Notification type, e.g. `ticket_created`, `customer_reply`, `ticket_internal_note`, `ticket_sla_overdue`, `ticket_due_overdue`, `update_available` |
+| `type` | VARCHAR(60) | NO | | Notification type, e.g. `ticket_created`, `customer_reply`, `ticket_internal_note`, `ticket_sla_overdue`, `ticket_due_overdue`, `update_available`, `chat_mention`, `chat_direct_message`, `chat_channel_message` |
 | `severity` | ENUM('info','success','warning','danger') | NO | `info` | UI severity styling |
 | `title` | VARCHAR(180) | NO | | Primary notification headline |
 | `body` | TEXT | YES | NULL | Optional secondary line shown in the bell menu / browser notification |
@@ -454,6 +457,7 @@ Per-agent in-app notification inbox entries shown in the navbar bell menu.
 - Silent admin update checks use `dedupe_key = update:<version>` so each opted-in admin sees at most one current notification per released version.
 - New ticket, assignment, customer reply, and internal note notifications are deleted for an agent when that agent opens the ticket.
 - SLA and due-date overdue notifications remain active while the ticket is still overdue, and disappear once priority is no longer `overdue` or the due date moves out of the today/past window.
+- Chat direct-message, channel-message, and mention notifications are deleted when the agent opens/reads the relevant chat thread or channel.
 - Newly created rows are also eligible for Web Push delivery when the agent has enabled browser notifications and has at least one active push subscription.
 
 ---
@@ -540,7 +544,41 @@ Individual knowledge base articles.
 
 ---
 
-## 17. refresh_tokens
+## 17. Internal chat tables
+
+Internal chat is stored in separate tables so channel membership, direct messages, mentions, read markers, and retention can scale independently.
+
+| Table | Purpose |
+|-------|---------|
+| `chat_channels` | Admin-created chat rooms. `slug` is unique, `is_active` disables a channel without deleting history, and `retention_days` overrides the global channel default when set. |
+| `chat_channel_members` | Many-to-many channel membership. `can_post` allows future read-only channels without changing the schema. |
+| `chat_threads` | Direct-message threads. One row per pair of agents with the lower agent ID stored in `agent_one_id` and the higher ID in `agent_two_id`. |
+| `chat_messages` | Channel and direct messages. `body_text` stores normalised plain text after common emoticons are converted to Unicode emoji; `body_rendered_html` stores server-rendered safe HTML. Messages are soft-deleted by retention prune via `deleted_at`. |
+| `chat_message_mentions` | Join table between a message and active agents mentioned by `@chat_handle`. |
+| `chat_message_reads` | Per-agent read cursor for each channel or direct thread. |
+| `chat_channel_notification_preferences` | Per-agent opt-in for channel-message notifications. Mentions and direct messages use the normal `agents.notification_preferences_json` preferences. |
+
+**Key constraints and indexes:**
+
+| Table | Constraint / index | Purpose |
+|-------|--------------------|---------|
+| `chat_channels` | `uq_chat_channels_slug` | Prevent duplicate channel routes/namespaces |
+| `chat_channel_members` | Primary key `(channel_id, agent_id)` and `idx_chat_channel_members_agent` | Fast membership lookup from either direction |
+| `chat_threads` | `uq_chat_direct_pair (agent_one_id, agent_two_id)` | Guarantees only one direct-message thread exists per agent pair |
+| `chat_messages` | `idx_chat_messages_channel_id_created`, `idx_chat_messages_thread_id_created` | Cursor pagination and recovery by message ID |
+| `chat_message_mentions` | Primary key `(message_id, mentioned_agent_id)` | Prevent duplicate mention rows per message |
+| `chat_message_reads` | Unique channel/direct read cursors per agent | Fast unread counts without scanning old messages repeatedly |
+
+**Security notes:**
+
+- Chat messages are plain text only. The server escapes message text before linkifying tickets, KB references, external URLs, and mentions.
+- External links render with `target="_blank"` and `rel="noopener noreferrer"`.
+- Direct-message history is retained until the configured retention period or prune job removes it. Admin read-only access is audit logged.
+- Disabled agents cannot connect to chat or receive new direct messages, but existing history remains until retention/prune.
+
+---
+
+## 18. refresh_tokens
 
 JWT refresh tokens used for session persistence and token rotation.
 
@@ -573,7 +611,7 @@ JWT refresh tokens used for session persistence and token rotation.
 
 ---
 
-## 18. audit_log
+## 19. audit_log
 
 Immutable log of significant actions performed in the system.
 
@@ -603,11 +641,14 @@ Immutable log of significant actions performed in the system.
   - `ticket.status_changed`: `{"from": "open", "to": "closed"}`
   - `ticket.assigned`: `{"agent_id": 3, "agent_name": "Jane"}`
   - `agent.login`: `{}` (IP recorded separately)
+  - `chat_direct_history_viewed`: admin opened a direct-message thread history view
+  - `chat_prune_run`: admin ran chat retention pruning
+  - `chat_websocket_start_requested`, `chat_websocket_stop_requested`, `chat_websocket_restart_requested`: admin requested cron-managed WebSocket service action
 - BIGINT primary key is used because audit tables grow large in busy systems.
 
 ---
 
-## 19. Default Settings Reference
+## 20. Default Settings Reference
 
 The following settings are seeded by `schema.sql`. Values shown are the defaults; all can be changed at runtime via the admin settings routes (for example `#/admin/settings/general`).
 
@@ -703,9 +744,30 @@ The following settings are seeded by `schema.sql`. Values shown are the defaults
 | `push_last_send_failed_at` | `` | string | Timestamp of the most recent Web Push send failure, shown in admin diagnostics |
 | `push_last_send_failure` | `` | string | Short diagnostic message for the most recent Web Push send failure |
 
+### Internal Chat
+
+| Key | Default | Type | Description |
+|-----|---------|------|-------------|
+| `chat_enabled` | `0` | boolean | Master switch for the internal agent chat service |
+| `chat_default_channel_retention_days` | `90` | integer | Default retention period for channel messages when a channel does not override it |
+| `chat_direct_retention_days` | `90` | integer | Retention period for direct-message history |
+| `chat_max_message_length` | `4000` | integer | Maximum plain-text chat message length |
+| `chat_allow_external_links` | `1` | boolean | Whether external URLs are linkified in chat messages |
+| `chat_websocket_enabled` | `1` | boolean | Whether the WebSocket daemon may run |
+| `chat_websocket_autostart` | `1` | boolean | Whether cron supervisor should start/restart the daemon automatically |
+| `chat_websocket_management_mode` | `cron` | string | `cron` for built-in supervisor, `external` for systemd or another service manager |
+| `chat_websocket_host` | `127.0.0.1` | string | Local interface the WebSocket daemon listens on. Saved values must be hostnames, IPv4 addresses, or bracketed IPv6 addresses, not URLs, `host:port` pairs, or paths. |
+| `chat_websocket_port` | `8090` | integer | Local port the WebSocket daemon listens on; must be `1`-`65535`; use a different port for each install on the same server |
+| `chat_websocket_status` | `stopped` | string | Last known daemon status |
+| `chat_websocket_pid` | `` | string | Last known daemon PID |
+| `chat_websocket_last_seen_at` | `` | string | Last daemon heartbeat timestamp |
+| `chat_websocket_last_started_at` | `` | string | Last daemon start timestamp |
+| `chat_websocket_restart_requested` | `0` | boolean | Admin-requested restart flag processed by `bin/chat-supervisor.php` |
+| `chat_websocket_stop_requested` | `0` | boolean | Admin-requested stop flag processed by `bin/chat-supervisor.php` |
+
 ---
 
-## 20. Entity Relationship Summary
+## 21. Entity Relationship Summary
 
 ```
 agents ──────────────────────────────────────────────────────────────────────────┐
@@ -731,6 +793,20 @@ knowledge_base_articles ──► knowledge_base_categories
 knowledge_base_articles ──► agents (author)
 knowledge_base_articles ──► tickets (source_ticket_id)
 
+chat_channels ──► agents (created_by_agent_id)
+chat_channel_members ──► chat_channels
+chat_channel_members ──► agents
+chat_threads ──► agents (agent_one_id, agent_two_id)
+chat_messages ──► chat_channels
+chat_messages ──► chat_threads
+chat_messages ──► agents (sender/deleted_by)
+chat_message_mentions ──► chat_messages
+chat_message_mentions ──► agents
+chat_message_reads ──► agents
+chat_message_reads ──► chat_channels / chat_threads
+chat_channel_notification_preferences ──► agents
+chat_channel_notification_preferences ──► chat_channels
+
 refresh_tokens ──► agents
 refresh_tokens ──► customers
 
@@ -745,7 +821,7 @@ imap_accounts (standalone — tag_id references tags but no FK defined)
 
 ---
 
-## 21. Indexes and Performance Notes
+## 22. Indexes and Performance Notes
 
 ### Covering indexes for common queries
 
@@ -766,6 +842,12 @@ The ticket list query (`GET /api/tickets`) filters by `deleted_at IS NULL` and o
 ### Character set
 
 All tables use `utf8mb4` with `utf8mb4_unicode_ci` collation, which correctly handles emoji, CJK characters, and case-insensitive email comparisons in the unique indexes.
+
+### Chat cursor pagination
+
+Chat message history and recovery use monotonically increasing `chat_messages.id` cursors. Channel queries use `idx_chat_messages_channel_id_created`; direct-message queries use `idx_chat_messages_thread_id_created`. This keeps the HTTP fallback endpoint efficient for the target scale of about 500 agents and 50 channels on a single server.
+
+WebSocket live events still enforce the same access rules as REST: only active agents can authenticate, typing/read/message events are checked against channel membership or direct-thread participation before broadcast, and browser handshakes with an `Origin` header must match the configured app host.
 
 ### Foreign key checks
 

@@ -47,6 +47,9 @@ const Navbar = {
                 { label: 'Customers', icon: 'bi-people', route: '/customers' },
                 { label: 'Knowledge Base', icon: 'bi-book', route: '/kb' }
             );
+            if (App.settings.chat_enabled) {
+                routes.splice(2, 0, { label: 'Chat', icon: 'bi-chat-dots', route: '/chat' });
+            }
             return routes;
         }
 
