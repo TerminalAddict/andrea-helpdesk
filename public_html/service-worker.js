@@ -68,7 +68,21 @@ self.addEventListener('fetch', (event) => {
 
     if (event.request.mode === 'navigate') {
         event.respondWith(
-            fetch(event.request).catch(() => caches.match('/offline.html'))
+            fetch(event.request, { cache: 'no-store' }).catch(() => caches.match('/offline.html'))
+        );
+        return;
+    }
+
+    const isVersionedAsset = url.searchParams.has('v') && STATIC_ASSETS.includes(url.pathname);
+    if (isVersionedAsset) {
+        event.respondWith(
+            fetch(event.request, { cache: 'no-store' }).then((response) => {
+                if (event.request.method === 'GET' && response.ok) {
+                    const copy = response.clone();
+                    caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+                }
+                return response;
+            }).catch(() => caches.match(event.request))
         );
         return;
     }

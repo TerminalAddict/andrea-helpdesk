@@ -6,6 +6,13 @@ $dotenv->safeLoad();
 
 $pageTitle  = 'Andrea Helpdesk';
 $faviconUrl = '/Andrea-Helpdesk-favicon.png';
+$appVersion = '0.0.0';
+try {
+    $versionData = json_decode((string)@file_get_contents($projectRoot . '/version.json'), true);
+    if (is_array($versionData) && !empty($versionData['version'])) {
+        $appVersion = preg_replace('/[^A-Za-z0-9._-]/', '', (string)$versionData['version']) ?: '0.0.0';
+    }
+} catch (Throwable) {}
 try {
     $pdo = new PDO(
         'mysql:host=' . (getenv('DB_HOST') ?: 'localhost') .
@@ -22,6 +29,9 @@ try {
     if (!empty($rows['company_name'])) $pageTitle  = $rows['company_name'];
     if (!empty($rows['favicon_url']))  $faviconUrl = $rows['favicon_url'];
 } catch (Throwable) {}
+
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -35,11 +45,11 @@ try {
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="<?= htmlspecialchars($pageTitle) ?>">
-    <link rel="stylesheet" href="/assets/vendor/bootstrap/bootstrap.min.css">
-    <link rel="stylesheet" href="/assets/vendor/bootstrap-icons/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="/assets/vendor/quill/quill.snow.css">
-    <link rel="stylesheet" href="/assets/css/app.css">
-    <link rel="stylesheet" href="/assets/css/terminal-shell.css">
+    <link rel="stylesheet" href="/assets/vendor/bootstrap/bootstrap.min.css?v=<?= htmlspecialchars($appVersion) ?>">
+    <link rel="stylesheet" href="/assets/vendor/bootstrap-icons/bootstrap-icons.min.css?v=<?= htmlspecialchars($appVersion) ?>">
+    <link rel="stylesheet" href="/assets/vendor/quill/quill.snow.css?v=<?= htmlspecialchars($appVersion) ?>">
+    <link rel="stylesheet" href="/assets/css/app.css?v=<?= htmlspecialchars($appVersion) ?>">
+    <link rel="stylesheet" href="/assets/css/terminal-shell.css?v=<?= htmlspecialchars($appVersion) ?>">
 </head>
 <body>
 
@@ -85,42 +95,42 @@ try {
 <script>
 window.AppConfig = {
     apiBase: '/api',
-    version: '1.4.13',
+    version: '<?= htmlspecialchars($appVersion) ?>',
     initialHash: ''
 };
 </script>
 
-<script src="/assets/vendor/jquery/jquery.min.js"></script>
-<script src="/assets/vendor/bootstrap/bootstrap.bundle.min.js"></script>
-<script src="/assets/vendor/dompurify/purify.min.js"></script>
-<script src="/assets/vendor/quill/quill.min.js"></script>
-<script src="/assets/js/rich-editor.js"></script>
+<script src="/assets/vendor/jquery/jquery.min.js?v=<?= htmlspecialchars($appVersion) ?>"></script>
+<script src="/assets/vendor/bootstrap/bootstrap.bundle.min.js?v=<?= htmlspecialchars($appVersion) ?>"></script>
+<script src="/assets/vendor/dompurify/purify.min.js?v=<?= htmlspecialchars($appVersion) ?>"></script>
+<script src="/assets/vendor/quill/quill.min.js?v=<?= htmlspecialchars($appVersion) ?>"></script>
+<script src="/assets/js/rich-editor.js?v=<?= htmlspecialchars($appVersion) ?>"></script>
 
 <!-- API wrapper (must load first) -->
-<script src="/assets/js/api.js"></script>
+<script src="/assets/js/api.js?v=<?= htmlspecialchars($appVersion) ?>"></script>
 
 <!-- Components -->
-<script src="/assets/js/components/notifications.js"></script>
-<script src="/assets/js/components/navbar.js"></script>
+<script src="/assets/js/components/notifications.js?v=<?= htmlspecialchars($appVersion) ?>"></script>
+<script src="/assets/js/components/navbar.js?v=<?= htmlspecialchars($appVersion) ?>"></script>
 
 <!-- Views -->
-<script src="/assets/js/views/login.js"></script>
-<script src="/assets/js/views/dashboard.js"></script>
-<script src="/assets/js/views/tickets.js"></script>
-<script src="/assets/js/views/ticket-detail.js"></script>
-<script src="/assets/js/views/ticket-new.js"></script>
-<script src="/assets/js/views/customers.js"></script>
-<script src="/assets/js/views/customer-detail.js"></script>
-<script src="/assets/js/views/agents.js"></script>
-<script src="/assets/js/views/settings.js"></script>
-<script src="/assets/js/views/reports.js"></script>
-<script src="/assets/js/views/calendar.js"></script>
-<script src="/assets/js/views/knowledge-base.js"></script>
-<script src="/assets/js/views/chat.js"></script>
-<script src="/assets/js/views/portal.js"></script>
+<script src="/assets/js/views/login.js?v=<?= htmlspecialchars($appVersion) ?>"></script>
+<script src="/assets/js/views/dashboard.js?v=<?= htmlspecialchars($appVersion) ?>"></script>
+<script src="/assets/js/views/tickets.js?v=<?= htmlspecialchars($appVersion) ?>"></script>
+<script src="/assets/js/views/ticket-detail.js?v=<?= htmlspecialchars($appVersion) ?>"></script>
+<script src="/assets/js/views/ticket-new.js?v=<?= htmlspecialchars($appVersion) ?>"></script>
+<script src="/assets/js/views/customers.js?v=<?= htmlspecialchars($appVersion) ?>"></script>
+<script src="/assets/js/views/customer-detail.js?v=<?= htmlspecialchars($appVersion) ?>"></script>
+<script src="/assets/js/views/agents.js?v=<?= htmlspecialchars($appVersion) ?>"></script>
+<script src="/assets/js/views/settings.js?v=<?= htmlspecialchars($appVersion) ?>"></script>
+<script src="/assets/js/views/reports.js?v=<?= htmlspecialchars($appVersion) ?>"></script>
+<script src="/assets/js/views/calendar.js?v=<?= htmlspecialchars($appVersion) ?>"></script>
+<script src="/assets/js/views/knowledge-base.js?v=<?= htmlspecialchars($appVersion) ?>"></script>
+<script src="/assets/js/views/chat.js?v=<?= htmlspecialchars($appVersion) ?>"></script>
+<script src="/assets/js/views/portal.js?v=<?= htmlspecialchars($appVersion) ?>"></script>
 
 <!-- Main app router (must load last) -->
-<script src="/assets/js/app.js"></script>
+<script src="/assets/js/app.js?v=<?= htmlspecialchars($appVersion) ?>"></script>
 
 </body>
 </html>

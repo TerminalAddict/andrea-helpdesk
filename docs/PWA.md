@@ -101,10 +101,13 @@ iOS Web Push requires the app to be installed on the Home Screen. A normal Safar
 ## Service Worker Behaviour
 
 - Cache name is tied to the application version, so new releases create a fresh static asset cache.
+- The app shell includes the application version on static JS/CSS URLs. This forces Android/iOS installed PWAs to fetch the new assets after the shell reloads, even if an older service worker still has old unversioned files cached.
+- On startup, focus, visibility change, and then every minute while visible, the SPA checks `/api/version` with `cache: no-store`. If the server version differs from the running app version, Andrea Helpdesk asks the browser for a service-worker update and reloads the app so the installed PWA moves to the current release promptly.
+- The service worker is registered with `updateViaCache: none` and a versioned script URL, so service-worker update checks bypass normal HTTP cache behaviour.
 - Old static caches are removed on service-worker activation.
 - Static app assets are cached; API and attachment routes are always network-only.
 - If the network is unavailable during a page navigation, the service worker shows a small offline page instead of a browser error.
-- When a new service worker is installed, the SPA shows a refresh prompt so the user can switch to the latest cached assets.
+- If automatic update activation cannot complete, the SPA shows a refresh prompt so the user can switch to the latest assets.
 - Notification clicks focus an existing Andrea Helpdesk window when possible, otherwise they open the linked app route.
 - If the browser rotates a push subscription, the service worker attempts to re-subscribe and the authenticated SPA refreshes the server-side subscription on the next app load.
 
@@ -155,3 +158,7 @@ iOS Web Push requires the app to be added to the Home Screen and opened from the
 ### Is helpdesk data available offline?
 
 No. Andrea Helpdesk is online-first. The service worker caches static app files only; tickets, customers, attachments, API responses, and authentication data are not cached for security and freshness.
+
+### Why did my installed Android PWA not update immediately after a server update?
+
+Older releases relied mostly on the browser noticing a new service worker. Android can keep an installed PWA process alive and continue serving old cached static asset URLs. Current releases use versioned asset URLs plus a `/api/version` runtime check so an installed PWA reloads onto the new release shortly after the server update is visible.

@@ -6,6 +6,9 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ## [Unreleased]
 
+### Changed
+- Improved installed PWA update behaviour by versioning static asset URLs, registering the service worker with cache bypass, checking `/api/version` while the app is visible, and automatically reloading when the server version changes
+
 ---
 
 ## [1.4.13] — 2026-05-12
