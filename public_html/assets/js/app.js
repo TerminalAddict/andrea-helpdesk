@@ -8,6 +8,7 @@ const App = {
     refreshingForServiceWorker: false,
     checkingForAppUpdate: false,
     pwaUpdateInterval: null,
+    serviceWorkerRegistration: null,
 
     routes: {
         '/':               'DashboardView',
@@ -88,24 +89,15 @@ const App = {
     async registerServiceWorkerForPwa() {
         if (!('serviceWorker' in navigator)) return;
         try {
-            const version = encodeURIComponent(window.AppConfig?.version || '0.0.0');
-            const registration = await navigator.serviceWorker.register(`/service-worker.js?v=${version}`, {
-                scope: '/',
-                updateViaCache: 'none',
-            });
+            const registration = await this.getServiceWorkerRegistration();
             registration.addEventListener('updatefound', () => {
                 const worker = registration.installing;
                 if (!worker) return;
                 worker.addEventListener('statechange', () => {
                     if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-                        this.activateServiceWorkerUpdate(worker);
+                        this.showAppUpdateReadyPrompt('', worker);
                     }
                 });
-            });
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                if (this.refreshingForServiceWorker) return;
-                this.refreshingForServiceWorker = true;
-                window.location.reload();
             });
             await navigator.serviceWorker.ready;
             await registration.update().catch(() => {});
@@ -113,6 +105,18 @@ const App = {
         } catch (e) {
             // PWA install support is optional; the app remains online-first without it.
         }
+    },
+
+    async getServiceWorkerRegistration() {
+        if (!('serviceWorker' in navigator)) return null;
+        if (this.serviceWorkerRegistration) return this.serviceWorkerRegistration;
+
+        const version = encodeURIComponent(window.AppConfig?.version || '0.0.0');
+        this.serviceWorkerRegistration = await navigator.serviceWorker.register(`/service-worker.js?v=${version}`, {
+            scope: '/',
+            updateViaCache: 'none',
+        });
+        return this.serviceWorkerRegistration;
     },
 
     startPwaUpdatePolling(registration) {
@@ -148,20 +152,7 @@ const App = {
 
             await registration.update().catch(() => {});
             const pendingWorker = registration.waiting || registration.installing;
-            if (pendingWorker) {
-                this.activateServiceWorkerUpdate(pendingWorker);
-                return;
-            }
-
-            const reloadKey = `andrea-pwa-reloaded-for-${serverVersion}`;
-            if (!sessionStorage.getItem(reloadKey)) {
-                sessionStorage.setItem(reloadKey, '1');
-                this.refreshingForServiceWorker = true;
-                window.location.reload();
-                return;
-            }
-
-            this.showHardReloadUpdatePrompt(serverVersion);
+            this.showAppUpdateReadyPrompt(serverVersion, pendingWorker || null);
         } catch (e) {
             // Version checks should never block normal app use.
         } finally {
@@ -169,31 +160,31 @@ const App = {
         }
     },
 
-    activateServiceWorkerUpdate(worker) {
-        if (!worker) return;
-        if (worker.state === 'installed' || worker.state === 'activated') {
-            worker.postMessage({ type: 'ANDREA_SKIP_WAITING' });
-            return;
-        }
-        worker.addEventListener('statechange', () => {
-            if (worker.state === 'installed') {
-                worker.postMessage({ type: 'ANDREA_SKIP_WAITING' });
-            }
-        });
-    },
-
-    showHardReloadUpdatePrompt(serverVersion) {
+    showAppUpdateReadyPrompt(serverVersion, worker = null) {
         const id = 'toast-app-version-update';
         if (document.getElementById(id)) return;
+        const versionText = serverVersion ? ` ${this.escapeHtml(serverVersion)}` : '';
         const html = `
             <div id="${id}" class="toast align-items-center bg-warning text-dark border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="false">
                 <div class="d-flex">
-                    <div class="toast-body">${this.escapeHtml(this.appName || 'Andrea Helpdesk')} ${this.escapeHtml(serverVersion)} is available. Refresh to update this installed app.</div>
+                    <div class="toast-body">${this.escapeHtml(this.appName || 'Andrea Helpdesk')}${versionText} is available. Refresh once to update this installed app.</div>
                     <button type="button" class="btn btn-sm btn-dark my-2 me-2" id="btn-hard-reload-app">Refresh</button>
                 </div>
             </div>`;
         $('#toast-container').append(html);
-        $('#btn-hard-reload-app').on('click', () => window.location.reload());
+        $('#btn-hard-reload-app').on('click', () => {
+            this.refreshingForServiceWorker = true;
+            if (worker && (worker.state === 'installed' || worker.state === 'activated')) {
+                worker.postMessage({ type: 'ANDREA_SKIP_WAITING' });
+            } else if (worker) {
+                worker.addEventListener('statechange', () => {
+                    if (worker.state === 'installed') {
+                        worker.postMessage({ type: 'ANDREA_SKIP_WAITING' });
+                    }
+                }, { once: true });
+            }
+            window.setTimeout(() => window.location.reload(), 300);
+        });
         new bootstrap.Toast(document.getElementById(id), { autohide: false }).show();
     },
 

@@ -359,7 +359,10 @@ const Notifications = {
     },
 
     async registerServiceWorker() {
-        const registration = await navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
+        const version = encodeURIComponent(window.AppConfig?.version || '0.0.0');
+        const registration = App.getServiceWorkerRegistration
+            ? await App.getServiceWorkerRegistration()
+            : await navigator.serviceWorker.register(`/service-worker.js?v=${version}`, { scope: '/', updateViaCache: 'none' });
         await navigator.serviceWorker.ready;
         return registration;
     },

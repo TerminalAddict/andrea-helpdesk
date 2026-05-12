@@ -8,6 +8,15 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
+## [1.4.16] — 2026-05-12
+
+### Changed
+- Stabilised installed PWA update handling by removing automatic reload-on-service-worker-activation and showing a single manual refresh prompt instead.
+- Reused the app's versioned service-worker registration for browser push subscriptions so notifications cannot alternately register a different `/service-worker.js` URL and trigger repeated update loops.
+
+
+---
+
 ## [1.4.15] — 2026-05-12
 
 ### Changed
