@@ -1,5 +1,5 @@
 {
-    "version": "1.4.14",
+    "version": "1.4.15",
     "released": "2026-05-12",
     "description": "Add notification center, active notifications overview, and update hardening",
     "minimum_update_from": "1.4.9",

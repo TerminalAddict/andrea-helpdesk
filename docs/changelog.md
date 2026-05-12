@@ -8,6 +8,14 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
+## [1.4.15] — 2026-05-12
+
+### Changed
+- Reissued the PWA/update hotfix as a new patch release so installed PWAs and in-app updater checks detect a newer version instead of staying on the affected `1.4.14` release
+
+
+---
+
 ## [1.4.14] — 2026-05-12
 
 ### Changed
