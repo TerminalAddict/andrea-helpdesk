@@ -2,7 +2,7 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-SCRIPT_VERSION="1.1.0"
+SCRIPT_VERSION="1.1.1"
 SCRIPT_CWD="${PWD}"
 DEFAULT_REPO_URL="https://github.com/TerminalAddict/andrea-helpdesk.git"
 DEFAULT_REPO_REF="main"
@@ -1200,14 +1200,14 @@ run_fetch_assets() {
 run_cron_install() {
     if [[ "$INSTALL_MODE" == "local" ]]; then
         local cron_entry
-        cron_entry="* * * * * php ${WORK_DIR}/bin/imap-poll.php >> ${STORAGE_PATH}/logs/imap.log 2>&1"
-        if run_step_capture "Installing the local IMAP/SLA cron entry" bash -lc "(crontab -l 2>/dev/null | grep -v imap-poll; printf '%s\n' '$cron_entry') | crontab -" >/dev/null; then
+        cron_entry="* * * * * php ${WORK_DIR}/bin/cron.php >> ${STORAGE_PATH}/logs/cron.log 2>&1"
+        if run_step_capture "Installing the local Andrea background cron entry" bash -lc "(crontab -l 2>/dev/null | grep -vE 'bin/(imap-poll|cron)\.php|chat-supervisor'; printf '%s\n' '$cron_entry') | crontab -" >/dev/null; then
             CRON_STATUS="installed locally"
         else
             CRON_STATUS="manual setup required"
         fi
     else
-        if run_step_capture "Installing the remote IMAP/SLA cron entry" make cron-install-production >/dev/null; then
+        if run_step_capture "Installing the remote Andrea background cron entry" make cron-install-production >/dev/null; then
             CRON_STATUS="installed on ${PROD_HOST}"
         else
             CRON_STATUS="manual setup required on ${PROD_HOST}"
