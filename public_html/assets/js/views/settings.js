@@ -415,6 +415,18 @@ const SettingsView = {
                                 <div class="small text-muted">Update channel</div>
                                 <div class="fw-semibold text-capitalize" id="installed-update-channel">${App.escapeHtml(s.update_channel || 'stable')}</div>
                             </div>
+                            <div class="d-flex align-items-end gap-2 flex-wrap">
+                                <div>
+                                    <label class="small text-muted mb-1" for="version-update-channel">Change channel</label>
+                                    <select class="form-select form-select-sm" id="version-update-channel" style="min-width: 13rem;">
+                                        <option value="stable" ${(s.update_channel || 'stable') === 'stable' ? 'selected' : ''}>Stable releases</option>
+                                        <option value="development" ${(s.update_channel || 'stable') === 'development' ? 'selected' : ''}>Development releases</option>
+                                    </select>
+                                </div>
+                                <button class="btn btn-outline-primary btn-sm" id="btn-save-update-channel">
+                                    <i class="bi bi-save me-1"></i>Save Channel
+                                </button>
+                            </div>
                             <button class="btn btn-outline-secondary btn-sm" id="btn-check-update">
                                 <i class="bi bi-arrow-repeat me-1"></i>Check for Updates
                             </button>
@@ -442,6 +454,29 @@ const SettingsView = {
                 $('#installed-version').text(res.data.version || 'unknown');
             }).catch(() => {
                 $('#installed-version').text('unknown');
+            });
+
+            $('#btn-save-update-channel').on('click', async function() {
+                const $btn = $(this);
+                const channel = $('#version-update-channel').val() || 'stable';
+                const $result = $('#update-result');
+                const original = $btn.html();
+                $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Saving…');
+                $result.html('');
+                try {
+                    await API.put('/admin/settings', { settings: { update_channel: channel } });
+                    SettingsView.settings.update_channel = channel;
+                    $('#s-update_channel').val(channel);
+                    $('#installed-update-channel').text(channel);
+                    $result.html(`
+                        <div class="alert alert-info py-2 mb-0">
+                            <i class="bi bi-info-circle me-1"></i>Update channel saved as <strong>${App.escapeHtml(channel)}</strong>. Use Check for Updates to query that channel.
+                        </div>`);
+                } catch (e) {
+                    $result.html(`<div class="alert alert-danger py-2 mb-0"><i class="bi bi-exclamation-triangle me-1"></i>${App.escapeHtml(e.message)}</div>`);
+                } finally {
+                    $btn.prop('disabled', false).html(original);
+                }
             });
 
             $('#btn-check-update').on('click', async function() {
