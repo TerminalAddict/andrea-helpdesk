@@ -363,13 +363,13 @@ class ChatService
             [$agentId, $afterId, $agentId, $agentId]
         );
 
-        return array_map(static function (array $message): array {
+        return array_map(function (array $message): array {
             return [
                 'id' => (int)$message['id'],
                 'type' => $message['message_scope'] === 'direct'
                     ? 'chat.direct.message.created'
                     : 'chat.channel.message.created',
-                'message' => $message,
+                'message' => $this->renderMessageForOutput($message),
             ];
         }, $rows);
     }
@@ -1047,7 +1047,7 @@ class ChatService
             $order = 'm.id ASC';
         }
 
-        return $this->db->fetchAll(
+        $messages = $this->db->fetchAll(
             "SELECT m.*, a.name AS sender_name, a.chat_handle AS sender_chat_handle
                FROM chat_messages m
                JOIN agents a ON a.id = m.sender_agent_id
@@ -1056,17 +1056,30 @@ class ChatService
               LIMIT {$limit}",
             $params
         );
+
+        return array_map(fn(array $message): array => $this->renderMessageForOutput($message), $messages);
     }
 
     private function messageById(int $id): array
     {
-        return $this->db->fetch(
+        $message = $this->db->fetch(
             "SELECT m.*, a.name AS sender_name, a.chat_handle AS sender_chat_handle
                FROM chat_messages m
                JOIN agents a ON a.id = m.sender_agent_id
               WHERE m.id = ?",
             [$id]
         ) ?: [];
+
+        return $message ? $this->renderMessageForOutput($message) : [];
+    }
+
+    private function renderMessageForOutput(array $message): array
+    {
+        $message['body_rendered_html'] = $this->renderer->render(
+            (string)($message['body_text'] ?? ''),
+            (bool)$this->config()['allow_external_links']
+        );
+        return $message;
     }
 
     private function adminChannel(int $id): array

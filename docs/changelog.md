@@ -6,6 +6,10 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ## [Unreleased]
 
+### Fixed
+- Fixed chat ticket linking so internal ticket references use the full ticket number format, for example `#HD-2026-03-17-485`, and shorthand references such as `#123` render as the matching full ticket number while resolving to the correct ticket route.
+- Fixed installed-app version polling so `/api/version` can be checked without admin-only authentication errors.
+
 ---
 
 ## [1.4.16] — 2026-05-12

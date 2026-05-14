@@ -156,7 +156,7 @@ return [
     ['PUT',  '/api/admin/chat/websocket/settings',    ChatAdminController::class, 'websocketSettings', ['role:admin']],
 
     // ── Version & updates ─────────────────────────────────────────────────────
-    ['GET',  '/api/version',          VersionController::class, 'index',     ['role:admin']],
+    ['GET',  '/api/version',          VersionController::class, 'index',     []],
     ['GET',  '/api/version/latest',   VersionController::class, 'latest',    ['role:admin']],
     ['GET',  '/api/update/preflight', UpdateController::class,  'preflight', ['role:admin']],
     ['POST', '/api/update/run',       UpdateController::class,  'run',       ['role:admin']],

@@ -908,7 +908,7 @@ Update the currently authenticated agent's own profile. Requires current passwor
 
 ## Chat endpoints
 
-All chat endpoints require an active agent token. Chat messages are plain text and emoji only. Common emoticons such as `:)`, `:P`, `<3`, and `:+1:` are normalised to Unicode emoji before storage. The server escapes message text before rendering safe links for external URLs, internal ticket references such as `#123`, KB references such as `kb:printer-reset`, and `@chat_handle` mentions.
+All chat endpoints require an active agent token. Chat messages are plain text and emoji only. Common emoticons such as `:)`, `:P`, `<3`, and `:+1:` are normalised to Unicode emoji before storage. The server escapes message text before rendering safe links for external URLs, internal ticket references using the full ticket number such as `#HD-2026-03-17-485`, shorthand ticket ID references such as `#123` rendered as the matching full ticket number, KB references such as `kb:printer-reset`, and `@chat_handle` mentions.
 
 ### Agent chat API
 
