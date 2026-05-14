@@ -24,6 +24,7 @@ CRON_ENTRY  = * * * * * php $(REMOTE_PATH)/bin/cron.php >> $(REMOTE_PATH)/storag
         script \
         package \
         release \
+        dev-release \
         deploy \
         cron-install-local cron-install-production \
         logs-local logs-production storage-setup
@@ -86,13 +87,25 @@ script: ## Bump CLI installer patch version, commit, and push only bin/install-c
 package: ## Build a clean release zip under build/ for FTP/browser installs
 	php bin/build-release-package.php
 
-release: ## Bump patch version, update changelog, commit, tag, and push current branch
-	@NEW_VERSION=$$(php bin/release.php) && \
+release: ## Create a stable release, commit, tag, and push current branch
+	@BRANCH=$$(git rev-parse --abbrev-ref HEAD) && \
+	if [ "$$BRANCH" != "main" ]; then echo "make release must be run from main (current: $$BRANCH)"; exit 1; fi && \
+	NEW_VERSION=$$(php bin/release.php --channel=stable) && \
 	git add -A && \
 	git commit -m "Bump version to $$NEW_VERSION" && \
 	git tag "v$$NEW_VERSION" && \
 	git push origin HEAD && \
 	git push origin "v$$NEW_VERSION"
+
+dev-release: ## Create a development release, commit, tag, and push current branch
+	@BRANCH=$$(git rev-parse --abbrev-ref HEAD) && \
+	if [ "$$BRANCH" != "development" ]; then echo "make dev-release must be run from development (current: $$BRANCH)"; exit 1; fi && \
+	NEW_VERSION=$$(php bin/release.php --channel=development) && \
+	git add -A && \
+	git commit -m "Bump version to $$NEW_VERSION" && \
+	git tag "dev-v$$NEW_VERSION" && \
+	git push origin HEAD && \
+	git push origin "dev-v$$NEW_VERSION"
 
 storage-setup: ## Create storage directory structure
 	mkdir -p storage/attachments storage/logs

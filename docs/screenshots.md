@@ -197,7 +197,7 @@ The upper portion of **General** settings, including application identity, timez
 
 Filename: `admin settings 2.png`
 
-The lower portion of **General** settings, showing cron setup help, SLA escalation controls, and the **Version & Updates** panel with the shared-hosting/file-ownership guidance.
+The lower portion of **General** settings, showing cron setup help, SLA escalation controls, and the **Version & Updates** panel with stable/development update channel selection plus shared-hosting/file-ownership guidance.
 
 ### Branding Settings
 

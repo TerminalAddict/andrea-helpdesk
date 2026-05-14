@@ -660,6 +660,7 @@ The following settings are seeded by `schema.sql`. Values shown are the defaults
 | `app_url` | `` | string | Absolute base URL of the helpdesk (e.g. `https://support.example.com`). Used in outbound email links and Slack alerts. Must be set after install. Trailing slashes are stripped automatically when building URLs. |
 | `timezone` | `Pacific/Auckland` | string | PHP timezone string for date display |
 | `date_format` | `d/m/Y H:i` | string | PHP `date()` format string |
+| `update_channel` | `stable` | string | In-app updater channel: `stable` for production releases or `development` for prerelease builds |
 | `imap_poll_mode` | `cron` | string | `cron` = external crontab; `web` = authenticated agent page views trigger the poller in the background |
 | `sla_enabled` | `0` | boolean | Enable inactivity-based SLA escalation |
 | `sla_high_after_days` | `3` | integer | Days with no attention before a ticket is raised to `high` |

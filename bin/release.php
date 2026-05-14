@@ -4,6 +4,14 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 $today = date('Y-m-d');
+$channel = 'stable';
+foreach (array_slice($argv, 1) as $arg) {
+    if ($arg === '--development' || $arg === '--channel=development') {
+        $channel = 'development';
+    } elseif ($arg === '--stable' || $arg === '--channel=stable') {
+        $channel = 'stable';
+    }
+}
 
 $versionPath = $root . '/version.json';
 $versionData = json_decode((string)file_get_contents($versionPath), true);
@@ -12,17 +20,12 @@ if (!is_array($versionData) || empty($versionData['version'])) {
     exit(1);
 }
 
-$parts = array_map('intval', explode('.', (string)$versionData['version']));
-while (count($parts) < 3) {
-    $parts[] = 0;
-}
-$parts[2]++;
-$newVersion = implode('.', array_slice($parts, 0, 3));
-
 $currentVersion = (string)$versionData['version'];
+$newVersion = nextVersion($currentVersion, $channel);
 
 $versionData['version'] = $newVersion;
 $versionData['released'] = $today;
+$versionData['channel'] = $channel;
 if (empty($versionData['description'])) {
     $versionData['description'] = "Release {$newVersion}";
 }
@@ -39,7 +42,7 @@ updateFile(
 
 updateFile(
     $root . '/public_html/service-worker.js',
-    "/const APP_VERSION = '\\d+\\.\\d+\\.\\d+';/",
+    "/const APP_VERSION = '[^']+';/",
     "const APP_VERSION = '{$newVersion}';"
 );
 
@@ -84,7 +87,7 @@ function updateChangelog(string $path, string $version, string $date, string $cu
 
 function generateReleaseNotesFromGit(string $root, string $currentVersion): string
 {
-    $tag = 'v' . $currentVersion;
+    $tag = tagForVersion($currentVersion);
     $tagExists = trim((string)shell_exec('cd ' . escapeshellarg($root) . ' && git rev-parse --verify --quiet ' . escapeshellarg($tag) . ' 2>/dev/null'));
     if ($tagExists === '') {
         fwrite(STDERR, "docs/changelog.md [Unreleased] section is empty and {$tag} was not found; add release notes before running make release\n");
@@ -101,7 +104,7 @@ function generateReleaseNotesFromGit(string $root, string $currentVersion): stri
     $notes = [];
     foreach ($subjects as $subject) {
         $subject = trim((string)$subject);
-        if ($subject === '' || preg_match('/^Bump version to \d+\.\d+\.\d+$/', $subject)) {
+        if ($subject === '' || preg_match('/^Bump version to \d+\.\d+\.\d+(?:-dev\.\d+)?$/', $subject)) {
             continue;
         }
         $notes[] = '- ' . normalizeCommitSubject($subject);
@@ -124,4 +127,47 @@ function normalizeCommitSubject(string $subject): string
     }
 
     return strtoupper($subject[0]) . substr($subject, 1);
+}
+
+function nextVersion(string $currentVersion, string $channel): string
+{
+    $parsed = parseReleaseVersion($currentVersion);
+    if (!$parsed) {
+        fwrite(STDERR, "Current version '{$currentVersion}' is not a supported release version\n");
+        exit(1);
+    }
+
+    if ($channel === 'development') {
+        if ($parsed['dev'] !== null) {
+            return "{$parsed['major']}.{$parsed['minor']}.{$parsed['patch']}-dev." . ($parsed['dev'] + 1);
+        }
+        return "{$parsed['major']}.{$parsed['minor']}." . ($parsed['patch'] + 1) . '-dev.1';
+    }
+
+    if ($parsed['dev'] !== null) {
+        return "{$parsed['major']}.{$parsed['minor']}.{$parsed['patch']}";
+    }
+    return "{$parsed['major']}.{$parsed['minor']}." . ($parsed['patch'] + 1);
+}
+
+/**
+ * @return array{major:int,minor:int,patch:int,dev:int|null}|null
+ */
+function parseReleaseVersion(string $version): ?array
+{
+    if (!preg_match('/^(\d+)\.(\d+)\.(\d+)(?:-dev\.(\d+))?$/', trim($version), $m)) {
+        return null;
+    }
+
+    return [
+        'major' => (int)$m[1],
+        'minor' => (int)$m[2],
+        'patch' => (int)$m[3],
+        'dev' => isset($m[4]) && $m[4] !== '' ? (int)$m[4] : null,
+    ];
+}
+
+function tagForVersion(string $version): string
+{
+    return str_contains($version, '-dev.') ? 'dev-v' . $version : 'v' . $version;
 }

@@ -7,7 +7,10 @@ class UpdateController
 {
     private const DEFAULT_REPO_ZIP_URL = 'https://github.com/TerminalAddict/andrea-helpdesk/archive/refs/heads/main.zip';
     private const DEFAULT_REPO_PREFIX  = 'andrea-helpdesk-main'; // top-level dir inside the zip
+    private const DEFAULT_DEV_REPO_ZIP_URL = 'https://github.com/TerminalAddict/andrea-helpdesk/archive/refs/heads/development.zip';
+    private const DEFAULT_DEV_REPO_PREFIX  = 'andrea-helpdesk-development'; // top-level dir inside the zip
     private const RELEASE_ZIP_TEMPLATE = 'https://github.com/TerminalAddict/andrea-helpdesk/releases/download/v%s/andrea-helpdesk-%s-full.zip';
+    private const DEV_RELEASE_ZIP_TEMPLATE = 'https://github.com/TerminalAddict/andrea-helpdesk/releases/download/dev-v%s/andrea-helpdesk-%s-full.zip';
     private const FULL_PACKAGE_BRIDGE_VERSION = '1.4.9';
 
     /** Dirs relative to root that must be writable for an update */
@@ -291,14 +294,16 @@ class UpdateController
         }
 
         $sources = [];
+        $latestChannel = VersionService::CHANNEL_STABLE;
         try {
             $latest = (new VersionService())->getLatest();
             $version = (string)($latest['version'] ?? '');
+            $latestChannel = (string)($latest['channel'] ?? VersionService::CHANNEL_STABLE);
             if (preg_match('/^\d+\.\d+\.\d+(?:[-+][A-Za-z0-9._-]+)?$/', $version) === 1) {
                 $sources[] = [
-                    'url' => sprintf(self::RELEASE_ZIP_TEMPLATE, $version, $version),
+                    'url' => $this->releasePackageUrl($version, $latestChannel),
                     'prefix' => 'andrea-helpdesk-' . $version,
-                    'label' => 'GitHub full release package v' . $version,
+                    'label' => 'GitHub full release package ' . $version . ' (' . $latestChannel . ')',
                 ];
             }
         } catch (\Throwable) {
@@ -311,9 +316,9 @@ class UpdateController
         }
 
         $sources[] = [
-            'url' => self::DEFAULT_REPO_ZIP_URL,
-            'prefix' => self::DEFAULT_REPO_PREFIX,
-            'label' => 'GitHub source archive',
+            'url' => $latestChannel === VersionService::CHANNEL_DEVELOPMENT ? self::DEFAULT_DEV_REPO_ZIP_URL : self::DEFAULT_REPO_ZIP_URL,
+            'prefix' => $latestChannel === VersionService::CHANNEL_DEVELOPMENT ? self::DEFAULT_DEV_REPO_PREFIX : self::DEFAULT_REPO_PREFIX,
+            'label' => 'GitHub ' . $latestChannel . ' source archive',
         ];
 
         return $sources;
@@ -331,18 +336,19 @@ class UpdateController
                     'Check version.json or update manually.',
                 ];
             }
-            $url = sprintf(self::RELEASE_ZIP_TEMPLATE, $version, $version);
+            $channel = (string)($latest['channel'] ?? 'stable');
+            $url = $this->releasePackageUrl($version, $channel);
             if ($this->remoteFileAvailable($url)) {
                 return [
                     true,
-                    "Full release package v{$version} is available.",
+                    "Full release package {$version} ({$channel}) is available.",
                     '',
                 ];
             }
 
             return [
                 false,
-                "Full release package v{$version} is not available yet.",
+                "Full release package {$version} ({$channel}) is not available yet.",
                 'Wait for the GitHub release package workflow to complete, then run the updater again. Do not use the source archive on hosts without Composer.',
             ];
         } catch (\Throwable $e) {
@@ -399,6 +405,7 @@ class UpdateController
             $installed = (string)($versions->getInstalled()['version'] ?? 'unknown');
             $latestData = $versions->getLatest();
             $latest = (string)($latestData['version'] ?? 'unknown');
+            $channel = (string)($latestData['channel'] ?? $versions->getUpdateChannel());
             $minimumFrom = (string)($latestData['minimum_update_from'] ?? self::FULL_PACKAGE_BRIDGE_VERSION);
             $minimumReason = trim((string)($latestData['minimum_update_reason'] ?? ''));
         } catch (\Throwable $e) {
@@ -417,6 +424,22 @@ class UpdateController
             ];
         }
 
+        if (!empty($latestData['waiting_for_stable'])) {
+            return [
+                true,
+                (string)($latestData['message'] ?? "Installed development version {$installed} is ahead of stable {$latest}; no stable update will be installed yet."),
+                '',
+            ];
+        }
+
+        if ($versions->compare($latest, $installed) <= 0) {
+            return [
+                true,
+                "No {$channel} update is newer than installed version {$installed}.",
+                '',
+            ];
+        }
+
         if (
             $versions->compare($installed, $minimumFrom) < 0
             && $versions->compare($latest, $minimumFrom) > 0
@@ -431,7 +454,7 @@ class UpdateController
 
         return [
             true,
-            "Upgrade path is supported from {$installed} to {$latest}.",
+            "Upgrade path is supported from {$installed} to {$latest} on the {$channel} channel.",
             '',
         ];
     }
@@ -439,6 +462,14 @@ class UpdateController
     private function isComparableVersion(string $version): bool
     {
         return preg_match('/^\d+\.\d+\.\d+(?:[-+][A-Za-z0-9._-]+)?$/', $version) === 1;
+    }
+
+    private function releasePackageUrl(string $version, string $channel): string
+    {
+        $channel = (new VersionService())->normalizeChannel($channel);
+        return $channel === VersionService::CHANNEL_DEVELOPMENT
+            ? sprintf(self::DEV_RELEASE_ZIP_TEMPLATE, $version, $version)
+            : sprintf(self::RELEASE_ZIP_TEMPLATE, $version, $version);
     }
 
     private function findExtractedRoot(string $tmpDir, string $expectedPrefix): string

@@ -1941,7 +1941,7 @@ Returns an iCal (`.ics`) feed of all open tickets with due dates for the agent i
 
 ## Version endpoints
 
-**Auth:** `role:admin` for all endpoints.
+`GET /api/version` is public so installed PWAs can check whether the server has moved to a newer version without requiring an admin session. Latest-version checks remain admin-only because they contact upstream update metadata.
 
 ### `GET /api/version`
 
@@ -1950,16 +1950,31 @@ Return the installed version from `version.json` in the repository root.
 **Response `200`**
 
 ```json
-{ "version": "1.0.0", "released": "2026-04-03", "description": "..." }
+{ "version": "1.4.16", "channel": "stable", "released": "2026-05-12", "description": "..." }
 ```
 
 ---
 
 ### `GET /api/version/latest`
 
-Fetch `version.json` from the GitHub `main` branch server-side (via cURL / `file_get_contents`) and return it. Used by the Settings → General **Check for Updates** button to compare installed vs latest without the browser making a cross-origin request.
+**Auth:** `role:admin`.
 
-**Response `200`** — same shape as `GET /api/version`.
+Fetch the latest metadata for the configured update channel server-side (via cURL / `file_get_contents`) and return it. Stable uses the GitHub `main` branch metadata by default; development uses the GitHub `development` branch metadata by default. Used by the Settings → General **Check for Updates** button to compare installed vs latest without the browser making a cross-origin request.
+
+**Response `200`** — latest metadata plus channel/comparison fields:
+
+```json
+{
+  "version": "1.4.17-dev.1",
+  "channel": "development",
+  "installed_version": "1.4.16",
+  "installed_channel": "stable",
+  "update_available": true,
+  "waiting_for_stable": false
+}
+```
+
+If a development install is switched back to stable while stable is still behind, `update_available` is `false` and `waiting_for_stable` is `true`; the updater will not downgrade.
 
 **Response `502`** — if GitHub is unreachable or returns unexpected data.
 

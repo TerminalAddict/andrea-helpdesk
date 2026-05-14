@@ -626,7 +626,9 @@ That usually means:
 - use `/install/` for setup
 - use manual FTP/SFTP deployment for upgrades if the in-app updater preflight reports overwrite or permission failures
 
-The in-app updater now prefers the full GitHub release package and can update packaged PHP dependencies, including Web Push libraries, without Composer. If you override the updater to use a source ZIP without `vendor/`, Composer must be available and executable by PHP.
+The in-app updater now prefers the full GitHub release package for the configured update channel and can update packaged PHP dependencies, including Web Push libraries, without Composer. If you override the updater to use a source ZIP without `vendor/`, Composer must be available and executable by PHP.
+
+The default update channel is **stable**. Administrators can opt into **development** releases from `#/admin/settings/general` → **Version & Updates**. Development releases are prerelease builds intended for testing. If a development install is switched back to stable, it will not downgrade; it waits until the stable release reaches or exceeds the installed development version.
 
 Installs older than `1.4.9` must update to `1.4.9` before updating to newer releases. Version `1.4.9` is the updater bridge release that adds full release package and packaged `vendor/` dependency support.
 

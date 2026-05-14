@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+      - 'dev-v*'
 
 permissions:
   contents: write
@@ -39,6 +40,7 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: Andrea Helpdesk ${{ steps.version.outputs.value }}
+          prerelease: ${{ startsWith(github.ref_name, 'dev-v') }}
           generate_release_notes: true
           files: |
             build/andrea-helpdesk-${{ steps.version.outputs.value }}-full.zip

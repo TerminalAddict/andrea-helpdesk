@@ -478,6 +478,7 @@ INSERT INTO settings (key_name, value, type, group_name, label) VALUES
 ('app_url',             '',                  'string',  'general',  'Application URL'),
 ('timezone',            'Pacific/Auckland',  'string',  'general',  'Timezone'),
 ('date_format',         'd/m/Y H:i',         'string',  'general',  'Date/Time Format'),
+('update_channel',      'stable',            'string',  'general',  'Update Channel'),
 ('imap_poll_mode',      'cron',              'string',  'general',  'IMAP Polling Mode'),
 ('sla_enabled',         '0',                 'boolean', 'general',  'Enable SLA Escalation'),
 ('sla_high_after_days', '3',                 'integer', 'general',  'Raise to High after days with no attention'),

@@ -97,6 +97,8 @@ const SettingsView = {
                 { key: 'timezone',       label: 'Timezone',          type: 'text',   value: s.timezone || 'Pacific/Auckland', hint: 'e.g. Pacific/Auckland, UTC' },
                 { key: 'date_format',    label: 'Date Format',       type: 'text',   value: s.date_format || 'Y-m-d H:i', hint: 'PHP date() format string' },
                 { key: 'ticket_prefix',  label: 'Ticket Number Prefix', type: 'text', value: s.ticket_prefix || 'HD' },
+                { key: 'update_channel', label: 'Update Channel', type: 'select', value: s.update_channel || 'stable',
+                  options: [['stable','Stable releases'],['development','Development releases']] },
                 { key: 'imap_poll_mode', label: 'IMAP Polling Mode', type: 'select', value: s.imap_poll_mode || 'cron',
                   options: [['cron','Cron Job (recommended)'],['web','Web Triggered']] },
                 { key: 'sla_enabled',    label: 'Enable SLA escalation', type: 'checkbox', value: s.sla_enabled },
@@ -409,6 +411,10 @@ const SettingsView = {
                                 <div class="small text-muted">Installed version</div>
                                 <div class="fw-semibold" id="installed-version"><span class="spinner-border spinner-border-sm"></span></div>
                             </div>
+                            <div>
+                                <div class="small text-muted">Update channel</div>
+                                <div class="fw-semibold text-capitalize" id="installed-update-channel">${App.escapeHtml(s.update_channel || 'stable')}</div>
+                            </div>
                             <button class="btn btn-outline-secondary btn-sm" id="btn-check-update">
                                 <i class="bi bi-arrow-repeat me-1"></i>Check for Updates
                             </button>
@@ -423,6 +429,9 @@ const SettingsView = {
                             </div>
                             <div class="small text-muted mt-2">
                                 Installs older than <code>1.4.9</code> must update to <code>1.4.9</code> first. That bridge release upgrades the updater so newer releases can install packaged PHP dependencies safely.
+                            </div>
+                            <div class="small text-muted mt-2">
+                                Stable is recommended for production. Development releases are prerelease builds for testing. If a development install is switched back to stable, it will not downgrade; it waits until stable reaches or exceeds the installed development version.
                             </div>
                         </div>
                         <div id="update-result" class="mt-2"></div>
@@ -448,27 +457,22 @@ const SettingsView = {
                     const res       = await API.get('/version/latest');
                     const latest    = res.data;
                     const installed = $('#installed-version').text().trim();
-                    const cmp = (() => {
-                        const a = (latest.version || '0').split('.').map(Number);
-                        const b = (installed      || '0').split('.').map(Number);
-                        for (let i = 0; i < Math.max(a.length, b.length); i++) {
-                            const diff = (a[i] || 0) - (b[i] || 0);
-                            if (diff !== 0) return diff;
-                        }
-                        return 0;
-                    })();
-                    if (cmp > 0) {
+                    const channel = latest.channel || SettingsView.settings.update_channel || 'stable';
+                    $('#installed-update-channel').text(channel);
+                    if (latest.update_available) {
                         $result.html(`
                             <div class="alert alert-warning py-2 mb-0">
-                                <div><i class="bi bi-arrow-up-circle me-1"></i>Version <strong>${App.escapeHtml(latest.version)}</strong> is available (released ${App.escapeHtml(latest.released)})</div>
+                                <div><i class="bi bi-arrow-up-circle me-1"></i>${App.escapeHtml(channel)} version <strong>${App.escapeHtml(latest.version)}</strong> is available (released ${App.escapeHtml(latest.released)})</div>
                                 <div class="mt-2 d-flex gap-2 flex-wrap">
                                     <a href="https://github.com/TerminalAddict/andrea-helpdesk" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-dark"><i class="bi bi-github me-1"></i>View on GitHub</a>
                                     <button class="btn btn-sm btn-success" id="btn-update-now"><i class="bi bi-arrow-up-circle me-1"></i>Update Now</button>
                                 </div>
                             </div>`);
                         $('#btn-update-now').on('click', () => SettingsView.openUpdateModal(latest.version));
+                    } else if (latest.waiting_for_stable) {
+                        $result.html(`<div class="alert alert-info py-2 mb-0"><i class="bi bi-info-circle me-1"></i>${App.escapeHtml(latest.message || 'This install is ahead of stable. It will receive stable updates again when stable catches up.')}</div>`);
                     } else {
-                        $result.html(`<div class="alert alert-success py-2 mb-0"><i class="bi bi-check-circle me-1"></i>You are running the latest version.</div>`);
+                        $result.html(`<div class="alert alert-success py-2 mb-0"><i class="bi bi-check-circle me-1"></i>You are running the latest ${App.escapeHtml(channel)} version.</div>`);
                     }
                 } catch (e) {
                     $result.html(`<div class="alert alert-danger py-2 mb-0"><i class="bi bi-exclamation-triangle me-1"></i>${App.escapeHtml(e.message)}</div>`);
@@ -1790,7 +1794,7 @@ sudo systemctl status andrea-chat-websocket</code></pre>
     async save(tab) {
         const s = this.settings;
         const tabFields = {
-            general:      ['company_name','app_url','timezone','date_format','ticket_prefix','imap_poll_mode','sla_enabled','sla_high_after_days','sla_overdue_after_days','sla_notify_scope'],
+            general:      ['company_name','app_url','timezone','date_format','ticket_prefix','update_channel','imap_poll_mode','sla_enabled','sla_high_after_days','sla_overdue_after_days','sla_notify_scope'],
             branding:     ['logo_url','favicon_url','primary_color','support_email_display'],
             email:        ['smtp_host','smtp_port','smtp_encryption','smtp_username','smtp_password','smtp_from_address','smtp_from_name','reply_to_address','global_signature','include_portal_link_in_customer_emails','notify_agent_on_new_ticket','notify_agent_on_new_reply'],
             autoresponse: ['auto_response_enabled','auto_response_subject','auto_response_body'],

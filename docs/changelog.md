@@ -6,6 +6,13 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ## [Unreleased]
 
+### Added
+- Added stable/development update channel support in Version & Updates, including a new `update_channel` setting and development prerelease version handling.
+- Added `make dev-release` and GitHub release-package support for development tags such as `dev-v1.4.17-dev.1`.
+
+### Changed
+- Updated the in-app updater and dependency repair flow to select full release packages from the configured stable or development channel and prevent downgrades when switching from development back to stable.
+
 ### Fixed
 - Fixed chat ticket linking so internal ticket references use the full ticket number format, for example `#HD-2026-03-17-485`, and shorthand references such as `#123` render as the matching full ticket number while resolving to the correct ticket route.
 - Fixed installed-app version polling so `/api/version` can be checked without admin-only authentication errors.

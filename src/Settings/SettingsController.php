@@ -93,6 +93,11 @@ class SettingsController
                 fn(int $id): bool => $id > 0
             ));
         }
+        if (array_key_exists('update_channel', $data)) {
+            $data['update_channel'] = in_array($data['update_channel'], ['stable', 'development'], true)
+                ? $data['update_channel']
+                : 'stable';
+        }
         if (($data['sla_notify_scope'] ?? null) === 'specific' && empty($data['sla_notify_agent_ids'])) {
             Response::error('Select at least one SLA reminder recipient when using specific agents', 422);
             return;

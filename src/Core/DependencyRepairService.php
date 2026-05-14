@@ -6,6 +6,7 @@ namespace Andrea\Helpdesk\Core;
 class DependencyRepairService
 {
     private const RELEASE_ZIP_TEMPLATE = 'https://github.com/TerminalAddict/andrea-helpdesk/releases/download/v%s/andrea-helpdesk-%s-full.zip';
+    private const DEV_RELEASE_ZIP_TEMPLATE = 'https://github.com/TerminalAddict/andrea-helpdesk/releases/download/dev-v%s/andrea-helpdesk-%s-full.zip';
 
     public function ensureClasses(array $classes): array
     {
@@ -123,7 +124,9 @@ class DependencyRepairService
         $tmpDir = sys_get_temp_dir() . '/andrea-helpdesk-dependencies-' . time();
 
         try {
-            $url = sprintf(self::RELEASE_ZIP_TEMPLATE, $version, $version);
+            $url = str_contains($version, '-dev.')
+                ? sprintf(self::DEV_RELEASE_ZIP_TEMPLATE, $version, $version)
+                : sprintf(self::RELEASE_ZIP_TEMPLATE, $version, $version);
             $bytes = $this->downloadToFile($url, $zipPath);
             if ($bytes === false || $bytes < 1024) {
                 return ['success' => false, 'message' => 'Could not download the full release package for dependency repair.'];
