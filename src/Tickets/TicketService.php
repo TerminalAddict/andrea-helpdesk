@@ -48,6 +48,8 @@ class TicketService
                 'original_message_id'=> $emailData['message_id'] ?? null,
                 'last_message_id'    => $emailData['message_id'] ?? null,
                 'reply_to_address'   => $emailData['reply_to'] ?? $emailData['from_email'],
+                'status'             => $emailData['status'] ?? 'new',
+                'suppress_emails'    => !empty($emailData['suppress_emails']) ? 1 : 0,
             ]);
 
             $ticket = $this->ticketRepo->findById($ticketId);
@@ -81,11 +83,13 @@ class TicketService
             throw $e;
         }
 
-        // Notify outside the transaction
-        try {
-            $notifications = new NotificationService();
-            $notifications->onNewTicket($ticket, $customer);
-        } catch (\Throwable) {}
+        // Notify outside the transaction unless the caller is handling the message specially.
+        if (empty($emailData['suppress_notifications'])) {
+            try {
+                $notifications = new NotificationService();
+                $notifications->onNewTicket($ticket, $customer);
+            } catch (\Throwable) {}
+        }
 
         return ['ticket' => $ticket, 'customer' => $customer, 'initial_reply_id' => $firstReplyId ?? null];
     }

@@ -129,6 +129,10 @@ const SettingsView = {
                 { key: 'include_portal_link_in_customer_emails', label: 'Include a link to the customer portal in all email communications', type: 'checkbox', value: s.include_portal_link_in_customer_emails },
                 { key: 'notify_agent_on_new_ticket', label: 'Notify agents on new ticket', type: 'checkbox', value: s.notify_agent_on_new_ticket },
                 { key: 'notify_agent_on_new_reply',  label: 'Notify agents on new customer reply', type: 'checkbox', value: s.notify_agent_on_new_reply },
+                { key: 'incoming_email_blocklist', label: 'Blocked incoming email addresses', type: 'textarea', value: (Array.isArray(s.incoming_email_blocklist) ? s.incoming_email_blocklist : String(s.incoming_email_blocklist || '').split(/\r\n|\r|\n|,/).map(v => v.trim()).filter(Boolean)).join('\n'),
+                  hint: 'One entry per line. Supports exact addresses, *@domain.com, or domain.com.' },
+                { key: 'incoming_email_block_message', label: 'Blocked sender response', type: 'textarea', value: s.incoming_email_block_message || 'Your email has not been accepted by this helpdesk. This ticket has been closed automatically.',
+                  hint: 'Plain text response sent to blocked senders. Placeholders: {{customer_name}}, {{customer_email}}, {{ticket_number}}, {{subject}}, {{app_name}}.' },
             ]);
         } else if (tab === 'autoresponse') {
             html = this.form('autoresponse', [
@@ -1831,7 +1835,7 @@ sudo systemctl status andrea-chat-websocket</code></pre>
         const tabFields = {
             general:      ['company_name','app_url','timezone','date_format','ticket_prefix','update_channel','imap_poll_mode','sla_enabled','sla_high_after_days','sla_overdue_after_days','sla_notify_scope'],
             branding:     ['logo_url','favicon_url','primary_color','support_email_display'],
-            email:        ['smtp_host','smtp_port','smtp_encryption','smtp_username','smtp_password','smtp_from_address','smtp_from_name','reply_to_address','global_signature','include_portal_link_in_customer_emails','notify_agent_on_new_ticket','notify_agent_on_new_reply'],
+            email:        ['smtp_host','smtp_port','smtp_encryption','smtp_username','smtp_password','smtp_from_address','smtp_from_name','reply_to_address','global_signature','include_portal_link_in_customer_emails','notify_agent_on_new_ticket','notify_agent_on_new_reply','incoming_email_blocklist','incoming_email_block_message'],
             autoresponse: ['auto_response_enabled','auto_response_subject','auto_response_body'],
             imap:         [],
             slack:        ['slack_enabled','slack_webhook_url','slack_channel','slack_on_new_ticket','slack_on_assign','slack_on_new_reply','slack_unfurl_links','slack_username','slack_icon_url','slack_icon_emoji'],
@@ -1849,8 +1853,8 @@ sudo systemctl status andrea-chat-websocket</code></pre>
             } else if (el.type === 'password') {
                 if (el.value) payload[key] = el.value;
             } else {
-                payload[key] = key === 'support_form_allowed_origins'
-                    ? el.value.split(/\r\n|\r|\n/).map(v => v.trim()).filter(Boolean)
+                payload[key] = ['support_form_allowed_origins', 'incoming_email_blocklist'].includes(key)
+                    ? el.value.split(/\r\n|\r|\n|,/).map(v => v.trim()).filter(Boolean)
                     : el.value;
             }
         });

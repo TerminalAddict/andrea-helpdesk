@@ -10,6 +10,7 @@ use Andrea\Helpdesk\Core\Response;
 use Andrea\Helpdesk\Notifications\EmailNotifier;
 use Andrea\Helpdesk\Notifications\PushNotificationService;
 use Andrea\Helpdesk\Notifications\SlackNotifier;
+use Andrea\Helpdesk\IMAP\IncomingEmailBlockService;
 use Andrea\Helpdesk\Tickets\AttachmentService;
 use Minishlink\WebPush\VAPID;
 
@@ -104,6 +105,26 @@ class SettingsController
         }
         if (array_key_exists('support_form_allowed_origins', $data)) {
             $data['support_form_allowed_origins'] = $this->service->normalizeSupportFormAllowedOrigins($data['support_form_allowed_origins']);
+        }
+        if (array_key_exists('incoming_email_blocklist', $data)) {
+            $blockService = new IncomingEmailBlockService($this->service);
+            $items = is_array($data['incoming_email_blocklist'])
+                ? $data['incoming_email_blocklist']
+                : preg_split('/\r\n|\r|\n|,/', (string)$data['incoming_email_blocklist']);
+            $patterns = [];
+            foreach ($items ?: [] as $item) {
+                $pattern = $blockService->normalisePattern((string)$item);
+                if ($pattern !== '') {
+                    $patterns[$pattern] = true;
+                }
+            }
+            $data['incoming_email_blocklist'] = array_keys($patterns);
+        }
+        if (array_key_exists('incoming_email_block_message', $data)) {
+            $message = trim((string)$data['incoming_email_block_message']);
+            $data['incoming_email_block_message'] = $message !== ''
+                ? $message
+                : 'Your email has not been accepted by this helpdesk. This ticket has been closed automatically.';
         }
         if (array_key_exists('push_vapid_subject', $data)) {
             $data['push_vapid_subject'] = $this->normalizeVapidSubject((string)$data['push_vapid_subject']);

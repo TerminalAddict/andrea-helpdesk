@@ -646,6 +646,7 @@ After any install method:
 4. Configure cron for `bin/cron.php`.
 5. Send a test SMTP message.
 6. Add an IMAP account and run **Poll Now**.
-7. Configure browser push notifications and PWA install behaviour from **Admin → Settings → Notifications** if you want desktop/mobile OS alerts. The PWA uses the configured **Application Name** and optional **PWA / Notification Icon URL**; when that icon is empty it falls back to Branding → **Favicon URL**.
-8. If you enable internal chat, configure channels and the WebSocket service from **Admin → Settings → Chat Service**. If this server hosts multiple Andrea Helpdesk installs, give each install a unique WebSocket listen port and update each vhost `/ws/chat` proxy to match. For production external service mode, see `docs/chat-websocket-systemd.md`.
-9. Remove or restrict `public_html/install/`.
+7. Configure inbound sender blocking from **Admin → Settings → Email / SMTP** if you need to reject exact senders or domains. Blocked email receives only the configured blocked-sender response, is immediately closed, and does not create agent, Slack, in-app, or push notifications.
+8. Configure browser push notifications and PWA install behaviour from **Admin → Settings → Notifications** if you want desktop/mobile OS alerts. The PWA uses the configured **Application Name** and optional **PWA / Notification Icon URL**; when that icon is empty it falls back to Branding → **Favicon URL**.
+9. If you enable internal chat, configure channels and the WebSocket service from **Admin → Settings → Chat Service**. If this server hosts multiple Andrea Helpdesk installs, give each install a unique WebSocket listen port and update each vhost `/ws/chat` proxy to match. For production external service mode, see `docs/chat-websocket-systemd.md`.
+10. Remove or restrict `public_html/install/`.

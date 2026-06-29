@@ -221,7 +221,7 @@ The upper section of **Email / SMTP** settings, covering transport settings such
 
 Filename: `admin email 2.png`
 
-The lower section of **Email / SMTP** settings, showing the signature editor, notification toggles, save action, and the **Test SMTP** action.
+The lower section of **Email / SMTP** settings, showing the signature editor, inbound sender blocklist, blocked-sender response text, notification toggles, save action, and the **Test SMTP** action.
 
 ### Auto-Response Settings
 

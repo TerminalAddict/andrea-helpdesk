@@ -510,6 +510,8 @@ INSERT INTO settings (key_name, value, type, group_name, label) VALUES
 ('auto_response_enabled','1',                'boolean', 'email',    'Enable Auto-Response'),
 ('auto_response_subject','Re: {{subject}} [{{ticket_number}}]', 'string', 'email', 'Auto-Response Subject'),
 ('auto_response_body',  '<p>Dear {{customer_name}},</p><p>Thank you for contacting us. Your ticket has been created with reference number <strong>{{ticket_number}}</strong>.</p><p>We will respond as soon as possible.</p><p>{{global_signature}}</p>', 'string', 'email', 'Auto-Response Body (HTML)'),
+('incoming_email_blocklist', '[]',           'json',    'email',    'Blocked Incoming Email Addresses'),
+('incoming_email_block_message', 'Your email has not been accepted by this helpdesk. This ticket has been closed automatically.', 'string', 'email', 'Blocked Incoming Email Response'),
 
 -- IMAP
 ('imap_host',           '',                  'string',  'imap',     'IMAP Host'),

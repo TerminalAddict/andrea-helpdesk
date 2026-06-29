@@ -8,6 +8,15 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
+## [1.4.18-dev.1] — 2026-06-29
+
+### Added
+- Added admin-configurable inbound email blocking with exact sender and domain pattern support.
+- Added a configurable blocked-sender response message; blocked inbound email creates/records the ticket, sends only that response, and closes the ticket without agent, Slack, in-app, or push notifications.
+
+
+---
+
 ## [1.4.17] — 2026-05-14
 
 ### Added

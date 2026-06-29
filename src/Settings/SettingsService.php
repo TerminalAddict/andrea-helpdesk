@@ -73,6 +73,8 @@ class SettingsService
             'auto_response_body'          => $this->repo->get('auto_response_body', ''),
             'notify_agent_on_new_ticket'  => (bool)$this->repo->get('notify_agent_on_new_ticket', true),
             'notify_agent_on_new_reply'   => (bool)$this->repo->get('notify_agent_on_new_reply', true),
+            'incoming_email_blocklist'     => (array)$this->repo->get('incoming_email_blocklist', []),
+            'incoming_email_block_message' => (string)$this->repo->get('incoming_email_block_message', 'Your email has not been accepted by this helpdesk. This ticket has been closed automatically.'),
         ];
     }
 

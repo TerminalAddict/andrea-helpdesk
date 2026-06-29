@@ -1,7 +1,7 @@
 {
-    "version": "1.4.17",
-    "channel": "stable",
-    "released": "2026-05-14",
+    "version": "1.4.18-dev.1",
+    "channel": "development",
+    "released": "2026-06-29",
     "description": "Add notification center, active notifications overview, and update hardening",
     "minimum_update_from": "1.4.9",
     "minimum_update_reason": "Version 1.4.9 upgrades the updater so full release packages and packaged vendor dependencies can be installed safely."

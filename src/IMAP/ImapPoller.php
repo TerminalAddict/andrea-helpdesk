@@ -8,7 +8,7 @@ use Andrea\Helpdesk\Tickets\ReplyService;
 use Andrea\Helpdesk\Tickets\AttachmentService;
 use Andrea\Helpdesk\Tickets\TicketRepository;
 use Andrea\Helpdesk\Customers\CustomerRepository;
-use Andrea\Helpdesk\Notifications\NotificationService;
+use Andrea\Helpdesk\Notifications\EmailNotifier;
 use Andrea\Helpdesk\Core\Database;
 
 class ImapPoller
@@ -16,6 +16,7 @@ class ImapPoller
     private $connection = null;
     private string $logFile;
     private array $config;
+    private IncomingEmailBlockService $blockService;
 
     public function __construct(
         array $config,
@@ -25,6 +26,7 @@ class ImapPoller
         $this->config  = $config;
         $storagePath   = getenv('STORAGE_PATH') ?: '/tmp';
         $this->logFile = $storagePath . '/logs/imap.log';
+        $this->blockService = new IncomingEmailBlockService();
     }
 
     public function connect(): bool
@@ -99,6 +101,7 @@ class ImapPoller
 
         // Find existing ticket
         $existingTicket = $this->matcher->findExistingTicket($parsed);
+        $isBlockedSender = $this->blockService->isBlocked((string)$parsed['from_email']);
 
         if (!empty($parsed['is_bounce'])) {
             if ($existingTicket) {
@@ -122,6 +125,17 @@ class ImapPoller
             $this->log("Skipping auto-reply (loop prevention): {$parsed['subject']}");
             $this->markSeen($msgNum);
             return false;
+        }
+
+        if ($isBlockedSender) {
+            $this->processBlockedMessage($parsed, $existingTicket);
+            $this->markSeen($msgNum);
+            if ($config['delete_after_import']) {
+                imap_delete($this->connection, (string)$msgNum);
+                imap_expunge($this->connection);
+                $this->log("Deleted message {$msgNum}");
+            }
+            return true;
         }
 
         if ($existingTicket) {
@@ -254,6 +268,79 @@ class ImapPoller
 
         (new ReplyService())->createSystemReply((int)$ticket['id'], $body);
         $this->log("Recorded delivery failure on {$ticket['ticket_number']}: {$summary}");
+    }
+
+    private function processBlockedMessage(array $parsed, ?array $existingTicket): void
+    {
+        $ticketRepo = new TicketRepository();
+        $customerRepo = new CustomerRepository();
+        $ticketService = new TicketService();
+
+        $customer = $customerRepo->upsertByEmail($parsed['from_email'], $parsed['from_name']);
+        if ($existingTicket) {
+            $ticket = $existingTicket;
+            $this->log("Blocked sender {$parsed['from_email']} matched existing ticket {$ticket['ticket_number']}; closing without notifications.");
+        } else {
+            $this->log("Creating closed ticket from blocked sender: {$parsed['from_email']}");
+            $result = $ticketService->createFromEmail([
+                'from_email' => $parsed['from_email'],
+                'from_name' => $parsed['from_name'],
+                'subject' => $parsed['subject'],
+                'body_html' => $parsed['body_html'] ?: nl2br(htmlspecialchars($parsed['body_text'])),
+                'body_text' => $parsed['body_text'],
+                'message_id' => $parsed['message_id'],
+                'reply_to' => $parsed['reply_to'] ?: $parsed['from_email'],
+                'cc_emails' => [],
+                'status' => 'closed',
+                'suppress_emails' => 1,
+                'suppress_notifications' => true,
+            ]);
+            $ticket = $result['ticket'];
+            $customer = $result['customer'];
+
+            if (!empty($this->config['tag_id'])) {
+                $ticketRepo->addTag((int)$ticket['id'], (int)$this->config['tag_id']);
+            }
+
+            $firstReply = Database::getInstance()->fetch(
+                "SELECT id FROM replies WHERE ticket_id = ? ORDER BY id ASC LIMIT 1",
+                [(int)$ticket['id']]
+            );
+            $this->saveAttachments((int)$ticket['id'], $firstReply['id'] ?? null, $parsed['attachments']);
+        }
+
+        $body = $this->blockService->renderMessage($ticket, $customer, $parsed);
+        $subject = 'Re: ' . (string)($ticket['subject'] ?? $parsed['subject'] ?? 'Blocked email');
+        $messageId = ((string)($ticket['ticket_number'] ?? 'blocked')) . '.blocked.' . time() . '.' . bin2hex(random_bytes(4)) . '@' . (parse_url(getenv('APP_URL') ?: '', PHP_URL_HOST) ?: 'helpdesk');
+        $headers = [
+            'Message-ID' => "<{$messageId}>",
+            'Auto-Submitted' => 'auto-replied',
+            'X-Auto-Response-Suppress' => 'All',
+            'Precedence' => 'auto-reply',
+        ];
+        if (!empty($parsed['message_id'])) {
+            $origId = trim((string)$parsed['message_id'], '<>');
+            $headers['In-Reply-To'] = "<{$origId}>";
+            $headers['References'] = "<{$origId}>";
+        }
+
+        (new EmailNotifier())->sendRaw(
+            (string)($parsed['reply_to'] ?: $parsed['from_email']),
+            (string)($parsed['from_name'] ?? ''),
+            $subject,
+            $body,
+            $headers,
+            (int)$ticket['id'],
+            false
+        );
+
+        $ticketRepo->update((int)$ticket['id'], [
+            'status' => 'closed',
+            'closed_at' => date('Y-m-d H:i:s'),
+            'suppress_emails' => 1,
+        ]);
+        (new ReplyService())->createSystemReply((int)$ticket['id'], 'Incoming email blocked by admin policy. Ticket closed automatically.');
+        $this->log("Blocked sender {$parsed['from_email']} and closed ticket {$ticket['ticket_number']}.");
     }
 
     private function log(string $message, string $level = 'INFO'): void

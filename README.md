@@ -84,6 +84,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 
 ### Notifications
 - **Email notifications** — agents are notified of new tickets, customer replies, ticket assignments, and @mentions; customers and participants are notified of replies
+- **Inbound email blocking** — admins can block exact senders or whole domains from **Settings → Email / SMTP**; blocked senders receive only the configured block response, the ticket is immediately closed, and no agent, Slack, in-app, or push notification is created
 - **In-app notification center** — agents get a bell icon in the navbar for current actionable alerts, plus an Alerts Panel at `#/my-profile/notifications`
 - **Per-agent notification preferences** — agents can choose which in-app/browser notifications they receive at `#/my-profile/settings/notifications`; update alerts are admin-only and enabled by default for admins
 - **Ticket notification lifecycle** — new-ticket, assignment, customer-reply, and internal-note notifications are removed for an agent when that agent opens the ticket; SLA/due-date overdue notifications remain until the overdue condition is cleared
@@ -106,6 +107,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 ### Settings And Profile Routes
 - **SMTP configuration** — host, port, encryption, credentials, from address — all managed in the UI
 - **IMAP accounts** — add, edit, test, and browse folders on multiple inbound mailboxes; username accepts both email (`user@domain.com`) and Windows domain (`DOMAIN\user`) formats; leading/trailing whitespace in host and username is stripped on save; credentials encrypted at rest with AES-256-CBC
+- **Inbound email blocklist** — exact email addresses, `*@domain.com`, or bare `domain.com` entries can be configured by admins from **Settings → Email / SMTP**, along with the plain-text response sent to blocked senders
 - **Company branding** — company name, logo URL, favicon URL, primary colour, and support email
 - **Ticket prefix** — customise the ticket number prefix
 - **Auto-responder** — enable/disable and customise the automatic acknowledgement email

@@ -1232,9 +1232,18 @@ Get all runtime settings (or a specific group).
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `group` | string | `general`, `branding`, `email`, `imap`, `slack`, `notifications`, `support-form` |
+| `group` | string | `general`, `branding`, `email`, `imap`, `slack`, `notifications`, `support-form`, `chat` |
 
 Sensitive values (`smtp_password`, `imap_password`, `support_form_recaptcha_secret_key`, `push_vapid_private_key`) are masked as `***` in the response.
+
+The `email` group includes the admin-managed inbound blocklist settings:
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `incoming_email_blocklist` | array | Exact email addresses, wildcard domains such as `*@example.com`, or bare domains such as `example.com`. Invalid entries are ignored on save. |
+| `incoming_email_block_message` | string | Plain-text response sent to blocked senders before the ticket is closed. Supports `{{customer_name}}`, `{{customer_email}}`, `{{ticket_number}}`, `{{subject}}`, and `{{app_name}}`. |
+
+Blocked inbound email is processed by the IMAP poller as a closed email-channel ticket with notifications suppressed. Only the configured block response is sent; agent email, Slack, in-app, and browser push notifications are not created.
 
 **Response `200`** — object of `{ key_name: value }` pairs (when group specified) or grouped object (all settings).
 

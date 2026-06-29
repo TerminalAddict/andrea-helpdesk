@@ -698,6 +698,8 @@ The following settings are seeded by `schema.sql`. Values shown are the defaults
 | `auto_response_enabled` | `1` | boolean | Whether to send an automatic acknowledgement on new tickets |
 | `auto_response_subject` | `Re: {{subject}} [{{ticket_number}}]` | string | Auto-response subject template |
 | `auto_response_body` | *(HTML template)* | string | Auto-response body HTML template. Placeholders: `{{customer_name}}`, `{{ticket_number}}`, `{{subject}}`, `{{global_signature}}` |
+| `incoming_email_blocklist` | `[]` | json | Admin-managed inbound sender blocklist. Entries can be exact addresses, `*@domain.com`, or `domain.com`. |
+| `incoming_email_block_message` | *(plain text)* | string | Response sent to blocked senders before the ticket is closed. Placeholders: `{{customer_name}}`, `{{customer_email}}`, `{{ticket_number}}`, `{{subject}}`, `{{app_name}}` |
 
 ### IMAP (legacy single-account)
 

@@ -221,7 +221,7 @@ class EmailNotifier
         }
     }
 
-    public function sendRaw(string $to, string $toName, string $subject, string $body, array $headers = [], ?int $ticketId = null): bool
+    public function sendRaw(string $to, string $toName, string $subject, string $body, array $headers = [], ?int $ticketId = null, bool $includePortalLink = true): bool
     {
         try {
             $mailer = $this->createMailer();
@@ -229,7 +229,9 @@ class EmailNotifier
             $mailer->addAddress($to, $toName);
             $mailer->Subject = $subject;
             $mailer->isHTML(true);
-            [$htmlBody, $altBody] = $this->applyCustomerPortalLink($body, strip_tags($body));
+            [$htmlBody, $altBody] = $includePortalLink
+                ? $this->applyCustomerPortalLink($body, strip_tags($body))
+                : [$body, strip_tags($body)];
             $mailer->Body    = $htmlBody;
             $mailer->AltBody = $altBody;
             foreach ($headers as $name => $value) {
