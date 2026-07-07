@@ -1,5 +1,6 @@
 /vendor/
 /.env
+/cache/
 /storage/attachments/
 /storage/logs/*.log
 composer.lock

@@ -1232,7 +1232,7 @@ Get all runtime settings (or a specific group).
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `group` | string | `general`, `branding`, `email`, `imap`, `slack`, `notifications`, `support-form`, `chat` |
+| `group` | string | `general`, `branding`, `email`, `imap`, `slack`, `cache`, `notifications`, `support-form`, `chat` |
 
 Sensitive values (`smtp_password`, `imap_password`, `support_form_recaptcha_secret_key`, `push_vapid_private_key`) are masked as `***` in the response.
 
@@ -1246,6 +1246,42 @@ The `email` group includes the admin-managed inbound blocklist settings:
 Blocked inbound email is processed by the IMAP poller as a closed email-channel ticket with notifications suppressed. Only the configured block response is sent; agent email, Slack, in-app, and browser push notifications are not created.
 
 **Response `200`** — object of `{ key_name: value }` pairs (when group specified) or grouped object (all settings).
+
+### `GET /api/admin/settings/cache-status`
+
+Return application cache diagnostics for `#/admin/settings/cache`.
+
+**Auth:** `role:admin`
+
+**Response `200`**
+
+```json
+{
+  "data": {
+    "enabled": true,
+    "healthy": true,
+    "backend": "redis",
+    "ttl_seconds": 60,
+    "cache_home": "/var/www/andrea-helpdesk/cache",
+    "cache_home_writable": true,
+    "redis_extension_loaded": true,
+    "redis_host": "127.0.0.1",
+    "redis_port": 6379,
+    "redis_database": 1,
+    "redis_prefix": "andrea_helpdesk",
+    "redis_connected": true,
+    "redis_error": "",
+    "message": "Redis cache is enabled and reachable.",
+    "instructions": []
+  }
+}
+```
+
+### `POST /api/admin/settings/clear-cache`
+
+Clear the current application cache namespace and return fresh diagnostics.
+
+**Auth:** `role:admin`
 
 ### `GET /api/admin/settings/push-status`
 

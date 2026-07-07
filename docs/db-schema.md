@@ -414,7 +414,7 @@ Runtime-configurable key/value store for application settings that don't require
 | `key_name` | VARCHAR(100) | NO | | Setting key (primary key) |
 | `value` | TEXT | YES | NULL | Setting value (stored as string regardless of `type`) |
 | `type` | ENUM('string','integer','boolean','json') | NO | 'string' | Hint for how to cast the value when reading |
-| `group_name` | VARCHAR(60) | NO | 'general' | Logical grouping for the settings UI (`general`, `branding`, `email`, `imap`, `slack`, `notifications`, `support-form`, `chat`) |
+| `group_name` | VARCHAR(60) | NO | 'general' | Logical grouping for the settings UI (`general`, `branding`, `email`, `imap`, `slack`, `cache`, `notifications`, `support-form`, `chat`) |
 | `label` | VARCHAR(120) | NO | | Human-readable label shown in the settings UI |
 | `updated_at` | DATETIME | NO | CURRENT_TIMESTAMP ON UPDATE | Last modification time |
 
@@ -727,6 +727,18 @@ The following settings are seeded by `schema.sql`. Values shown are the defaults
 | `slack_username` | `` | string | Display name shown on Slack messages (blank = webhook default) |
 | `slack_icon_url` | `` | string | URL of an image to use as the bot icon; takes priority over `slack_icon_emoji` |
 | `slack_icon_emoji` | `` | string | Slack emoji code for the bot icon, e.g. `:robot_face:` or `:paul:` |
+
+### Application Cache
+
+| Key | Default | Type | Description |
+|-----|---------|------|-------------|
+| `cache_enabled` | `0` | boolean | Enables the application read-through cache. Environment variable `CACHE` overrides this when set. |
+| `cache_home` | `cache` | string | File cache fallback directory. Relative paths are resolved from the install directory. Environment variables `CACHEHOME` or `CACHE_HOME` override this when set. |
+| `cache_ttl_seconds` | `60` | integer | Default read cache TTL in seconds, between 5 and 86400. Environment variable `CACHE_TTL_SECONDS` overrides this when set. |
+| `redis_host` | `127.0.0.1` | string | Redis host. Environment variable `REDIS_HOST` overrides this when set. |
+| `redis_port` | `6379` | integer | Redis port. Environment variable `REDIS_PORT` overrides this when set. |
+| `redis_prefix` | `andrea_helpdesk` | string | Redis key prefix. Use a unique prefix per install. Environment variable `REDIS_PREFIX` overrides this when set. |
+| `redis_database` | `1` | integer | Redis logical database number, 0-15. Use a unique number per install on shared Redis servers. Environment variable `REDIS_DATABASE` overrides this when set. |
 
 ### Support Form
 

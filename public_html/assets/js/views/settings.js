@@ -11,6 +11,7 @@ const SettingsView = {
         { key: 'autoresponse', label: 'Auto-Response' },
         { key: 'imap', label: 'IMAP Polling' },
         { key: 'slack', label: 'Slack' },
+        { key: 'cache', label: 'Cache' },
         { key: 'notifications', label: 'Notifications' },
         { key: 'chatservice', label: 'Chat Service' },
         { key: 'support-form', label: 'Support Form' },
@@ -64,13 +65,15 @@ const SettingsView = {
                 API.get('/settings/public'),
                 API.get('/admin/settings'),
                 API.get('/agents'),
-                API.get('/admin/settings/push-status')
+                API.get('/admin/settings/push-status'),
+                API.get('/admin/settings/cache-status')
             ]);
             this.currentAgent = (results[0].data && results[0].data.user) || {};
             this.settings = results[2].data || {};
             this.publicSettings = results[1].data || {};
             this.agents   = results[3].data || [];
             this.pushStatus = results[4].data || {};
+            this.cacheStatus = results[5].data || {};
             this.renderTab(initialSection);
             this.bindTabSwitching();
         } catch (e) {
@@ -172,6 +175,109 @@ const SettingsView = {
                   placeholder: ':robot_face:',
                   hint_html: `<div class="mt-2 mb-1">Quick pick:</div>${emojiPicks}<div class="form-text mt-1">Or type any emoji code set up in your Slack workspace, e.g. <code>:paul:</code></div>` },
             ]);
+        } else if (tab === 'cache') {
+            const status = this.cacheStatus || {};
+            const statusClass = status.enabled
+                ? (status.redis_connected ? 'success' : (status.healthy ? 'warning' : 'danger'))
+                : 'secondary';
+            const backendLabel = status.backend || 'disabled';
+            const cacheBadge = (label, ok) => `<span class="badge ${ok ? 'text-bg-success' : 'text-bg-danger'} me-1">${App.escapeHtml(label)} ${ok ? 'OK' : 'Missing'}</span>`;
+            const instructions = Array.isArray(status.instructions) ? status.instructions : [];
+            html = `
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white fw-semibold py-2">
+                        <i class="bi bi-speedometer2 me-2"></i>Application Cache
+                    </div>
+                    <div class="card-body py-3">
+                        <div class="alert alert-${statusClass} py-2">
+                            <div class="fw-semibold">${App.escapeHtml(status.message || 'Cache status unknown.')}</div>
+                            <div class="small mt-1">Active backend: <code>${App.escapeHtml(backendLabel)}</code> · TTL: ${App.escapeHtml(String(status.ttl_seconds || s.cache_ttl_seconds || 60))} seconds</div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-4">
+                                <div class="border rounded p-2 h-100 bg-light">
+                                    <div class="small text-muted">PHP extension</div>
+                                    <div>${cacheBadge('redis', !!status.redis_extension_loaded)}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="border rounded p-2 h-100 bg-light">
+                                    <div class="small text-muted">Redis server</div>
+                                    <div>${cacheBadge(`${status.redis_host || '127.0.0.1'}:${status.redis_port || 6379}`, !!status.redis_connected)}</div>
+                                    ${status.redis_error ? `<div class="small text-danger mt-1">${App.escapeHtml(status.redis_error)}</div>` : ''}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="border rounded p-2 h-100 bg-light">
+                                    <div class="small text-muted">File cache fallback</div>
+                                    <div>${cacheBadge('cache dir', !!status.cache_home_writable)}</div>
+                                    <div class="small font-monospace text-muted mt-1">${App.escapeHtml(status.cache_home || s.cache_home || 'cache')}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        ${instructions.length ? `
+                            <div class="alert alert-info py-2">
+                                <div class="fw-semibold small mb-1">Setup guidance</div>
+                                <ul class="small mb-0 ps-3">
+                                    ${instructions.map(item => `<li>${App.escapeHtml(item)}</li>`).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
+
+                        <p class="text-muted small mb-3">
+                            The application cache stores short-lived read query results. Any write through Andrea Helpdesk invalidates the cache namespace, so ticket, customer, chat, settings, and notification changes are not left stale.
+                        </p>
+
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="s-cache_enabled" ${s.cache_enabled ? 'checked' : ''}>
+                                    <label class="form-check-label" for="s-cache_enabled">Enable application cache</label>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label">CACHEHOME</label>
+                                <input type="text" class="form-control font-monospace" id="s-cache_home" value="${App.escapeHtml(s.cache_home || 'cache')}">
+                                <div class="form-text">Relative paths are resolved from the install directory. Use a writable path outside <code>public_html</code> where possible.</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Cache TTL seconds</label>
+                                <input type="number" min="5" max="86400" class="form-control" id="s-cache_ttl_seconds" value="${App.escapeHtml(String(s.cache_ttl_seconds || 60))}">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">REDIS_HOST</label>
+                                <input type="text" class="form-control font-monospace" id="s-redis_host" value="${App.escapeHtml(s.redis_host || '127.0.0.1')}">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">REDIS_PORT</label>
+                                <input type="number" min="1" max="65535" class="form-control" id="s-redis_port" value="${App.escapeHtml(String(s.redis_port || 6379))}">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">REDIS_DATABASE</label>
+                                <input type="number" min="0" max="15" class="form-control" id="s-redis_database" value="${App.escapeHtml(String(s.redis_database ?? 1))}">
+                                <div class="form-text">Use unique numbers 0-15 for different sites.</div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">REDIS_PREFIX</label>
+                                <input type="text" class="form-control font-monospace" id="s-redis_prefix" value="${App.escapeHtml(s.redis_prefix || 'andrea_helpdesk')}">
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2 flex-wrap mt-3">
+                            <button class="btn btn-primary btn-save-settings" data-tab="cache">
+                                <i class="bi bi-save me-1"></i>Save Cache Settings
+                            </button>
+                            <button class="btn btn-outline-secondary" id="btn-refresh-cache-status">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Refresh Status
+                            </button>
+                            <button class="btn btn-outline-danger" id="btn-clear-app-cache">
+                                <i class="bi bi-trash me-1"></i>Clear Cache
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
         } else if (tab === 'notifications') {
             const status = this.pushStatus || {};
             const diagnostics = status.diagnostics || {};
@@ -363,6 +469,26 @@ const SettingsView = {
         if (tab === 'notifications') {
             $('#btn-generate-push-keys').on('click', () => this.generatePushKeys());
             $('#btn-admin-test-push').on('click', () => this.sendTestPush('#btn-admin-test-push'));
+        }
+
+        if (tab === 'cache') {
+            $('#btn-refresh-cache-status').on('click', async () => {
+                try {
+                    this.cacheStatus = (await API.get('/admin/settings/cache-status')).data || {};
+                    this.renderTab('cache');
+                } catch (e) {
+                    App.toast(e.message, 'error');
+                }
+            });
+            $('#btn-clear-app-cache').on('click', async () => {
+                try {
+                    this.cacheStatus = (await API.post('/admin/settings/clear-cache', {})).data || {};
+                    this.renderTab('cache');
+                    App.toast('Application cache cleared');
+                } catch (e) {
+                    App.toast(e.message, 'error');
+                }
+            });
         }
 
         // Add test SMTP button on email tab
@@ -1839,6 +1965,7 @@ sudo systemctl status andrea-chat-websocket</code></pre>
             autoresponse: ['auto_response_enabled','auto_response_subject','auto_response_body'],
             imap:         [],
             slack:        ['slack_enabled','slack_webhook_url','slack_channel','slack_on_new_ticket','slack_on_assign','slack_on_new_reply','slack_unfurl_links','slack_username','slack_icon_url','slack_icon_emoji'],
+            cache:        ['cache_enabled','cache_home','cache_ttl_seconds','redis_host','redis_port','redis_prefix','redis_database'],
             notifications: ['push_vapid_public_key','push_vapid_private_key','push_vapid_subject','pwa_icon_url'],
             chatservice:  ['chat_enabled','chat_default_channel_retention_days','chat_direct_retention_days','chat_max_message_length','chat_allow_external_links','chat_websocket_enabled','chat_websocket_autostart','chat_websocket_management_mode','chat_websocket_host','chat_websocket_port'],
             'support-form': ['support_form_recaptcha_site_key','support_form_recaptcha_secret_key','support_form_allowed_origins'],
@@ -1894,6 +2021,10 @@ sudo systemctl status andrea-chat-websocket</code></pre>
                     App.applyManifest();
                 }
                 this.renderTab('notifications');
+            }
+            if (tab === 'cache') {
+                this.cacheStatus = (await API.get('/admin/settings/cache-status')).data || {};
+                this.renderTab('cache');
             }
             if (tab === 'chatservice') {
                 App.settings.chat_enabled = !!payload.chat_enabled;

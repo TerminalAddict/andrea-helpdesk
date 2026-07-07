@@ -119,6 +119,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Notification push settings** — configure or generate VAPID keys from **Settings → Notifications** so browser push subscriptions can be created securely; optionally set a dedicated PWA / notification icon, otherwise the PWA manifest and push notifications use the Branding favicon
 - **Version & update channels** — the General tab shows the currently installed version, lets admins choose the `stable` or `development` update channel, and offers a **Check for Updates** button. Stable checks read public GitHub `main` metadata by default; development checks read the `development` branch. Development builds use prerelease versions such as `1.4.17-dev.1`, and installs are never downgraded when switching back to stable.
 - **Bridge release enforcement** — release metadata can require a minimum installed bridge version before the in-app updater will continue; installs older than `1.4.9` must update to `1.4.9` before moving to newer releases because that release upgrades packaged `vendor/` dependency handling.
+- **Application cache** — optional Redis-backed read-through cache from `#/admin/settings/cache`; diagnostics check php-redis, local Redis connectivity, cache directory writability, and show install instructions. Read caches are invalidated automatically when Andrea Helpdesk writes data.
 - **Notification preferences** — `#/my-profile/settings/notifications` includes browser push subscription controls and app install guidance so each agent can enable or disable browser / OS alerts independently
 - **Chat service settings** — `#/admin/settings/chatservice` enables/disables internal chat, manages channels and membership, sets retention, and controls WebSocket daemon mode/status
 - **Admin password recovery** — `make reset-admin-password` lists admin accounts only, lets you choose one, resets the password interactively, and revokes that admin’s existing refresh-token sessions
@@ -130,7 +131,9 @@ Route structure:
 - `/admin/settings/autoresponse`
 - `/admin/settings/imap`
 - `/admin/settings/slack`
+- `/admin/settings/cache`
 - `/admin/settings/notifications`
+- `/admin/settings/chatservice`
 - `/admin/settings/support-form`
 - `/admin/tags`
 - `/my-profile`

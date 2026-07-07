@@ -147,7 +147,7 @@ class SlaService
 
     private function claimHighEscalation(int $ticketId): bool
     {
-        $stmt = $this->db->getPdo()->prepare(
+        $affected = $this->db->executeAffected(
             "UPDATE tickets
              SET priority = CASE
                     WHEN priority IN ('low', 'normal') THEN 'high'
@@ -159,30 +159,30 @@ class SlaService
                AND status NOT IN ('resolved', 'closed')
                AND (sla_high_notified_at IS NULL OR sla_high_notified_at < last_attention_at)
                AND (sla_overdue_notified_at IS NULL OR sla_overdue_notified_at < last_attention_at)
-               AND priority != 'overdue'"
+               AND priority != 'overdue'",
+            [$ticketId]
         );
-        $stmt->execute([$ticketId]);
-        return $stmt->rowCount() > 0;
+        return $affected > 0;
     }
 
     private function claimOverdueEscalation(int $ticketId): bool
     {
-        $stmt = $this->db->getPdo()->prepare(
+        $affected = $this->db->executeAffected(
             "UPDATE tickets
              SET priority = 'overdue',
                  sla_overdue_notified_at = NOW()
              WHERE id = ?
                AND deleted_at IS NULL
                AND status NOT IN ('resolved', 'closed')
-               AND (sla_overdue_notified_at IS NULL OR sla_overdue_notified_at < last_attention_at)"
+               AND (sla_overdue_notified_at IS NULL OR sla_overdue_notified_at < last_attention_at)",
+            [$ticketId]
         );
-        $stmt->execute([$ticketId]);
-        return $stmt->rowCount() > 0;
+        return $affected > 0;
     }
 
     private function claimDueDateOverdue(int $ticketId): bool
     {
-        $stmt = $this->db->getPdo()->prepare(
+        $affected = $this->db->executeAffected(
             "UPDATE tickets
              SET priority = 'overdue',
                  sla_overdue_notified_at = NOW()
@@ -191,10 +191,10 @@ class SlaService
                AND status NOT IN ('resolved', 'closed')
                AND priority != 'overdue'
                AND due_at IS NOT NULL
-               AND DATE(COALESCE(due_end, due_at)) <= CURRENT_DATE()"
+               AND DATE(COALESCE(due_end, due_at)) <= CURRENT_DATE()",
+            [$ticketId]
         );
-        $stmt->execute([$ticketId]);
-        return $stmt->rowCount() > 0;
+        return $affected > 0;
     }
 
     private function resolveRecipientAgentIds(array $config): array

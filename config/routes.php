@@ -139,6 +139,8 @@ return [
     ['POST', '/api/admin/settings/test-imap',   SettingsController::class, 'testImap',  ['role:admin']],
     ['POST', '/api/admin/settings/test-slack',  SettingsController::class, 'testSlack', ['role:admin']],
     ['GET',  '/api/admin/settings/push-status', SettingsController::class, 'pushStatus', ['role:admin']],
+    ['GET',  '/api/admin/settings/cache-status', SettingsController::class, 'cacheStatus', ['role:admin']],
+    ['POST', '/api/admin/settings/clear-cache',  SettingsController::class, 'clearCache', ['role:admin']],
     ['POST', '/api/admin/settings/generate-push-keys', SettingsController::class, 'generatePushKeys', ['role:admin']],
     ['GET',  '/api/admin/chat/channels',              ChatAdminController::class, 'channels', ['role:admin']],
     ['POST', '/api/admin/chat/channels',              ChatAdminController::class, 'createChannel', ['role:admin']],

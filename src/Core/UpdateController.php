@@ -698,6 +698,7 @@ class UpdateController
             }
         }
         $log[] = "Schema: {$count} statement(s) executed.";
+        Database::getInstance()->clearCache();
         return $log;
     }
 
@@ -768,6 +769,7 @@ class UpdateController
         }
 
         $log[] = $ran > 0 ? "{$ran} migration(s) applied." : 'No new migrations.';
+        $db->clearCache();
         return $log;
     }
 

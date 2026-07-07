@@ -101,6 +101,19 @@ class SettingsService
         ];
     }
 
+    public function getCacheConfig(): array
+    {
+        return [
+            'enabled' => (bool)$this->repo->get('cache_enabled', false),
+            'cache_home' => (string)$this->repo->get('cache_home', 'cache'),
+            'ttl' => max(5, min(86400, (int)$this->repo->get('cache_ttl_seconds', 60))),
+            'redis_host' => (string)$this->repo->get('redis_host', '127.0.0.1'),
+            'redis_port' => max(1, min(65535, (int)$this->repo->get('redis_port', 6379))),
+            'redis_prefix' => (string)$this->repo->get('redis_prefix', 'andrea_helpdesk'),
+            'redis_database' => max(0, min(15, (int)$this->repo->get('redis_database', 1))),
+        ];
+    }
+
     public function getSupportFormConfig(): array
     {
         return [

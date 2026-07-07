@@ -8,6 +8,15 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
+## [1.4.19-dev.1] — 2026-07-07
+
+### Added
+- Added admin-configurable application caching with Redis settings, php-redis/Redis diagnostics, setup guidance, and a manual cache-clear action in `#/admin/settings/cache`.
+- Added read-through caching for database reads with automatic namespace invalidation on writes, using Redis when available and a local file cache fallback when Redis is unavailable.
+
+
+---
+
 ## [1.4.18] — 2026-06-29
 
 ---

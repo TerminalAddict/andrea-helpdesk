@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Andrea\Helpdesk\Settings;
 
 use Andrea\Helpdesk\Core\DependencyRepairService;
+use Andrea\Helpdesk\Core\Database;
 use Andrea\Helpdesk\Core\Sanitizer;
 use Andrea\Helpdesk\Core\Request;
 use Andrea\Helpdesk\Core\Response;
@@ -144,6 +145,53 @@ class SettingsController
             }
             $data['chat_websocket_port'] = $port;
         }
+        if (array_key_exists('cache_home', $data)) {
+            $cacheHome = trim((string)$data['cache_home']);
+            if ($cacheHome === '' || str_contains($cacheHome, "\0") || strlen($cacheHome) > 255) {
+                Response::error('Cache directory must be a valid filesystem path', 422);
+                return;
+            }
+            $data['cache_home'] = $cacheHome;
+        }
+        if (array_key_exists('cache_ttl_seconds', $data)) {
+            $ttl = (int)$data['cache_ttl_seconds'];
+            if ($ttl < 5 || $ttl > 86400) {
+                Response::error('Cache TTL must be between 5 and 86400 seconds', 422);
+                return;
+            }
+            $data['cache_ttl_seconds'] = $ttl;
+        }
+        if (array_key_exists('redis_host', $data)) {
+            $data['redis_host'] = trim((string)$data['redis_host']) ?: '127.0.0.1';
+            if (!$this->isValidWebsocketHost($data['redis_host'])) {
+                Response::error('Redis host must be a hostname or IP address, not a URL or path', 422);
+                return;
+            }
+        }
+        if (array_key_exists('redis_port', $data)) {
+            $port = (int)$data['redis_port'];
+            if ($port < 1 || $port > 65535) {
+                Response::error('Redis port must be between 1 and 65535', 422);
+                return;
+            }
+            $data['redis_port'] = $port;
+        }
+        if (array_key_exists('redis_database', $data)) {
+            $database = (int)$data['redis_database'];
+            if ($database < 0 || $database > 15) {
+                Response::error('Redis database must be between 0 and 15', 422);
+                return;
+            }
+            $data['redis_database'] = $database;
+        }
+        if (array_key_exists('redis_prefix', $data)) {
+            $prefix = trim((string)$data['redis_prefix']);
+            if ($prefix === '' || !preg_match('/^[A-Za-z0-9:_-]{1,80}$/', $prefix)) {
+                Response::error('Redis prefix must be 1-80 characters using letters, numbers, colon, underscore, or hyphen', 422);
+                return;
+            }
+            $data['redis_prefix'] = $prefix;
+        }
         if (
             array_key_exists('push_vapid_public_key', $data)
             || array_key_exists('push_vapid_private_key', $data)
@@ -188,6 +236,9 @@ class SettingsController
         }
 
         $this->repo->setMany($data);
+        if (array_intersect(array_keys($data), ['cache_enabled', 'cache_home', 'cache_ttl_seconds', 'redis_host', 'redis_port', 'redis_prefix', 'redis_database'])) {
+            Database::getInstance()->clearCache();
+        }
         Response::success(null, 'Settings saved');
     }
 
@@ -240,6 +291,17 @@ class SettingsController
     public function pushStatus(Request $request): void
     {
         Response::success((new PushNotificationService())->getAdminStatus());
+    }
+
+    public function cacheStatus(Request $request): void
+    {
+        Response::success(Database::getInstance()->getCacheStatus());
+    }
+
+    public function clearCache(Request $request): void
+    {
+        Database::getInstance()->clearCache();
+        Response::success(Database::getInstance()->getCacheStatus(), 'Application cache cleared');
     }
 
     /**

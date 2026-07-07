@@ -647,6 +647,32 @@ After any install method:
 5. Send a test SMTP message.
 6. Add an IMAP account and run **Poll Now**.
 7. Configure inbound sender blocking from **Admin → Settings → Email / SMTP** if you need to reject exact senders or domains. Blocked email receives only the configured blocked-sender response, is immediately closed, and does not create agent, Slack, in-app, or push notifications.
-8. Configure browser push notifications and PWA install behaviour from **Admin → Settings → Notifications** if you want desktop/mobile OS alerts. The PWA uses the configured **Application Name** and optional **PWA / Notification Icon URL**; when that icon is empty it falls back to Branding → **Favicon URL**.
-9. If you enable internal chat, configure channels and the WebSocket service from **Admin → Settings → Chat Service**. If this server hosts multiple Andrea Helpdesk installs, give each install a unique WebSocket listen port and update each vhost `/ws/chat` proxy to match. For production external service mode, see `docs/chat-websocket-systemd.md`.
-10. Remove or restrict `public_html/install/`.
+8. Configure application caching from **Admin → Settings → Cache** if you want Redis-backed read caching. The page checks whether php-redis is installed, whether Redis is reachable, and whether the file-cache fallback directory is writable.
+9. Configure browser push notifications and PWA install behaviour from **Admin → Settings → Notifications** if you want desktop/mobile OS alerts. The PWA uses the configured **Application Name** and optional **PWA / Notification Icon URL**; when that icon is empty it falls back to Branding → **Favicon URL**.
+10. If you enable internal chat, configure channels and the WebSocket service from **Admin → Settings → Chat Service**. If this server hosts multiple Andrea Helpdesk installs, give each install a unique WebSocket listen port and update each vhost `/ws/chat` proxy to match. For production external service mode, see `docs/chat-websocket-systemd.md`.
+11. Remove or restrict `public_html/install/`.
+
+## Optional Redis Cache
+
+Andrea Helpdesk can use Redis through the PHP `redis` extension to cache short-lived read query results. Enable it from `#/admin/settings/cache`.
+
+Recommended Debian/Ubuntu setup:
+
+```bash
+sudo apt install redis-server php-redis
+sudo systemctl enable --now redis-server
+sudo systemctl restart apache2
+redis-cli -h 127.0.0.1 -p 6379 ping
+```
+
+Other package managers commonly use these packages:
+
+| System | Packages |
+|--------|----------|
+| RHEL/Fedora | `sudo dnf install redis php-pecl-redis` |
+| older CentOS/YUM | `sudo yum install redis php-pecl-redis` |
+| Arch | `sudo pacman -S redis php-redis` |
+| openSUSE | `sudo zypper install redis php-redis` |
+| Gentoo | `sudo emerge dev-db/redis dev-php/pecl-redis` |
+
+Use a unique `REDIS_DATABASE` number from `0` to `15` and a unique `REDIS_PREFIX` for each Andrea Helpdesk install sharing the same Redis server. If Redis is unavailable but cache is enabled, Andrea Helpdesk falls back to `CACHEHOME` file caching when that directory is writable.

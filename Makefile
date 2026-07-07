@@ -108,7 +108,7 @@ dev-release: ## Create a development release, commit, tag, and push current bran
 	git push origin "dev-v$$NEW_VERSION"
 
 storage-setup: ## Create storage directory structure
-	mkdir -p storage/attachments storage/logs
+	mkdir -p cache storage/attachments storage/logs storage/cache
 	mkdir -p storage/runtime
 	touch storage/logs/app.log storage/logs/imap.log storage/logs/cron.log storage/logs/chat-supervisor.log storage/logs/chat-websocket.log
 	@echo "Storage directories created."

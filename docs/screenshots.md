@@ -253,6 +253,10 @@ Filename: `admin slack.png`
 
 The Slack integration settings page for webhook destination, posting behaviour, and Slack-side notification options.
 
+### Cache Settings
+
+The **Cache** settings page configures the optional Redis-backed application cache. It shows php-redis status, Redis connectivity, file-cache fallback writability, setup guidance, cache TTL, Redis host/port/database/prefix settings, and a manual cache-clear action.
+
 ### Support Form Settings
 
 ![Admin Support Form](screenshots/admin%20settings%20support-form.png)

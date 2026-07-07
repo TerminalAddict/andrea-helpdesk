@@ -534,6 +534,15 @@ INSERT INTO settings (key_name, value, type, group_name, label) VALUES
 ('slack_icon_url',      '',                  'string',  'slack',    'Bot Icon Image URL'),
 ('slack_icon_emoji',    '',                  'string',  'slack',    'Bot Icon Emoji'),
 
+-- Application Cache
+('cache_enabled',       '0',                 'boolean', 'cache',    'Enable Application Cache'),
+('cache_home',          'cache',             'string',  'cache',    'Cache Directory'),
+('cache_ttl_seconds',   '60',                'integer', 'cache',    'Default Cache TTL Seconds'),
+('redis_host',          '127.0.0.1',          'string',  'cache',    'Redis Host'),
+('redis_port',          '6379',              'integer', 'cache',    'Redis Port'),
+('redis_prefix',        'andrea_helpdesk',   'string',  'cache',    'Redis Key Prefix'),
+('redis_database',      '1',                 'integer', 'cache',    'Redis Database Number'),
+
 -- Support Form
 ('support_form_recaptcha_site_key', '',      'string',  'support-form', 'reCAPTCHA v3 Site Key'),
 ('support_form_recaptcha_secret_key', '',    'string',  'support-form', 'reCAPTCHA v3 Secret Key'),
