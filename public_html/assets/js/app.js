@@ -290,7 +290,7 @@ const App = {
                 window.location.hash = '#/';
                 return;
             }
-            if (!['general', 'branding', 'email', 'autoresponse', 'imap', 'slack', 'support-form', 'notifications', 'chatservice'].includes(params.section)) {
+            if (!['general', 'branding', 'email', 'autoresponse', 'imap', 'slack', 'cache', 'support-form', 'notifications', 'chatservice'].includes(params.section)) {
                 window.location.hash = '#/admin/settings/general';
                 return;
             }

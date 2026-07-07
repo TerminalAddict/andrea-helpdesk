@@ -1,5 +1,5 @@
 {
-    "version": "1.4.19-dev.1",
+    "version": "1.4.19-dev.2",
     "channel": "development",
     "released": "2026-07-07",
     "description": "Add notification center, active notifications overview, and update hardening",
