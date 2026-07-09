@@ -8,6 +8,16 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
+## [1.4.20] — 2026-07-09
+
+### Changed
+- Moved the dashboard All Open Tickets panel above Overdue Tickets and My Assigned Tickets.
+- Added client-side sorting to the dashboard All Open Tickets table for the tickets currently displayed.
+- Added a compact floating new-ticket action button for authenticated agents.
+
+
+---
+
 ## [1.4.20-dev.1] — 2026-07-09
 
 ---
