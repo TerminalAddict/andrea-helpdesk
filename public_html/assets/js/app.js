@@ -240,6 +240,7 @@ const App = {
         document.body.classList.toggle('support-form-embed', isSupportEmbed);
         document.getElementById('app-wrapper')?.classList.toggle('support-form-embed', isSupportEmbed);
         document.getElementById('navbar-container')?.classList.toggle('d-none', isSupportEmbed);
+        this.updateFloatingNewTicketButton(hash, isSupportEmbed);
 
         if (hash === '/login' || hash.startsWith('/login?')) {
             window.location.hash = '#/login/agent';
@@ -386,6 +387,32 @@ const App = {
 
     navigate(path) {
         window.location.hash = '#' + path;
+    },
+
+    updateFloatingNewTicketButton(hash, isSupportEmbed = false) {
+        const existing = document.getElementById('floating-new-ticket');
+        const shouldShow = API.isAuthenticated()
+            && API.currentUser?.type === 'agent'
+            && !isSupportEmbed
+            && !hash.startsWith('/login')
+            && !hash.startsWith('/portal');
+
+        if (!shouldShow) {
+            existing?.remove();
+            return;
+        }
+
+        if (existing) return;
+
+        document.body.insertAdjacentHTML('beforeend', `
+            <a id="floating-new-ticket" class="terminal-floating-ticket-btn" href="#/tickets/new" aria-label="Create new ticket">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M3.75 8.25A2.25 2.25 0 0 1 6 6h12a2.25 2.25 0 0 1 2.25 2.25v2.05a2 2 0 0 0 0 3.4v2.05A2.25 2.25 0 0 1 18 18H6a2.25 2.25 0 0 1-2.25-2.25V13.7a2 2 0 0 0 0-3.4V8.25Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                    <path d="M8 6v12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="1.4 2.4"/>
+                    <path d="M14.5 9.5v5M12 12h5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+                </svg>
+            </a>
+        `);
     },
 
     showLoading() {

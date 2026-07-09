@@ -2,6 +2,12 @@
  * Dashboard View
  */
 const DashboardView = {
+    allOpenTickets: [],
+    allOpenTotal: 0,
+    allOpenViewAllHref: '#/tickets',
+    allOpenSort: 'updated_at',
+    allOpenDir: 'desc',
+
     render() {
         return `
         <div class="container-fluid terminal-screen terminal-screen-dashboard p-4">
@@ -42,6 +48,32 @@ const DashboardView = {
             </div>
 
             <div class="row g-3">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white d-flex align-items-center gap-2 flex-wrap">
+                            <span class="fw-semibold me-auto"><i class="bi bi-inbox me-2"></i>All Open Tickets</span>
+                            <select class="form-select form-select-sm w-auto" id="dash-filter-tag">
+                                <option value="">All Tags</option>
+                            </select>
+                            <select class="form-select form-select-sm w-auto" id="dash-filter-priority">
+                                <option value="">All Priorities</option>
+                                <option value="overdue">Overdue</option>
+                                <option value="urgent">Urgent</option>
+                                <option value="high">High</option>
+                                <option value="normal">Normal</option>
+                                <option value="low">Low</option>
+                            </select>
+                        </div>
+                        <div class="card-body p-0">
+                            <div id="all-open-tickets-table">
+                                <div class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 mt-1">
                 <div class="col-lg-6">
                     <div class="card border-0 shadow-sm">
                         <div class="card-header bg-white fw-semibold">
@@ -82,32 +114,6 @@ const DashboardView = {
                     </div>
                 </div>
             </div>
-
-            <div class="row g-3 mt-1">
-                <div class="col-12">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-white d-flex align-items-center gap-2 flex-wrap">
-                            <span class="fw-semibold me-auto"><i class="bi bi-inbox me-2"></i>All Open Tickets</span>
-                            <select class="form-select form-select-sm w-auto" id="dash-filter-tag">
-                                <option value="">All Tags</option>
-                            </select>
-                            <select class="form-select form-select-sm w-auto" id="dash-filter-priority">
-                                <option value="">All Priorities</option>
-                                <option value="overdue">Overdue</option>
-                                <option value="urgent">Urgent</option>
-                                <option value="high">High</option>
-                                <option value="normal">Normal</option>
-                                <option value="low">Low</option>
-                            </select>
-                        </div>
-                        <div class="card-body p-0">
-                            <div id="all-open-tickets-table">
-                                <div class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm"></div></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>`;
     },
 
@@ -124,6 +130,16 @@ const DashboardView = {
         } catch (e) {}
 
         const pageSize = parseInt(API.currentUser?.page_size) || 20;
+
+        // Tags and tickets for the primary All Open panel.
+        try {
+            const res = await API.get('/tags');
+            (res.data || []).forEach(t => {
+                $('#dash-filter-tag').append(`<option value="${t.id}">${App.escapeHtml(t.name)}</option>`);
+            });
+        } catch (e) {}
+        await this.loadAllOpen();
+        $('#dash-filter-tag, #dash-filter-priority').on('change', () => this.loadAllOpen());
 
         // Overdue tickets
         try {
@@ -190,18 +206,6 @@ const DashboardView = {
                 $box.addClass('d-none');
             }
         });
-
-        // Tags for filter
-        try {
-            const res = await API.get('/tags');
-            (res.data || []).forEach(t => {
-                $('#dash-filter-tag').append(`<option value="${t.id}">${App.escapeHtml(t.name)}</option>`);
-            });
-        } catch (e) {}
-
-        // All open tickets
-        await this.loadAllOpen();
-        $('#dash-filter-tag, #dash-filter-priority').on('change', () => this.loadAllOpen());
     },
 
     async loadAllOpen() {
@@ -218,7 +222,10 @@ const DashboardView = {
             const viewAllParams = new URLSearchParams({ status: 'active', sort: 'updated_at', dir: 'desc' });
             if (tag_id)   viewAllParams.set('tag_id',   tag_id);
             if (priority) viewAllParams.set('priority', priority);
-            this.renderAllOpenTable(res.data || [], total, `#/tickets?${viewAllParams}`);
+            this.allOpenTickets = res.data || [];
+            this.allOpenTotal = total;
+            this.allOpenViewAllHref = `#/tickets?${viewAllParams}`;
+            this.renderAllOpenTable();
         } catch (e) {
             $('#all-open-tickets-table').html('<p class="text-muted p-3 mb-0">Failed to load tickets.</p>');
         }
@@ -295,7 +302,11 @@ const DashboardView = {
         }
     },
 
-    renderAllOpenTable(tickets, total = 0, viewAllHref = '#/tickets') {
+    renderAllOpenTable() {
+        const tickets = this.getSortedAllOpenTickets();
+        const total = this.allOpenTotal;
+        const viewAllHref = this.allOpenViewAllHref;
+
         if (!tickets.length) {
             $('#all-open-tickets-table').html('<p class="text-muted p-3 mb-0">No active tickets match the selected filters.</p>');
             return;
@@ -321,15 +332,61 @@ const DashboardView = {
                    <span class="small text-muted">Showing ${showing} of ${total}</span>
                    <a href="${viewAllHref}" class="btn btn-sm btn-outline-primary">View all ${total} tickets →</a>
                </div>` : '';
+        const sortIcon = (field) => {
+            if (this.allOpenSort !== field) return '<i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:.75rem;"></i>';
+            return this.allOpenDir === 'asc'
+                ? '<i class="bi bi-arrow-up ms-1" style="font-size:.75rem;"></i>'
+                : '<i class="bi bi-arrow-down ms-1" style="font-size:.75rem;"></i>';
+        };
+        const th = (label, field, className = '') =>
+            `<th data-sort="${field}" class="${className}" style="cursor:pointer;white-space:nowrap;user-select:none;">${label}${sortIcon(field)}</th>`;
+
         $('#all-open-tickets-table').html(`
             <table class="table table-hover table-sm mb-0">
                 <thead class="table-light">
-                    <tr><th>Ticket</th><th>Subject</th><th>Priority</th><th>Tags</th><th class="text-center">Comments</th><th>Assigned To</th><th>Updated</th></tr>
+                    <tr>
+                        ${th('Ticket', 'ticket_number')}
+                        ${th('Subject', 'subject')}
+                        ${th('Priority', 'priority')}
+                        ${th('Tags', 'tag_names')}
+                        ${th('Comments', 'reply_count', 'text-center')}
+                        ${th('Assigned To', 'agent_name')}
+                        ${th('Updated', 'updated_at')}
+                    </tr>
                 </thead>
                 <tbody>${rows}</tbody>
             </table>${footer}`);
+        $('#all-open-tickets-table th[data-sort]').on('click', (e) => {
+            const field = $(e.currentTarget).data('sort');
+            if (this.allOpenSort === field) {
+                this.allOpenDir = this.allOpenDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                this.allOpenSort = field;
+                this.allOpenDir = field === 'updated_at' ? 'desc' : 'asc';
+            }
+            this.renderAllOpenTable();
+        });
         $('#all-open-tickets-table').on('click', '.dash-ticket-row', function() {
             App.navigate('/tickets/' + $(this).data('id'));
+        });
+    },
+
+    getSortedAllOpenTickets() {
+        const priorityRank = { overdue: 5, urgent: 4, high: 3, normal: 2, low: 1 };
+        const direction = this.allOpenDir === 'asc' ? 1 : -1;
+        const valueFor = (ticket, field) => {
+            if (field === 'priority') return priorityRank[ticket.priority] || 0;
+            if (field === 'reply_count') return parseInt(ticket.reply_count, 10) || 0;
+            if (field === 'updated_at') return Date.parse((ticket.updated_at || '').replace(' ', 'T')) || 0;
+            return String(ticket[field] || '').toLowerCase();
+        };
+
+        return [...this.allOpenTickets].sort((a, b) => {
+            const left = valueFor(a, this.allOpenSort);
+            const right = valueFor(b, this.allOpenSort);
+            if (left < right) return -1 * direction;
+            if (left > right) return 1 * direction;
+            return ((parseInt(a.id, 10) || 0) - (parseInt(b.id, 10) || 0)) * direction;
         });
     },
 
