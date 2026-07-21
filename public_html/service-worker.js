@@ -1,4 +1,4 @@
-const APP_VERSION = '1.4.21';
+const APP_VERSION = '1.4.22-dev.0';
 const CACHE_NAME = `andrea-helpdesk-static-${APP_VERSION}`;
 const STATIC_ASSETS = [
     '/',
