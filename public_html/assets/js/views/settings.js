@@ -809,6 +809,25 @@ const SettingsView = {
                 <div id="imap-accounts-list">
                     <div class="text-center py-3 text-muted"><div class="spinner-border spinner-border-sm"></div></div>
                 </div>
+                <div class="alert alert-light border mt-4 mb-0">
+                    <div class="fw-semibold mb-2">
+                        <i class="bi bi-paperclip me-1"></i>Allowed inbound email attachments
+                    </div>
+                    <p class="small text-muted mb-2">
+                        Attachments from IMAP are stored only when their server-detected MIME type is on the safe allowlist. Active browser content such as HTML, SVG, JavaScript, and generic <code>application/octet-stream</code> is rejected.
+                    </p>
+                    <div class="d-flex flex-wrap gap-2 small">
+                        <span class="badge text-bg-secondary">Images: JPEG, PNG, GIF, WebP</span>
+                        <span class="badge text-bg-secondary">Documents: PDF, Word, Excel, PowerPoint</span>
+                        <span class="badge text-bg-secondary">Text: TXT, CSV</span>
+                        <span class="badge text-bg-secondary">Archives: ZIP, TAR, GZIP</span>
+                        <span class="badge text-bg-secondary">Video: MP4, MPEG</span>
+                        <span class="badge text-bg-secondary">Audio: all <code class="text-white">audio/*</code> types</span>
+                    </div>
+                    <div class="form-text mt-2">
+                        The global size limit is controlled by <code>MAX_ATTACHMENT_SIZE</code> in <code>.env</code>.
+                    </div>
+                </div>
             </div>
         </div>
 

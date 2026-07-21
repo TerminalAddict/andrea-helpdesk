@@ -116,9 +116,10 @@ try {
         'application/pdf',
         'text/plain', 'text/csv',
         'video/mp4', 'video/webm',
-        'audio/mpeg', 'audio/wav', 'audio/ogg',
     ];
-    $disposition = in_array($mimeType, $inlineTypes, true) ? 'inline' : 'attachment';
+    $disposition = in_array($mimeType, $inlineTypes, true) || str_starts_with($mimeType, 'audio/')
+        ? 'inline'
+        : 'attachment';
 
     header('Content-Type: ' . $mimeType);
     $encodedFilename = rawurlencode($filename);

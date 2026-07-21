@@ -553,7 +553,7 @@ Attachments are served by `public_html/attachment.php`, not the API. Use:
 GET /attachment/:id?token=<download_token>
 ```
 
-Or authenticate with a bearer token (agent or customer JWT). The file is served inline for safe types (images, PDFs, audio, video) or as a download for all others.
+Or authenticate with a bearer token (agent or customer JWT). The file is served inline for safe types (images, PDFs, all `audio/*` MIME types, and selected video types) or as a download for all others.
 
 ---
 

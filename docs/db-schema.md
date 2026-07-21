@@ -310,7 +310,7 @@ Files uploaded to a ticket or reply, stored on disk outside the web root.
 - Physical files live at `{STORAGE_PATH}/attachments/{ticket_id}/{unique_filename}`.
 - `mime_type` is always determined server-side using `mime_content_type()` after the file is saved to disk — the sender's `Content-Type` is ignored to prevent MIME-type spoofing.
 - `public_html/attachment.php` serves files. It verifies either the `download_token` (HMAC) or a valid agent/customer JWT before calling `readfile()`. Path traversal is prevented by `realpath()` comparison against the attachments root.
-- Inline display is only permitted for a safe whitelist of MIME types (`image/jpeg`, `image/png`, `image/gif`, `image/webp`, `application/pdf`, `text/plain`, `text/csv`, `video/mp4`, `video/webm`, `audio/mpeg`, `audio/wav`, `audio/ogg`). Everything else gets `Content-Disposition: attachment`. `text/html` and `image/svg+xml` are intentionally excluded to prevent stored XSS.
+- Inline display is only permitted for a safe whitelist of MIME types (`image/jpeg`, `image/png`, `image/gif`, `image/webp`, `application/pdf`, `text/plain`, `text/csv`, `video/mp4`, `video/webm`, and all `audio/*` MIME types). Everything else gets `Content-Disposition: attachment`. `text/html` and `image/svg+xml` are intentionally excluded to prevent stored XSS.
 
 ---
 

@@ -22,7 +22,10 @@ class AttachmentService
         'text/plain', 'text/csv',
         'application/zip', 'application/x-zip-compressed',
         'application/x-tar', 'application/gzip',
-        'video/mp4', 'video/mpeg', 'audio/mpeg', 'audio/wav',
+        'video/mp4', 'video/mpeg',
+    ];
+    private array $allowedMimePrefixes = [
+        'audio/',
     ];
 
     public function __construct()
@@ -215,7 +218,10 @@ class AttachmentService
 
     public function getAllowedMimeTypes(): array
     {
-        return $this->allowedMimeTypes;
+        return array_merge($this->allowedMimeTypes, array_map(
+            fn(string $prefix): string => $prefix . '*',
+            $this->allowedMimePrefixes
+        ));
     }
 
     private function sanitiseFilename(string $filename): string
@@ -228,9 +234,18 @@ class AttachmentService
 
     private function assertAllowedMimeType(string $mimeType): void
     {
-        if (!in_array(strtolower($mimeType), $this->allowedMimeTypes, true)) {
-            throw new HttpException("File type not allowed: {$mimeType}", 400);
+        $mimeType = strtolower(trim($mimeType));
+        if (in_array($mimeType, $this->allowedMimeTypes, true)) {
+            return;
         }
+
+        foreach ($this->allowedMimePrefixes as $prefix) {
+            if (str_starts_with($mimeType, $prefix)) {
+                return;
+            }
+        }
+
+        throw new HttpException("File type not allowed: {$mimeType}", 400);
     }
 
     private function uploadErrorMessage(int $code): string
