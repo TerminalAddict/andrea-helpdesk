@@ -8,6 +8,15 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
+## [1.4.21] — 2026-07-21
+
+### Changed
+- Attachment storage now accepts every server-detected `audio/*` MIME type, including common aliases such as `audio/x-wav`.
+- IMAP settings now show the safe inbound attachment categories and note that active browser content is rejected.
+
+
+---
+
 ## [1.4.21-dev.1] — 2026-07-21
 
 ### Changed
