@@ -6,10 +6,15 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ## [Unreleased]
 
+---
+
+## [1.4.22] — 2026-08-30
+
 ### Fixed
 - Fixed the stripped support-form embed entrypoint so it no longer crashes when optional app views, such as Chat, are not loaded.
 - Versioned support-form embed CSS and JavaScript assets so long-lived browser caching does not keep stale embed scripts.
 - Excluded the runtime `cache/` directory from `make deploy` so web-owned cache files do not break rsync deploys.
+
 
 ---
 
