@@ -1,6 +1,6 @@
 {
-    "version": "1.4.22",
-    "channel": "stable",
+    "version": "1.4.23-dev.0",
+    "channel": "development",
     "released": "2026-08-30",
     "description": "Add notification center, active notifications overview, and update hardening",
     "minimum_update_from": "1.4.9",
