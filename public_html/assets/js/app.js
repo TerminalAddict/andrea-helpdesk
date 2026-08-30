@@ -307,13 +307,29 @@ const App = {
             return;
         }
 
-        // Get view from registry (const declarations don't attach to window)
+        // Get view from registry. Some stripped entrypoints, such as the support-form embed,
+        // intentionally do not load every view script.
         const viewRegistry = {
-            DashboardView, LoginView, TicketsView, TicketNewView,
-            TicketDetailView, ChatView, CalendarView, CustomersView, CustomerDetailView,
-            AgentsView, SettingsView, MyProfileView, TagsView, ReportsView,
-            KnowledgeBaseView, KbArticleView,
-            PortalLoginView, PortalSetPasswordView, PortalView, PortalTicketView,
+            DashboardView: typeof DashboardView !== 'undefined' ? DashboardView : null,
+            LoginView: typeof LoginView !== 'undefined' ? LoginView : null,
+            TicketsView: typeof TicketsView !== 'undefined' ? TicketsView : null,
+            TicketNewView: typeof TicketNewView !== 'undefined' ? TicketNewView : null,
+            TicketDetailView: typeof TicketDetailView !== 'undefined' ? TicketDetailView : null,
+            ChatView: typeof ChatView !== 'undefined' ? ChatView : null,
+            CalendarView: typeof CalendarView !== 'undefined' ? CalendarView : null,
+            CustomersView: typeof CustomersView !== 'undefined' ? CustomersView : null,
+            CustomerDetailView: typeof CustomerDetailView !== 'undefined' ? CustomerDetailView : null,
+            AgentsView: typeof AgentsView !== 'undefined' ? AgentsView : null,
+            SettingsView: typeof SettingsView !== 'undefined' ? SettingsView : null,
+            MyProfileView: typeof MyProfileView !== 'undefined' ? MyProfileView : null,
+            TagsView: typeof TagsView !== 'undefined' ? TagsView : null,
+            ReportsView: typeof ReportsView !== 'undefined' ? ReportsView : null,
+            KnowledgeBaseView: typeof KnowledgeBaseView !== 'undefined' ? KnowledgeBaseView : null,
+            KbArticleView: typeof KbArticleView !== 'undefined' ? KbArticleView : null,
+            PortalLoginView: typeof PortalLoginView !== 'undefined' ? PortalLoginView : null,
+            PortalSetPasswordView: typeof PortalSetPasswordView !== 'undefined' ? PortalSetPasswordView : null,
+            PortalView: typeof PortalView !== 'undefined' ? PortalView : null,
+            PortalTicketView: typeof PortalTicketView !== 'undefined' ? PortalTicketView : null,
         };
         const view = viewName && viewRegistry[viewName];
         if (!view) {

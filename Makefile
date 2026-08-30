@@ -16,7 +16,7 @@ REMOTE_PATH ?= /var/www/html/andrea-helpdesk
 -include Makefile.local
 
 RSYNC_OPTS  = -avz --delete
-RSYNC_EXCLUDE = --exclude=/vendor --exclude=.env --exclude=storage --exclude=.git --exclude=/demo --exclude=*.swp
+RSYNC_EXCLUDE = --exclude=/vendor --exclude=.env --exclude=storage --exclude=/cache --exclude=.git --exclude=/demo --exclude=*.swp
 
 CRON_ENTRY  = * * * * * php $(REMOTE_PATH)/bin/cron.php >> $(REMOTE_PATH)/storage/logs/cron.log 2>&1
 
