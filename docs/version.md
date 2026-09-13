@@ -1,6 +1,6 @@
 # Version
 
-Current release: **1.4.23-dev.0** (2026-08-30)
+Current release: **1.4.23** (2026-09-13)
 
 See [changelog.md](changelog.md) for full history.
 
