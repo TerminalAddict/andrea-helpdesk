@@ -8,6 +8,10 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ---
 
+## [1.4.24-dev.0] — 2026-09-13
+
+---
+
 ## [1.4.23] — 2026-09-13
 
 ### Fixed
