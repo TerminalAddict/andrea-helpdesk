@@ -109,9 +109,7 @@ class MessageParser
                     }
                 }
             }
-            if ($charset !== 'UTF-8') {
-                $body = mb_convert_encoding($body, 'UTF-8', $charset) ?: $body;
-            }
+            $body = $this->decodeBodyCharset($body, $charset);
 
             if (strtolower($structure->subtype) === 'html') {
                 $htmlBody = $body;
@@ -145,6 +143,29 @@ class MessageParser
         }
 
         return [$htmlBody, $textBody, $attachments];
+    }
+
+    private function decodeBodyCharset(string $body, string $charset): string
+    {
+        $charset = trim($charset, " \t\r\n\"'");
+        try {
+            return mb_convert_encoding($body, 'UTF-8', $charset);
+        } catch (\ValueError $e) {
+            // iconv supports additional mail charsets, including Windows-1257.
+        }
+
+        if (function_exists('iconv') && preg_match('/^[a-zA-Z0-9._:-]{1,80}$/D', $charset)) {
+            $converted = @iconv($charset, 'UTF-8', $body);
+            if ($converted !== false) {
+                return $converted;
+            }
+        }
+
+        // Unknown/malformed declarations must not abort polling or store invalid UTF-8.
+        error_log('IMAP: Unable to decode declared body charset; using UTF-8/Windows-1252 fallback.');
+        return mb_check_encoding($body, 'UTF-8')
+            ? $body
+            : mb_convert_encoding($body, 'UTF-8', 'Windows-1252');
     }
 
     private function fetchPart($imap, int $msgNum, string $partNum, int $encoding, bool $decode = true): string

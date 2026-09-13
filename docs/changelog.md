@@ -6,6 +6,9 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ## [Unreleased]
 
+### Fixed
+- Inbound email body decoding now falls back to iconv for charsets unsupported by mbstring, including Windows-1257. Unknown charset declarations use a logged best-effort UTF-8/Windows-1252 fallback instead of aborting message processing.
+
 ---
 
 ## [1.4.23-dev.0] — 2026-08-30
