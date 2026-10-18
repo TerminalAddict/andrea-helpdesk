@@ -64,7 +64,8 @@ class ImapPoller
     {
         if (!$this->connection) return 0;
 
-        $msgNums = imap_search($this->connection, 'UNSEEN');
+        // Sequence numbers change after expunge; UIDs remain stable for this mailbox.
+        $msgNums = imap_search($this->connection, 'UNSEEN', SE_UID);
         if (!$msgNums) {
             $this->log("No unseen messages.");
             return 0;
@@ -77,7 +78,7 @@ class ImapPoller
                     $processed++;
                 }
             } catch (\Throwable $e) {
-                $this->log("Error processing message {$msgNum}: " . $e->getMessage(), 'ERROR');
+                $this->log("Error processing message UID {$msgNum}: " . $e->getMessage(), 'ERROR');
             }
         }
 
@@ -85,6 +86,7 @@ class ImapPoller
         return $processed;
     }
 
+    /** Process a mailbox UID, never a mutable message sequence number. */
     public function processMessage(int $msgNum): bool
     {
         $parsed = $this->parser->parse($this->connection, $msgNum);
@@ -112,9 +114,9 @@ class ImapPoller
 
             $this->markSeen($msgNum);
             if ($config['delete_after_import']) {
-                imap_delete($this->connection, (string)$msgNum);
+                imap_delete($this->connection, (string)$msgNum, FT_UID);
                 imap_expunge($this->connection);
-                $this->log("Deleted message {$msgNum}");
+                $this->log("Deleted message UID {$msgNum}");
             }
             return true;
         }
@@ -123,9 +125,9 @@ class ImapPoller
             $this->processBlockedMessage($parsed, $existingTicket);
             $this->markSeen($msgNum);
             if ($config['delete_after_import']) {
-                imap_delete($this->connection, (string)$msgNum);
+                imap_delete($this->connection, (string)$msgNum, FT_UID);
                 imap_expunge($this->connection);
-                $this->log("Deleted message {$msgNum}");
+                $this->log("Deleted message UID {$msgNum}");
             }
             return true;
         }
@@ -204,9 +206,9 @@ class ImapPoller
 
         // Optionally delete
         if ($config['delete_after_import']) {
-            imap_delete($this->connection, (string)$msgNum);
+            imap_delete($this->connection, (string)$msgNum, FT_UID);
             imap_expunge($this->connection);
-            $this->log("Deleted message {$msgNum}");
+            $this->log("Deleted message UID {$msgNum}");
         }
 
         return true;
@@ -222,7 +224,7 @@ class ImapPoller
 
     private function markSeen(int $msgNum): void
     {
-        imap_setflag_full($this->connection, (string)$msgNum, '\\Seen');
+        imap_setflag_full($this->connection, (string)$msgNum, '\\Seen', ST_UID);
     }
 
     private function saveAttachments(int $ticketId, ?int $replyId, array $attachments): void

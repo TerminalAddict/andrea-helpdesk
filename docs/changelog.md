@@ -6,6 +6,10 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ## [Unreleased]
 
+### Fixed
+- IMAP polling now uses stable mailbox UIDs for fetching, marking read, and deletion, preventing skipped or incorrect messages when delete-after-import renumbers the mailbox.
+- Header, MIME structure, and body fetch failures now report clear errors. Fetching uses peek mode so failed imports remain unread for retry instead of creating empty tickets or failing with a PHP type error.
+
 ---
 
 ## [1.4.25-dev.0] — 2026-10-18

@@ -6,12 +6,19 @@ namespace Andrea\Helpdesk\IMAP;
 class MessageParser
 {
     /**
-     * Parse a single IMAP message into a structured array.
+     * Parse a single IMAP message by mailbox UID into a structured array.
      */
     public function parse($imap, int $msgNum): array
     {
-        $header     = imap_headerinfo($imap, $msgNum);
-        $rawHeaders = imap_fetchheader($imap, $msgNum);
+        // Fetch the header part without setting Seen, and avoid sequence-number lookups.
+        $rawHeaders = imap_fetchbody($imap, $msgNum, '0', FT_UID | FT_PEEK);
+        if ($rawHeaders === false || trim($rawHeaders) === '') {
+            throw new \RuntimeException("Unable to fetch headers for message UID {$msgNum}; message may have been removed or the IMAP connection failed.");
+        }
+        $header = imap_rfc822_parse_headers($rawHeaders);
+        if ($header === false) {
+            throw new \RuntimeException("Unable to parse headers for message UID {$msgNum}.");
+        }
 
         $autoSubmitted  = strtolower(trim($this->extractRawHeader($rawHeaders, 'Auto-Submitted')));
         $precedence     = strtolower(trim($this->extractRawHeader($rawHeaders, 'Precedence')));
@@ -44,7 +51,7 @@ class MessageParser
             'body_html'   => '',
             'body_text'   => '',
             'attachments' => [],
-            'date'        => date('Y-m-d H:i:s', $header->udate ?? time()),
+            'date'        => date('Y-m-d H:i:s', strtotime($header->date ?? '') ?: time()),
         ];
 
         // From
@@ -67,12 +74,9 @@ class MessageParser
         $result['cc'] = $this->decodeAddressList($header->cc ?? null);
 
         // Body and attachments
-        $structure = imap_fetchstructure($imap, $msgNum);
+        $structure = imap_fetchstructure($imap, $msgNum, FT_UID);
         if (!$structure) {
-            $result['body_html']   = '';
-            $result['body_text']   = '';
-            $result['attachments'] = [];
-            return $result;
+            throw new \RuntimeException("Unable to fetch MIME structure for message UID {$msgNum}; leaving it for retry.");
         }
         [$htmlBody, $textBody, $attachments] = $this->parseStructure($imap, $msgNum, $structure);
 
@@ -170,7 +174,10 @@ class MessageParser
 
     private function fetchPart($imap, int $msgNum, string $partNum, int $encoding, bool $decode = true): string
     {
-        $data = imap_fetchbody($imap, $msgNum, $partNum);
+        $data = imap_fetchbody($imap, $msgNum, $partNum, FT_UID | FT_PEEK);
+        if ($data === false) {
+            throw new \RuntimeException("Unable to fetch part {$partNum} for message UID {$msgNum}; leaving it for retry.");
+        }
         if (!$decode) return $data;
 
         return match($encoding) {

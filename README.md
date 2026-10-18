@@ -34,6 +34,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 
 ### Email Integration
 - **IMAP polling** — polls one or more mailboxes every minute via cron; handles plain text and HTML emails
+- **Safe mailbox processing** — uses stable IMAP UIDs so deleting imported mail does not shift the remaining batch. Failed header/body fetches are logged and left unread for retry.
 - **Multi-account IMAP** — each account can have its own tag, from-address, and reply-to
 - **Email quote stripping** — only the new content is stored; quoted reply history (Gmail, Outlook, Apple Mail, Yahoo) is automatically trimmed. Forwarded emails (`Fwd:`/`FW:`/`Forward:` subject prefix) are exempt — their full content is preserved since the forwarded message IS the primary content
 - **Inline image handling** — CID inline images are replaced with a clear paperclip indicator so attachments are findable
