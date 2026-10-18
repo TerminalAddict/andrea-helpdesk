@@ -119,14 +119,6 @@ class ImapPoller
             return true;
         }
 
-        // Skip auto-replies that would create a new ticket (loop prevention)
-        // If they match an existing thread we still add the reply — no auto-response is sent for replies
-        if ($parsed['is_auto_reply'] && !$existingTicket) {
-            $this->log("Skipping auto-reply (loop prevention): {$parsed['subject']}");
-            $this->markSeen($msgNum);
-            return false;
-        }
-
         if ($isBlockedSender) {
             $this->processBlockedMessage($parsed, $existingTicket);
             $this->markSeen($msgNum);
@@ -181,7 +173,12 @@ class ImapPoller
                 'message_id'  => $parsed['message_id'],
                 'reply_to'    => $parsed['reply_to'] ?: $parsed['from_email'],
                 'cc_emails'   => $ccEmails,
+                'suppress_auto_response' => !empty($parsed['is_auto_reply']),
             ]);
+
+            if (!empty($parsed['is_auto_reply'])) {
+                $this->log("Ticket {$result['ticket']['ticket_number']} created; automatic acknowledgement suppressed (loop prevention): {$parsed['subject']}");
+            }
 
             // Apply account tag if set
             if (!empty($config['tag_id'])) {
@@ -324,15 +321,19 @@ class ImapPoller
             $headers['References'] = "<{$origId}>";
         }
 
-        (new EmailNotifier())->sendRaw(
-            (string)($parsed['reply_to'] ?: $parsed['from_email']),
-            (string)($parsed['from_name'] ?? ''),
-            $subject,
-            $body,
-            $headers,
-            (int)$ticket['id'],
-            false
-        );
+        if (empty($parsed['is_auto_reply'])) {
+            (new EmailNotifier())->sendRaw(
+                (string)($parsed['reply_to'] ?: $parsed['from_email']),
+                (string)($parsed['from_name'] ?? ''),
+                $subject,
+                $body,
+                $headers,
+                (int)$ticket['id'],
+                false
+            );
+        } else {
+            $this->log('Blocked-sender reply suppressed for automated email (loop prevention).');
+        }
 
         $ticketRepo->update((int)$ticket['id'], [
             'status' => 'closed',

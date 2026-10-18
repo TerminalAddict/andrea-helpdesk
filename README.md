@@ -41,7 +41,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 - **Outbound threading** — replies set `In-Reply-To`, `References`, and `X-Ticket-ID` headers so email clients thread correctly
 - **RFC 5322 compliant** — single `Message-ID` header on all outbound mail (Gmail / strict server compatible)
 - **Per-tag from-address** — replies can be sent from the address associated with a ticket's tag (e.g. `support@yourdomain.com` vs `billing@yourdomain.com`)
-- **Loop prevention** — auto-reply and bulk/junk precedence headers are detected and skipped
+- **Loop prevention** — automated emails (including receipts and bulk mail) are imported as tickets or replies, with attachments. Automatic customer acknowledgements are suppressed for detected automated messages; normal agent alerts and later manual replies remain enabled. Blocked senders still follow the close policy, without sending a blocked-sender reply to automated mail. Delivery-failure bounces retain their separate handling.
 - **Per-customer email suppression** — flag on the customer record silences all outbound emails to that customer across every ticket; combines with the per-ticket flag (either is sufficient to suppress)
 
 ### Attachments

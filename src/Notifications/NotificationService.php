@@ -40,12 +40,12 @@ class NotificationService
         $this->push           = new PushNotificationService($settings);
     }
 
-    public function onNewTicket(array $ticket, array $customer): void
+    public function onNewTicket(array $ticket, array $customer, bool $suppressAutoResponse = false): void
     {
         $db = Database::getInstance();
 
-        // 1. Send auto-response to customer (skipped if suppression is active on ticket or customer)
-        if (empty($ticket['suppress_emails']) && empty($customer['suppress_emails'])) {
+        // Per-message loop prevention must not suppress agent alerts or future manual replies.
+        if (!$suppressAutoResponse && empty($ticket['suppress_emails']) && empty($customer['suppress_emails'])) {
             try {
                 $this->autoResponder->sendForNewTicket($ticket, $customer);
             } catch (\Throwable $e) {

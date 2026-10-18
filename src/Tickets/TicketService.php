@@ -87,7 +87,7 @@ class TicketService
         if (empty($emailData['suppress_notifications'])) {
             try {
                 $notifications = new NotificationService();
-                $notifications->onNewTicket($ticket, $customer);
+                $notifications->onNewTicket($ticket, $customer, !empty($emailData['suppress_auto_response']));
             } catch (\Throwable) {}
         }
 

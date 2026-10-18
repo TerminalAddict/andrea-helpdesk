@@ -6,6 +6,11 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ## [Unreleased]
 
+### Fixed
+- Automated inbound emails, including billing receipts, now create tickets instead of being marked read and skipped. Only the automatic acknowledgement is suppressed; attachments, agent notifications, and later manual replies remain available.
+- Automated mail from blocked senders follows the closed-ticket policy without sending a blocked-sender response, preventing reply loops.
+- Previously skipped mail still present in the mailbox can be imported by marking it unread after upgrading.
+
 ---
 
 ## [1.4.24-dev.0] — 2026-09-13

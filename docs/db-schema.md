@@ -695,7 +695,7 @@ The following settings are seeded by `schema.sql`. Values shown are the defaults
 | `global_signature` | `<p>--<br>Andrea Helpdesk</p>` | string | Default HTML signature appended to all outbound emails unless overridden per-agent |
 | `notify_agent_on_new_ticket` | `1` | boolean | Send an email to all active agents when a new ticket is created |
 | `notify_agent_on_new_reply` | `1` | boolean | Send an email to the assigned agent (or all agents if unassigned) when a customer replies |
-| `auto_response_enabled` | `1` | boolean | Whether to send an automatic acknowledgement on new tickets |
+| `auto_response_enabled` | `1` | boolean | Whether to send an automatic acknowledgement on new tickets. Detected automated inbound mail is imported without an acknowledgement to prevent reply loops; agent alerts and later manual replies remain enabled. |
 | `auto_response_subject` | `Re: {{subject}} [{{ticket_number}}]` | string | Auto-response subject template |
 | `auto_response_body` | *(HTML template)* | string | Auto-response body HTML template. Placeholders: `{{customer_name}}`, `{{ticket_number}}`, `{{subject}}`, `{{global_signature}}` |
 | `incoming_email_blocklist` | `[]` | json | Admin-managed inbound sender blocklist. Entries can be exact addresses, `*@domain.com`, or `domain.com`. |
