@@ -6,6 +6,10 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ## [Unreleased]
 
+### Fixed
+- System chat retention jobs now store a NULL deleting-agent ID instead of zero, avoiding foreign-key failures while retaining system audit entries.
+- IMAP connection checks now report a missing PHP IMAP extension clearly instead of crashing with an undefined-function error after PHP upgrades.
+
 ---
 
 ## [1.4.26-dev.0] — 2026-10-18

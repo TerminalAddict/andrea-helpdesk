@@ -31,6 +31,11 @@ class ImapPoller
 
     public function connect(): bool
     {
+        if (!function_exists('imap_open')) {
+            $this->log('IMAP extension unavailable in PHP ' . PHP_VERSION . ' (' . PHP_SAPI . '). Install and enable the IMAP extension for this PHP version and SAPI; mailbox polling was not performed.', 'ERROR');
+            return false;
+        }
+
         $config = $this->config;
 
         if (empty($config['host']) || empty($config['username'])) {

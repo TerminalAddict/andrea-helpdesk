@@ -460,6 +460,8 @@ class ChatService
 
     public function prune(?string $scope, ?int $channelId, int $adminAgentId, string $ip): array
     {
+        // CLI maintenance has no agent; zero is not a valid foreign key.
+        $deletedByAgentId = $adminAgentId > 0 ? $adminAgentId : null;
         $counts = $this->pruneCounts($scope, $channelId);
         $deleted = ['channel' => 0, 'direct' => 0];
 
@@ -477,7 +479,7 @@ class ChatService
                     AND channel_id = ?
                     AND deleted_at IS NULL
                     AND created_at < DATE_SUB(NOW(), INTERVAL ? DAY)",
-                [$adminAgentId, (int)$row['channel_id'], (int)$row['retention_days']]
+                [$deletedByAgentId, (int)$row['channel_id'], (int)$row['retention_days']]
             );
             $deleted['channel'] += (int)$row['message_count'];
         }
@@ -490,7 +492,7 @@ class ChatService
                   WHERE message_scope = 'direct'
                     AND deleted_at IS NULL
                     AND created_at < DATE_SUB(NOW(), INTERVAL ? DAY)",
-                [$adminAgentId, $days]
+                [$deletedByAgentId, $days]
             );
             $deleted['direct'] = (int)$counts['direct']['message_count'];
         }
