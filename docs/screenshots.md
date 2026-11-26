@@ -59,6 +59,8 @@ Filename: `tickets.png`
 
 The main ticket list with filters, search, priority/status badges, tags, assignment, and pagination.
 
+The current view also supports row checkboxes and selecting all tickets on the displayed page, with confirmed **Resolve selected** and **Delete selected** actions based on agent permissions. Selection clears when paging, sorting, or filtering. Deleting a parent includes its child tickets and attachments, even outside the page. The screenshot above predates these bulk controls.
+
 ### Ticket Detail
 
 ![Ticket Detail](screenshots/ticket%20details.png)

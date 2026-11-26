@@ -20,6 +20,7 @@ A self-hosted, full-featured customer support helpdesk built with PHP 8.1, MySQL
 
 ### Ticket Management
 - **Multi-channel intake** — tickets created via email (IMAP polling), agent UI, or the customer portal
+- **Bulk ticket actions** — select ticket-list rows or all tickets on the displayed page, then confirm Resolve selected or Delete selected. Actions respect close/delete permissions. Selection clears when changing pages, sorting, or filtering. Deleting a parent also deletes its child tickets and attachments, including children outside the page; failures are reported per selected ticket.
 - **Ticket threading** — replies are threaded using `Message-ID`, `In-Reply-To`, and `References` headers so email conversations stay together
 - **Parent / child tickets** — link related tickets in a hierarchy, displayed inline in the ticket list
 - **Priorities** — Overdue, Urgent, High, Normal, Low with colour-coded badges

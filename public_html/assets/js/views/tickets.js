@@ -79,6 +79,13 @@ const TicketsView = {
     },
 
     async init(params) {
+        this._view = {};
+        this._selected = new Set();
+        this._tickets = [];
+        this._bulkBusy = false;
+        this._loading = false;
+        this._page = 1;
+        this._loadId = 0;
         // Load agents and tags for filters
         try {
             const [agentsRes, tagsRes] = await Promise.all([API.get('/agents'), API.get('/tags')]);
@@ -125,6 +132,13 @@ const TicketsView = {
     },
 
     async loadTickets(page = 1) {
+        if (this._bulkBusy) return;
+        const view = this._view;
+        const loadId = ++this._loadId;
+        this._selected.clear();
+        this.updateBulkControls();
+        this._loading = true;
+        $('#tickets-table-wrap input[type="checkbox"]').prop('disabled', true);
         const perPage = parseInt(API.currentUser?.page_size) || 20;
         const filters = {
             status:      $('#filter-status').val() || undefined,
@@ -143,14 +157,28 @@ const TicketsView = {
 
         try {
             const res = await API.get('/tickets', filters);
+            if (view !== this._view || loadId !== this._loadId) return;
+            this._loading = false;
+            this._page = page;
+            this._tickets = res.data || [];
+            if (!this._tickets.length && page > 1) {
+                return this.loadTickets(page - 1);
+            }
             this.renderTable(res.data || [], res.meta || {});
             this.renderPagination(res.meta || {}, page);
         } catch (e) {
+            if (view !== this._view || loadId !== this._loadId) return;
+            this._loading = false;
+            this._tickets = [];
+            $('#tickets-pagination').empty();
             $('#tickets-table-wrap').html('<p class="text-danger p-3">Failed to load tickets: ' + App.escapeHtml(e.message) + '</p>');
         }
     },
 
     renderTable(tickets, meta) {
+        const canResolve = API.isAdmin() || API.can('can_close_tickets');
+        const canDelete = API.isAdmin() || API.can('can_delete_tickets');
+        const canSelect = canResolve || canDelete;
         if (!tickets.length) {
             $('#tickets-table-wrap').html('<p class="text-muted p-4 text-center">No tickets found.</p>');
             return;
@@ -178,6 +206,7 @@ const TicketsView = {
 
         const rows = ordered.map(({ t, child }) => `
             <tr class="ticket-row${child ? ' table-light ticket-child-row' : ''}${t.priority === 'overdue' ? ' ticket-overdue-row' : ''}" data-id="${t.id}" style="cursor:pointer;">
+                ${canSelect ? `<td class="ticket-selection"><input type="checkbox" class="form-check-input ticket-select" value="${Number(t.id)}" aria-label="Select ${App.escapeHtml(t.ticket_number)}"></td>` : ''}
                 <td>
                     ${child ? '<span class="text-muted me-1" style="padding-left:1rem;">↳</span>' : ''}
                     <span class="font-monospace small fw-semibold">${App.escapeHtml(t.ticket_number)}</span>
@@ -207,13 +236,21 @@ const TicketsView = {
 
         const total = meta.total || 0;
         $('#tickets-table-wrap').html(`
-            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom bg-light">
+            <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center px-3 py-2 border-bottom bg-light">
                 <span class="small text-muted">${total} ticket${total !== 1 ? 's' : ''}</span>
+                ${canSelect ? `<div class="d-flex flex-wrap gap-2 align-items-center">
+                    <span id="ticket-selection-count" class="small" role="status" aria-live="polite">0 selected on this page</span>
+                    ${canResolve ? '<button type="button" id="tickets-bulk-resolve" class="btn btn-sm btn-outline-success" disabled><i class="bi bi-check2-circle me-1"></i>Resolve selected</button>' : ''}
+                    ${canDelete ? '<button type="button" id="tickets-bulk-delete" class="btn btn-sm btn-outline-danger" disabled><i class="bi bi-trash me-1"></i>Delete selected</button>' : ''}
+                    <button type="button" id="tickets-clear-selection" class="btn btn-sm btn-outline-secondary" disabled>Clear selection</button>
+                </div>` : ''}
             </div>
+            <div id="tickets-bulk-result" class="px-3" role="status" aria-live="polite"></div>
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
+                            ${canSelect ? '<th class="ticket-selection"><input type="checkbox" class="form-check-input" id="tickets-select-all" aria-label="Select all tickets on this page"></th>' : ''}
                             ${th('Ticket #', 'ticket_number')}
                             ${th('Subject / Customer', null)}
                             ${th('Status', 'status')}
@@ -231,6 +268,7 @@ const TicketsView = {
 
         // Sortable column headers
         $('#tickets-table-wrap th[data-sort]').on('click', (e) => {
+            if (this._bulkBusy) return;
             const field = $(e.currentTarget).data('sort');
             if (this._sort === field) {
                 this._dir = this._dir === 'asc' ? 'desc' : 'asc';
@@ -242,9 +280,95 @@ const TicketsView = {
         });
 
         // Row click
-        $('.ticket-row').on('click', function() {
+        $('.ticket-row').on('click', function(e) {
+            if ($(e.target).closest('.ticket-selection').length) return;
             App.navigate('/tickets/' + $(this).data('id'));
         });
+        $('.ticket-select').on('change', (e) => {
+            const id = Number(e.target.value);
+            if (e.target.checked) this._selected.add(id);
+            else this._selected.delete(id);
+            this.updateBulkControls();
+        });
+        $('#tickets-select-all').on('change', (e) => {
+            this._selected = new Set(e.target.checked ? this._tickets.map(t => Number(t.id)) : []);
+            this.updateBulkControls();
+        });
+        $('#tickets-clear-selection').on('click', () => {
+            this._selected.clear();
+            this.updateBulkControls();
+        });
+        $('#tickets-bulk-resolve').on('click', () => this.runBulkAction('resolve'));
+        $('#tickets-bulk-delete').on('click', () => this.runBulkAction('delete'));
+    },
+
+    updateBulkControls() {
+        const count = this._selected.size;
+        $('#ticket-selection-count').text(`${count} selected on this page`);
+        $('#tickets-bulk-resolve, #tickets-bulk-delete, #tickets-clear-selection').prop('disabled', !count || this._bulkBusy);
+        $('#tickets-select-all').prop('checked', count > 0 && count === this._tickets.length)
+            .prop('indeterminate', count > 0 && count < this._tickets.length);
+        $('.ticket-select').each((_, input) => { input.checked = this._selected.has(Number(input.value)); });
+    },
+
+    async runBulkAction(action) {
+        if (this._bulkBusy || this._loading || !this._selected.size) return;
+        if (!['resolve', 'delete'].includes(action)) return;
+        const permission = action === 'delete' ? 'can_delete_tickets' : 'can_close_tickets';
+        if (!API.isAdmin() && !API.can(permission)) return;
+        const view = this._view;
+        const root = document.getElementById('tickets-table-wrap');
+        const stillHere = () => view === this._view && root === document.getElementById('tickets-table-wrap');
+        const tickets = this._tickets.filter(t => this._selected.has(Number(t.id)));
+        // Delete selected children first, avoiding false failures after a parent's cascade.
+        const depth = (ticket) => {
+            const seen = new Set();
+            while (ticket?.parent_ticket_id && !seen.has(Number(ticket.id))) {
+                seen.add(Number(ticket.id));
+                ticket = this._tickets.find(t => Number(t.id) === Number(ticket.parent_ticket_id));
+            }
+            return seen.size;
+        };
+        if (action === 'delete') tickets.sort((a, b) => depth(b) - depth(a));
+        this._bulkBusy = true;
+        this.updateBulkControls();
+        $('#tickets-table-wrap input, #filter-status, #filter-priority, #filter-agent, #filter-tag, #filter-q, #filter-reset').prop('disabled', true);
+        const failures = [];
+        let succeeded = 0;
+        let confirmed = false;
+        try {
+            const warning = action === 'delete'
+                ? `Delete ${tickets.length} selected ticket(s)? Their child tickets (including those outside this page) and attachments will also be deleted. This cannot be undone.`
+                : `Resolve ${tickets.length} selected ticket(s)? Normal ticket status-change notifications will apply.`;
+            confirmed = await App.confirm(warning, action === 'delete' ? 'Delete Selected Tickets' : 'Resolve Selected Tickets');
+            if (!confirmed || !stillHere()) return;
+            for (const [index, ticket] of tickets.entries()) {
+                if (!stillHere()) break;
+                $('#tickets-bulk-result').text(`Processing ${index + 1} of ${tickets.length}...`);
+                try {
+                    if (action === 'delete') await API.delete('/tickets/' + Number(ticket.id));
+                    else await API.post('/tickets/' + Number(ticket.id) + '/status', { status: 'resolved' });
+                    succeeded++;
+                } catch (e) {
+                    failures.push(`${ticket.ticket_number}: ${e.message || 'Request failed'}`);
+                }
+            }
+        } finally {
+            if (stillHere()) {
+                this._bulkBusy = false;
+                $('#tickets-table-wrap input, #filter-status, #filter-priority, #filter-agent, #filter-tag, #filter-q, #filter-reset').prop('disabled', false);
+                this.updateBulkControls();
+            }
+        }
+        if (!stillHere() || !confirmed) return;
+        await this.loadTickets(this._page || 1);
+        if (!stillHere()) return;
+        const summary = `${succeeded} selected ticket(s) ${action === 'delete' ? 'deleted' : 'resolved'}.`;
+        App.toast(summary, failures.length ? 'warning' : 'success');
+        if (failures.length) {
+            await App.confirm(`${summary}\n\n${failures.length} request(s) failed. Check ticket status before retrying:\n${failures.join('\n')}`, 'Bulk Action Results');
+        }
+        if (typeof Notifications !== 'undefined') Notifications.refreshCountersOnly();
     },
 
     renderPagination(meta, currentPage) {
@@ -274,7 +398,7 @@ const TicketsView = {
                 </li>
             </ul></nav>`);
 
-        $('#tickets-pagination').on('click', 'a[data-page]', (e) => {
+        $('#tickets-pagination').off('click').on('click', 'a[data-page]', (e) => {
             e.preventDefault();
             this.loadTickets(parseInt($(e.currentTarget).data('page')));
         });
