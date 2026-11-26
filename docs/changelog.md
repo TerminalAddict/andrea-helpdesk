@@ -6,8 +6,13 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ## [Unreleased]
 
+---
+
+## [1.4.27] — 2026-11-26
+
 ### Added
 - Ticket lists now support selecting individual rows or the current page and resolving or deleting the selection with confirmation. Existing permissions and status-change behavior apply. Deletion warns about child tickets and attachments; partial failures are reported individually. Selection clears when paging, sorting, or filtering.
+
 
 ---
 
