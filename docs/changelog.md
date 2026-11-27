@@ -6,6 +6,9 @@ All notable changes to Andrea Helpdesk are documented here.
 
 ## [Unreleased]
 
+### Fixed
+- Mobile ticket lists now prioritize the subject and customer alongside selection checkboxes, hiding the separate ticket-number column. Named-column visibility rules prevent permission-dependent checkboxes from hiding the subject; long subjects and email addresses wrap within the screen.
+
 ---
 
 ## [1.4.28-dev.0] — 2026-11-26

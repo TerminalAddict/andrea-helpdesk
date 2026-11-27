@@ -207,12 +207,12 @@ const TicketsView = {
         const rows = ordered.map(({ t, child }) => `
             <tr class="ticket-row${child ? ' table-light ticket-child-row' : ''}${t.priority === 'overdue' ? ' ticket-overdue-row' : ''}" data-id="${t.id}" style="cursor:pointer;">
                 ${canSelect ? `<td class="ticket-selection"><input type="checkbox" class="form-check-input ticket-select" value="${Number(t.id)}" aria-label="Select ${App.escapeHtml(t.ticket_number)}"></td>` : ''}
-                <td>
+                <td class="ticket-number-column">
                     ${child ? '<span class="text-muted me-1" style="padding-left:1rem;">↳</span>' : ''}
                     <span class="font-monospace small fw-semibold">${App.escapeHtml(t.ticket_number)}</span>
                 </td>
-                <td>
-                    <div>${App.escapeHtml(t.subject)}</div>
+                <td class="ticket-subject-column">
+                    <div class="ticket-subject-text">${child ? '<span class="d-md-none text-muted me-1" aria-label="Child ticket">&#8627;</span>' : ''}${App.escapeHtml(t.subject)}</div>
                     <div class="small text-muted">${App.escapeHtml(t.customer_name || '')} ${t.customer_email ? '&lt;' + App.escapeHtml(t.customer_email) + '&gt;' : ''}</div>
                 </td>
                 <td>${App.statusBadge(t.status)}</td>
@@ -252,7 +252,7 @@ const TicketsView = {
                         <tr>
                             ${canSelect ? '<th class="ticket-selection"><input type="checkbox" class="form-check-input" id="tickets-select-all" aria-label="Select all tickets on this page"></th>' : ''}
                             ${th('Ticket #', 'ticket_number')}
-                            ${th('Subject / Customer', null)}
+                            <th class="ticket-subject-column">Subject / Customer</th>
                             ${th('Status', 'status')}
                             ${th('Priority', 'priority')}
                             ${th('Tags', null)}
